@@ -245,7 +245,8 @@ function DashboardLayout() {
             </div>
           </div>
 
-          <div className="order-3 w-full sm:order-2 sm:w-auto sm:flex-1 sm:max-w-md">
+          {/* Search: full width on mobile (own row), inline on md+ */}
+          <div className="order-3 hidden w-full sm:order-2 sm:block sm:w-auto sm:flex-1 sm:max-w-md">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input placeholder="Search" className="h-10 rounded-full border-border bg-card pl-9" />
@@ -253,30 +254,37 @@ function DashboardLayout() {
           </div>
 
           <div className="order-2 ml-auto flex items-center gap-2 sm:order-3">
+            {/* Search icon (mobile only) */}
+            <button
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:text-foreground sm:hidden"
+              aria-label="Search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
             <button
               onClick={toggle}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:text-foreground"
+              className="hidden h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:text-foreground sm:flex"
               aria-label="Toggle theme"
             >
               {theme === "light" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
             <button
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:text-foreground"
+              className="hidden h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:text-foreground sm:flex"
               aria-label="Notifications"
             >
               <Bell className="h-4 w-4" />
             </button>
 
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 rounded-full border border-border bg-card px-2 py-1.5 text-left transition hover:bg-muted">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-primary text-[11px] font-semibold text-primary-foreground">
+              <DropdownMenuTrigger className="flex items-center gap-2 rounded-full border border-border bg-card p-1 text-left transition hover:bg-muted sm:px-2 sm:py-1.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-primary text-[11px] font-semibold text-primary-foreground sm:h-7 sm:w-7">
                   {initials}
                 </span>
-                <span className="hidden text-sm sm:block">
+                <span className="hidden text-sm xl:block">
                   <span className="block font-semibold leading-tight">{profile?.full_name || "User"}</span>
                   <span className="block text-xs text-muted-foreground">{user?.email}</span>
                 </span>
-                <ChevronRight className="hidden h-4 w-4 text-muted-foreground sm:block" />
+                <ChevronRight className="hidden h-4 w-4 text-muted-foreground xl:block" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>My account</DropdownMenuLabel>
@@ -290,11 +298,16 @@ function DashboardLayout() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="outline" size="sm" className="hidden rounded-full md:inline-flex">
+            <Button variant="outline" size="sm" className="hidden rounded-full xl:inline-flex">
               <Download className="mr-2 h-4 w-4" /> Export
             </Button>
-            <Button size="sm" className="rounded-full bg-foreground text-background hover:opacity-90">
-              <Plus className="mr-2 h-4 w-4" /> Add new entry
+            <Button
+              size="sm"
+              aria-label="Add new entry"
+              className="rounded-full bg-foreground text-background hover:opacity-90"
+            >
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Add new entry</span>
             </Button>
           </div>
         </header>
