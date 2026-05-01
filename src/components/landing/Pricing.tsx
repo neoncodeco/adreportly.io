@@ -84,17 +84,23 @@ export function Pricing() {
               className={cn(
                 "relative rounded-3xl border p-8 hover-lift",
                 p.highlight
-                  ? "border-ink/10 bg-ink text-ink-foreground shadow-elevated lg:scale-[1.04]"
+                  ? "border-ink bg-ink text-ink-foreground shadow-elevated lg:scale-[1.04] lg:-my-2"
                   : "border-border bg-card shadow-soft",
               )}
             >
               {p.highlight && (
                 <>
+                  {/* Outer glow halo — sits behind the card, not under it */}
                   <div
                     aria-hidden
-                    className="pointer-events-none absolute -inset-px -z-10 rounded-3xl bg-gradient-brand opacity-40 blur-xl"
+                    className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-brand/30 blur-3xl"
                   />
-                  <span className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-foreground shadow-glow">
+                  {/* Subtle top-edge brand line */}
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-brand to-transparent"
+                  />
+                  <span className="absolute -top-3.5 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-foreground shadow-glow">
                     <Sparkles className="h-3 w-3" />
                     Most popular
                   </span>
