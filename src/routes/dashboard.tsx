@@ -14,9 +14,9 @@ import {
   ChevronRight,
   Zap,
   LogOut,
-  Download,
-  Plus,
   Menu,
+  TrendingUp,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
@@ -298,17 +298,12 @@ function DashboardLayout() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="outline" size="sm" className="hidden rounded-full xl:inline-flex">
-              <Download className="mr-2 h-4 w-4" /> Export
-            </Button>
-            <Button
-              size="sm"
-              aria-label="Add new entry"
-              className="rounded-full bg-primary text-primary-foreground shadow-soft hover:bg-primary/90"
-            >
-              <Plus className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Add new entry</span>
-            </Button>
+            <span className="hidden items-center gap-1 rounded-full bg-success/15 px-2.5 py-1 text-xs font-semibold text-success sm:inline-flex">
+              <TrendingUp className="h-3.5 w-3.5" /> +18.2%
+            </span>
+            <button className="hidden items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground transition hover:text-foreground sm:inline-flex">
+              30d <ChevronDown className="h-3.5 w-3.5" />
+            </button>
           </div>
         </header>
 
