@@ -14,16 +14,269 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ad_accounts: {
+        Row: {
+          agency_id: string
+          created_at: string
+          currency: string | null
+          fb_account_id: string
+          id: string
+          is_active: boolean
+          last_synced_at: string | null
+          name: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          currency?: string | null
+          fb_account_id: string
+          id?: string
+          is_active?: boolean
+          last_synced_at?: string | null
+          name: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          currency?: string | null
+          fb_account_id?: string
+          id?: string
+          is_active?: boolean
+          last_synced_at?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
+      clients: {
+        Row: {
+          agency_id: string
+          created_at: string
+          email: string
+          id: string
+          last_login_at: string | null
+          name: string
+          organization: string | null
+          status: Database["public"]["Enums"]["client_status"]
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          email: string
+          id?: string
+          last_login_at?: string | null
+          name: string
+          organization?: string | null
+          status?: Database["public"]["Enums"]["client_status"]
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          last_login_at?: string | null
+          name?: string
+          organization?: string | null
+          status?: Database["public"]["Enums"]["client_status"]
+        }
+        Relationships: []
+      }
+      fb_tokens: {
+        Row: {
+          agency_id: string
+          auth_tag: string
+          created_at: string
+          encrypted_token: string
+          expires_at: string | null
+          fb_user_id: string | null
+          iv: string
+          scope: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          auth_tag: string
+          created_at?: string
+          encrypted_token: string
+          expires_at?: string | null
+          fb_user_id?: string | null
+          iv: string
+          scope?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          auth_tag?: string
+          created_at?: string
+          encrypted_token?: string
+          expires_at?: string | null
+          fb_user_id?: string | null
+          iv?: string
+          scope?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          fb_user_id: string | null
+          full_name: string | null
+          id: string
+          organization: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          fb_user_id?: string | null
+          full_name?: string | null
+          id: string
+          organization?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          fb_user_id?: string | null
+          full_name?: string | null
+          id?: string
+          organization?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      shared_links: {
+        Row: {
+          agency_id: string
+          campaign_id: string
+          campaign_name: string | null
+          client_email: string | null
+          client_id: string | null
+          created_at: string
+          date_from: string | null
+          date_to: string | null
+          expires_at: string
+          id: string
+          report_name: string | null
+          unique_token: string
+          view_count: number
+        }
+        Insert: {
+          agency_id: string
+          campaign_id: string
+          campaign_name?: string | null
+          client_email?: string | null
+          client_id?: string | null
+          created_at?: string
+          date_from?: string | null
+          date_to?: string | null
+          expires_at: string
+          id?: string
+          report_name?: string | null
+          unique_token?: string
+          view_count?: number
+        }
+        Update: {
+          agency_id?: string
+          campaign_id?: string
+          campaign_name?: string | null
+          client_email?: string | null
+          client_id?: string | null
+          created_at?: string
+          date_from?: string | null
+          date_to?: string | null
+          expires_at?: string
+          id?: string
+          report_name?: string | null
+          unique_token?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_links_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          agency_id: string
+          created_at: string
+          current_period_end: string | null
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          status: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          current_period_end?: string | null
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          current_period_end?: string | null
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "agency_owner"
+      client_status: "active" | "paused" | "archived"
+      subscription_plan: "free" | "pro" | "enterprise"
+      subscription_status: "active" | "past_due" | "canceled" | "trialing"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +403,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "agency_owner"],
+      client_status: ["active", "paused", "archived"],
+      subscription_plan: ["free", "pro", "enterprise"],
+      subscription_status: ["active", "past_due", "canceled", "trialing"],
+    },
   },
 } as const
