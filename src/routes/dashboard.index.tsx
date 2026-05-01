@@ -79,25 +79,27 @@ function DashboardHome() {
       transition={{ duration: 0.35 }}
       className="space-y-5 sm:space-y-6"
     >
-      {/* Hero summary card */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-primary p-5 text-primary-foreground shadow-glow sm:p-7">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/15 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
-        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold backdrop-blur">
+      {/* Hero summary card - subtle, matches KPI cards */}
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-5">
+        <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-12 -left-8 h-28 w-28 rounded-full bg-primary/10 blur-3xl" />
+        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
               <Sparkles className="h-3 w-3" /> Live overview
             </div>
-            <h2 className="mt-3 text-2xl font-bold leading-tight sm:text-3xl">
+            <h2 className="mt-2 text-xl font-bold leading-tight sm:text-2xl">
               ৳{totalSpend.toLocaleString()}
             </h2>
-            <p className="mt-1 text-sm opacity-90">Total ad spend · last 30 days</p>
+            <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
+              Total ad spend · last 30 days
+            </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1.5 text-xs font-semibold backdrop-blur">
+            <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
               <TrendingUp className="h-3.5 w-3.5" /> +18.2%
             </span>
-            <button className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold backdrop-blur transition hover:bg-white/25">
+            <button className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-xs font-semibold text-muted-foreground transition hover:text-foreground">
               30d <ChevronDown className="h-3.5 w-3.5" />
             </button>
           </div>
