@@ -33,12 +33,12 @@ export function Features() {
               transition={{ duration: 0.5, delay: (i % 3) * 0.1 }}
               className="group relative overflow-hidden rounded-2xl border border-border bg-card p-7 shadow-soft hover-lift"
             >
-              {/* Hover gradient sweep */}
+              {/* Always-on gradient accent */}
               <div
                 aria-hidden
-                className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-brand/0 blur-3xl transition-all duration-500 group-hover:bg-brand/40"
+                className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-brand/40 blur-3xl"
               />
-              <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-ink transition-all duration-500 group-hover:bg-ink group-hover:text-brand">
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-ink text-brand">
                 <f.icon className="h-5 w-5" />
               </div>
               <h3 className="relative mt-5 text-base font-bold tracking-tight">
