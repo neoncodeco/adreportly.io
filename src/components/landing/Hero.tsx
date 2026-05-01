@@ -60,10 +60,10 @@ export function Hero() {
               transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
               className="relative inline-block"
             >
-              <span className="relative z-10 text-ink">measurable ROI</span>
+              <span className="relative z-10 text-brand-foreground">measurable ROI</span>
               <span
                 aria-hidden
-                className="absolute inset-x-0 bottom-1 -z-0 h-3 -skew-x-6 bg-brand sm:bottom-2 sm:h-4"
+                className="absolute inset-0 -z-0 -skew-x-6 bg-brand"
               />
             </motion.span>
           </h1>

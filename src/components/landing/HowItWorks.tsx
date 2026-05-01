@@ -30,10 +30,10 @@ export function HowItWorks() {
           <h2 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl">
             Three steps from raw data to{" "}
             <span className="relative inline-block">
-              <span className="relative z-10">client report</span>
+              <span className="relative z-10 text-brand-foreground">client report</span>
               <span
                 aria-hidden
-                className="absolute inset-x-0 bottom-1 -z-0 h-3 -skew-x-6 bg-brand"
+                className="absolute inset-0 -z-0 -skew-x-6 bg-brand"
               />
             </span>
           </h2>
