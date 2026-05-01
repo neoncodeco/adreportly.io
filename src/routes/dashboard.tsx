@@ -161,6 +161,81 @@ function DashboardLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
         <header className="sticky top-0 z-30 flex flex-wrap items-center gap-3 border-b border-border bg-background/80 px-4 py-4 backdrop-blur sm:px-8">
+          {/* Mobile / md drawer trigger */}
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Open menu"
+                className="rounded-full border-border bg-card lg:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side="left"
+              className="w-[280px] border-r border-border bg-sidebar p-0 sm:w-[300px]"
+            >
+              <SheetHeader className="border-b border-border p-6">
+                <SheetTitle asChild>
+                  <Link to="/dashboard" className="flex items-center gap-2">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">
+                      <Zap className="h-4 w-4" />
+                    </span>
+                    <span className="text-base font-bold tracking-tight">FB Ads Analytics</span>
+                  </Link>
+                </SheetTitle>
+              </SheetHeader>
+
+              <div className="px-4 pt-4">
+                <p className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Menu
+                </p>
+                <nav className="space-y-1">
+                  {nav.map((item) => {
+                    const active = isActive(item.to, item.exact);
+                    return (
+                      <SheetClose asChild key={item.to}>
+                        <Link
+                          to={item.to}
+                          className={cn(
+                            "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
+                            active
+                              ? "bg-gradient-primary text-primary-foreground shadow-glow"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                          )}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          {item.label}
+                        </Link>
+                      </SheetClose>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              <div className="mt-auto p-4">
+                <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-soft">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-primary text-xs font-semibold text-primary-foreground">
+                    {initials}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold">{profile?.full_name || "Agency"}</div>
+                    <div className="truncate text-xs text-muted-foreground">{user?.email}</div>
+                  </div>
+                  <button
+                    onClick={() => signOut()}
+                    aria-label="Sign out"
+                    className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
           <div className="min-w-0 flex-1">
             <div className="text-xl font-bold leading-tight sm:text-2xl">
               {greeting},
