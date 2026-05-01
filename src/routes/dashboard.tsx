@@ -125,7 +125,7 @@ function DashboardLayout() {
                   className={cn(
                     "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
                     active
-                      ? "bg-gradient-primary text-primary-foreground shadow-glow dark:bg-none dark:bg-sidebar-accent dark:text-sidebar-accent-foreground dark:shadow-sog dark:shadow-soft"
+                      ? "bg-gradient-primary text-primary-foreground shadow-glow dark:bg-none dark:bg-sidebar-accent dark:text-sidebar-accent-foreground dark:shadow-soft"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-sidebar-foreground/70 dark:hover:bg-sidebar-accent/60 dark:hover:text-sidebar-foreground",
                   )}
                 >
