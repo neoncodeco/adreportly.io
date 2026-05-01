@@ -125,19 +125,21 @@ function DashboardLayout() {
                   className={cn(
                     "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
                     active
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                      ? "bg-gradient-primary text-primary-foreground shadow-glow dark:bg-none dark:bg-sidebar-accent dark:text-sidebar-accent-foreground dark:shadow-soft"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-sidebar-foreground/70 dark:hover:bg-sidebar-accent/60 dark:hover:text-sidebar-foreground",
                   )}
                 >
                   <item.icon
                     className={cn(
                       "h-4 w-4 shrink-0 transition",
-                      active ? "text-brand" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground",
+                      active
+                        ? "text-primary-foreground dark:text-brand"
+                        : "dark:text-sidebar-foreground/60 dark:group-hover:text-sidebar-foreground",
                     )}
                   />
                   {item.label}
                   {active && (
-                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-brand" />
+                    <span className="ml-auto hidden h-1.5 w-1.5 rounded-full bg-brand dark:block" />
                   )}
                 </Link>
               );
@@ -210,19 +212,21 @@ function DashboardLayout() {
                           className={cn(
                             "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
                             active
-                              ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
-                              : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                              ? "bg-gradient-primary text-primary-foreground shadow-glow dark:bg-none dark:bg-sidebar-accent dark:text-sidebar-accent-foreground dark:shadow-soft"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-sidebar-foreground/70 dark:hover:bg-sidebar-accent/60 dark:hover:text-sidebar-foreground",
                           )}
                         >
                           <item.icon
                             className={cn(
                               "h-4 w-4 shrink-0 transition",
-                              active ? "text-brand" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground",
+                              active
+                                ? "text-primary-foreground dark:text-brand"
+                                : "dark:text-sidebar-foreground/60 dark:group-hover:text-sidebar-foreground",
                             )}
                           />
                           {item.label}
                           {active && (
-                            <span className="ml-auto h-1.5 w-1.5 rounded-full bg-brand" />
+                            <span className="ml-auto hidden h-1.5 w-1.5 rounded-full bg-brand dark:block" />
                           )}
                         </Link>
                       </SheetClose>
