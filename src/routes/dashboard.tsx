@@ -44,14 +44,14 @@ export const Route = createFileRoute("/dashboard")({
   component: DashboardLayout,
 });
 
-const nav = [
+const nav: Array<{ to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }> = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/dashboard/campaigns", label: "Campaigns", icon: PieChart },
   { to: "/dashboard/clients", label: "Clients", icon: Users },
   { to: "/dashboard/reports", label: "Reports", icon: FileText },
   { to: "/dashboard/meta-connect", label: "Meta Connect", icon: Link2 },
   { to: "/dashboard/settings", label: "Settings", icon: Settings },
-] as const;
+];
 
 function DashboardLayout() {
   const { user, signOut } = useAuth();
