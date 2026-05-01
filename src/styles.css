@@ -343,10 +343,10 @@
   .bg-ink { background-color: var(--ink); }
   .text-ink { color: var(--ink); }
   .text-ink-foreground { color: var(--ink-foreground); }
-}
 
-/* In dark mode, text-ink should resolve to the page foreground (near-white) so headings/labels stay readable. */
-.dark .text-ink { color: var(--foreground); }
+  /* In dark mode, text-ink resolves to the page foreground (near-white) so headings/labels stay readable. */
+  .dark .text-ink { color: var(--foreground); }
+
 
   /* Animated gradient text */
   .text-gradient-primary {
