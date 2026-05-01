@@ -90,15 +90,10 @@ export function Pricing() {
             >
               {p.highlight && (
                 <>
-                  {/* Outer glow halo — sits behind the card, not under it */}
+                  {/* Soft outer glow — pushed far behind, low opacity, no tint bleed */}
                   <div
                     aria-hidden
-                    className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-brand/30 blur-3xl"
-                  />
-                  {/* Subtle top-edge brand line */}
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-brand to-transparent"
+                    className="pointer-events-none absolute -inset-10 -z-10 rounded-[2.5rem] bg-brand/15 blur-2xl"
                   />
                   <span className="absolute -top-3.5 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-foreground shadow-glow">
                     <Sparkles className="h-3 w-3" />
