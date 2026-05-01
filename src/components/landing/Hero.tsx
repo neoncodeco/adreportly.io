@@ -24,7 +24,7 @@ export function Hero() {
         className="pointer-events-none absolute inset-0 bg-grid opacity-[0.35]"
       />
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-24 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-32">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 sm:py-24 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-32">
         {/* Left: copy */}
         <div>
           <motion.span
@@ -41,7 +41,7 @@ export function Hero() {
             Real-time Facebook Ads insights
           </motion.span>
 
-          <h1 className="mt-6 font-display text-5xl font-bold leading-[1.02] tracking-tight sm:text-6xl lg:text-[4.25rem]">
+          <h1 className="mt-6 font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-[4.25rem] lg:leading-[1.02]">
             {headline.map((w, i) => (
               <motion.span
                 key={i}
@@ -216,7 +216,7 @@ export function Hero() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 1, duration: 0.5 }}
-            className="absolute -left-6 top-12 hidden rounded-2xl border border-border bg-card px-4 py-3 shadow-elevated backdrop-blur sm:block"
+            className="absolute -left-6 top-12 hidden rounded-2xl border border-border bg-card px-4 py-3 shadow-elevated backdrop-blur lg:block"
           >
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Today's spend
@@ -228,7 +228,7 @@ export function Hero() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 1.2, duration: 0.5 }}
-            className="absolute -right-4 -bottom-2 hidden items-center gap-2 rounded-full border border-border bg-card px-4 py-2 shadow-elevated sm:inline-flex"
+            className="absolute -right-4 -bottom-2 hidden items-center gap-2 rounded-full border border-border bg-card px-4 py-2 shadow-elevated lg:inline-flex"
           >
             <span className="h-2 w-2 rounded-full bg-success" />
             <span className="text-xs font-semibold text-foreground">

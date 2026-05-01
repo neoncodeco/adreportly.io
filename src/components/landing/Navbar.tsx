@@ -46,20 +46,23 @@ export function Navbar() {
             scrolled ? "h-16 py-3" : "h-20 py-5"
           )}
         >
-          <Link to="/" className="group flex items-center gap-2.5">
+          <Link to="/" className="group flex items-center gap-2.5 shrink-0">
             <span className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-ink text-brand shadow-glow-ink transition-transform duration-300 group-hover:rotate-12 group-hover:scale-105">
               <Zap className="h-4 w-4 fill-brand" />
             </span>
-            <span className="text-base font-bold tracking-tight">FB Ads Analytics</span>
+            <span className="text-base font-bold tracking-tight whitespace-nowrap">
+              <span className="hidden sm:inline">FB Ads Analytics</span>
+              <span className="sm:hidden">FB Ads</span>
+            </span>
           </Link>
 
-          <div className="hidden items-center gap-1 md:flex">
+          <div className="hidden items-center gap-1 lg:flex">
             <div className="flex items-center gap-1 rounded-full border border-border/60 bg-background/40 px-1.5 py-1 backdrop-blur-md">
               {links.map((l) => (
                 <a
                   key={l.label}
                   href={l.href}
-                  className="rounded-full px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground"
+                  className="whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground"
                 >
                   {l.label}
                 </a>
