@@ -68,6 +68,12 @@ function DashboardLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [greeting, setGreeting] = useState("Good Morning");
   const [profile, setProfile] = useState<{ full_name: string | null; organization: string | null } | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Close drawer on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const h = new Date().getHours();
