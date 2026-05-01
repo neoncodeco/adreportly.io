@@ -160,7 +160,7 @@ function DashboardLayout() {
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 flex flex-wrap items-center gap-3 border-b border-border bg-background/80 px-4 py-4 backdrop-blur sm:px-8">
+        <header className="sticky top-0 z-30 flex flex-wrap items-center gap-2 border-b border-border bg-background/80 px-3 py-3 backdrop-blur sm:gap-3 sm:px-6 sm:py-4 lg:px-8">
           {/* Mobile / md drawer trigger */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
@@ -312,7 +312,7 @@ function DashboardLayout() {
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 px-4 py-6 sm:px-8">
+        <main className="min-w-0 flex-1 px-3 py-5 sm:px-6 sm:py-6 lg:px-8">
           <Outlet />
         </main>
       </div>
