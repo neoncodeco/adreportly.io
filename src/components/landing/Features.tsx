@@ -12,32 +12,41 @@ const features = [
 
 export function Features() {
   return (
-    <section id="features" className="py-24">
+    <section id="features" className="relative py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+          <span className="inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink">
             Features
           </span>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl">
             Built for ads agencies that ship reports daily
           </h2>
         </div>
 
-        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((f, i) => (
             <motion.div
               key={f.title}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.45, delay: (i % 3) * 0.08 }}
-              className="group rounded-2xl border border-border bg-card p-6 shadow-soft hover-lift"
+              transition={{ duration: 0.5, delay: (i % 3) * 0.1 }}
+              className="group relative overflow-hidden rounded-2xl border border-border bg-card p-7 shadow-soft hover-lift"
             >
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-gradient-primary group-hover:text-primary-foreground">
+              {/* Hover gradient sweep */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-brand/0 blur-3xl transition-all duration-500 group-hover:bg-brand/40"
+              />
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-ink transition-all duration-500 group-hover:bg-ink group-hover:text-brand">
                 <f.icon className="h-5 w-5" />
               </div>
-              <h3 className="mt-4 font-semibold">{f.title}</h3>
-              <p className="mt-1.5 text-sm text-muted-foreground">{f.desc}</p>
+              <h3 className="relative mt-5 text-base font-bold tracking-tight">
+                {f.title}
+              </h3>
+              <p className="relative mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                {f.desc}
+              </p>
             </motion.div>
           ))}
         </div>

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -54,60 +54,93 @@ const plans = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="py-24">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section id="pricing" className="relative py-28">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-gradient-mesh opacity-50"
+      />
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink">
+            <Sparkles className="h-3 w-3" />
             Pricing
           </span>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl">
             Simple, transparent pricing
           </h2>
-          <p className="mt-3 text-muted-foreground">
+          <p className="mt-4 text-muted-foreground">
             Start free. Upgrade when your agency grows.
           </p>
         </div>
 
-        <div className="mt-14 grid gap-6 lg:grid-cols-3">
+        <div className="mt-16 grid gap-6 lg:grid-cols-3 lg:items-center">
           {plans.map((p, i) => (
             <motion.div
               key={p.name}
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
+              transition={{ duration: 0.55, delay: i * 0.12 }}
               className={cn(
-                "relative rounded-3xl border p-8 shadow-soft hover-lift",
+                "relative rounded-3xl border p-8 hover-lift",
                 p.highlight
-                  ? "border-primary/40 bg-gradient-primary text-primary-foreground shadow-glow"
-                  : "border-border bg-card",
+                  ? "border-ink/10 bg-ink text-ink-foreground shadow-elevated lg:scale-[1.04]"
+                  : "border-border bg-card shadow-soft",
               )}
             >
               {p.highlight && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-card px-3 py-1 text-xs font-semibold text-primary shadow-soft">
-                  Most popular
-                </span>
+                <>
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute -inset-px -z-10 rounded-3xl bg-gradient-brand opacity-40 blur-xl"
+                  />
+                  <span className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-foreground shadow-glow">
+                    <Sparkles className="h-3 w-3" />
+                    Most popular
+                  </span>
+                </>
               )}
-              <h3 className="text-lg font-semibold">{p.name}</h3>
+
+              <h3 className={cn("text-sm font-semibold uppercase tracking-wider", p.highlight ? "text-brand" : "text-muted-foreground")}>
+                {p.name}
+              </h3>
+
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-bold">{p.price}</span>
-                <span className={cn("text-sm", p.highlight ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                <span className={cn("font-display text-5xl font-bold", p.highlight ? "text-ink-foreground" : "text-foreground")}>
+                  {p.price}
+                </span>
+                <span
+                  className={cn(
+                    "text-sm",
+                    p.highlight ? "text-ink-foreground/70" : "text-muted-foreground",
+                  )}
+                >
                   {p.period}
                 </span>
               </div>
-              <p className={cn("mt-2 text-sm", p.highlight ? "text-primary-foreground/85" : "text-muted-foreground")}>
+
+              <p
+                className={cn(
+                  "mt-3 text-sm",
+                  p.highlight ? "text-ink-foreground/80" : "text-muted-foreground",
+                )}
+              >
                 {p.desc}
               </p>
 
-              <ul className="mt-6 space-y-3">
+              <div className={cn("my-6 h-px", p.highlight ? "bg-ink-foreground/15" : "bg-border")} />
+
+              <ul className="space-y-3">
                 {p.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm">
-                    <Check
+                  <li key={f} className={cn("flex items-start gap-2.5 text-sm", p.highlight ? "text-ink-foreground/90" : "text-foreground")}>
+                    <span
                       className={cn(
-                        "mt-0.5 h-4 w-4 shrink-0",
-                        p.highlight ? "text-primary-foreground" : "text-primary",
+                        "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full",
+                        p.highlight ? "bg-brand text-brand-foreground" : "bg-accent text-ink",
                       )}
-                    />
+                    >
+                      <Check className="h-3 w-3" strokeWidth={3} />
+                    </span>
                     {f}
                   </li>
                 ))}
@@ -116,10 +149,10 @@ export function Pricing() {
               <Button
                 asChild
                 className={cn(
-                  "mt-8 w-full rounded-full",
+                  "mt-8 w-full rounded-full font-semibold",
                   p.highlight
-                    ? "bg-card text-primary hover:bg-card/90"
-                    : "bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-95",
+                    ? "bg-brand text-brand-foreground shadow-glow hover:opacity-95"
+                    : "bg-ink text-ink-foreground hover:bg-ink/90",
                 )}
               >
                 <Link to="/signup">{p.cta}</Link>
