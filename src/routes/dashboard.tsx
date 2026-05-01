@@ -14,9 +14,9 @@ import {
   ChevronRight,
   Zap,
   LogOut,
-  Download,
-  Plus,
   Menu,
+  TrendingUp,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
