@@ -195,14 +195,16 @@
   --popover: oklch(0.18 0.025 260);
   --popover-foreground: oklch(0.98 0.003 248);
 
-  /* In dark mode primary stays a light surface for solid CTAs */
-  --primary: oklch(0.98 0.003 248);
-  --primary-foreground: oklch(0.13 0.02 260);
-  --primary-glow: oklch(0.85 0.01 248);
+  /* In dark mode primary stays the deep ink so brand consistency holds.
+     CTAs that need to "pop" against the dark bg should use bg-brand (lime) explicitly via dark: utilities. */
+  --primary: oklch(0.16 0.02 260);
+  --primary-foreground: oklch(0.99 0 0);
+  --primary-glow: oklch(0.28 0.04 260);
 
-  /* INK in dark = elevated near-white surface so "bg-ink + text-ink-foreground" stays readable */
-  --ink: oklch(0.98 0.003 248);
-  --ink-foreground: oklch(0.13 0.02 260);
+  /* INK stays deep ink in dark mode — used for icon chips, logo bg, dark surfaces.
+     Slightly lifted from the page background so it remains visible on --background. */
+  --ink: oklch(0.22 0.025 260);
+  --ink-foreground: oklch(0.99 0 0);
 
   /* BRAND stays the electric lime — used for accents/glow/highlight */
   --brand: oklch(0.95 0.22 122);
@@ -341,6 +343,10 @@
   .bg-ink { background-color: var(--ink); }
   .text-ink { color: var(--ink); }
   .text-ink-foreground { color: var(--ink-foreground); }
+
+  /* In dark mode, text-ink resolves to the page foreground (near-white) so headings/labels stay readable. */
+  .dark .text-ink { color: var(--foreground); }
+
 
   /* Animated gradient text */
   .text-gradient-primary {
