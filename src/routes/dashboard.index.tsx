@@ -34,6 +34,16 @@ export const Route = createFileRoute("/dashboard/")({
 
 const stats = [
   {
+    label: "Live overview · 30d",
+    value: `৳${totalSpend.toLocaleString()}`,
+    delta: "+18.2%",
+    up: true,
+    icon: Sparkles,
+    accent: "from-primary/25 to-primary/5",
+    iconBg: "bg-primary/15 text-primary",
+    highlight: true,
+  },
+  {
     label: "Total Spend",
     value: `৳${(totalSpend / 1000).toFixed(1)}K`,
     delta: "+12.4%",
