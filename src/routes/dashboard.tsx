@@ -237,10 +237,10 @@ function DashboardLayout() {
           </Sheet>
 
           <div className="min-w-0 flex-1">
-            <div className="text-xl font-bold leading-tight sm:text-2xl">
+            <div className="truncate text-lg font-bold leading-tight sm:text-2xl">
               {greeting},
             </div>
-            <div className="truncate text-xl font-semibold text-muted-foreground sm:text-2xl">
+            <div className="truncate text-base font-semibold text-muted-foreground sm:text-2xl">
               {profile?.organization || profile?.full_name || "Agency"}
             </div>
           </div>
