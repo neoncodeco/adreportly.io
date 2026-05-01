@@ -38,13 +38,19 @@ export const Route = createRootRoute({
         content:
           "Track Facebook ad campaigns in real time, generate beautiful PDF/CSV reports, and share secure read-only dashboards with clients. AES-256 encrypted, agency-grade.",
       },
-      { property: "og:title", content: "FB Ads Analytics — Real-time Facebook Ads Insights" },
+      { property: "og:title", content: "FB Ads Analytics — Real-time Facebook Ads Insights for Agencies" },
       {
         property: "og:description",
         content: "Real-time Facebook ad analytics with secure shareable client reports.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "FB Ads Analytics — Real-time Facebook Ads Insights for Agencies" },
+      { name: "description", content: "AdSight Pro is a SaaS platform for Facebook Ads analytics, offering real-time ROI tracking and client reporting." },
+      { property: "og:description", content: "AdSight Pro is a SaaS platform for Facebook Ads analytics, offering real-time ROI tracking and client reporting." },
+      { name: "twitter:description", content: "AdSight Pro is a SaaS platform for Facebook Ads analytics, offering real-time ROI tracking and client reporting." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9e461043-3cf3-4c2e-b0ad-d0915984965b/id-preview-b3aa24a5--b0ebd5f4-f67a-4ade-9c4d-b97522b92343.lovable.app-1777655552849.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9e461043-3cf3-4c2e-b0ad-d0915984965b/id-preview-b3aa24a5--b0ebd5f4-f67a-4ade-9c4d-b97522b92343.lovable.app-1777655552849.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
