@@ -84,7 +84,7 @@ export function Pricing() {
               className={cn(
                 "relative rounded-3xl border p-8 hover-lift",
                 p.highlight
-                  ? "border-ink bg-ink text-ink-foreground shadow-elevated lg:scale-[1.04] lg:-my-2"
+                  ? "border-ink bg-ink text-ink-foreground shadow-glow lg:scale-[1.04] lg:-my-2"
                   : "border-border bg-card shadow-soft",
               )}
             >
