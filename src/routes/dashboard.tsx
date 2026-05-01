@@ -304,7 +304,7 @@ function DashboardLayout() {
             <Button
               size="sm"
               aria-label="Add new entry"
-              className="rounded-full bg-foreground text-background hover:opacity-90"
+              className="rounded-full bg-primary text-primary-foreground shadow-soft hover:bg-primary/90"
             >
               <Plus className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Add new entry</span>
