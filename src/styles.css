@@ -195,13 +195,16 @@
   --popover: oklch(0.18 0.025 260);
   --popover-foreground: oklch(0.98 0.003 248);
 
-  --primary: oklch(0.95 0.22 122);
+  /* In dark mode primary stays a light surface for solid CTAs */
+  --primary: oklch(0.98 0.003 248);
   --primary-foreground: oklch(0.13 0.02 260);
-  --primary-glow: oklch(0.9 0.2 130);
+  --primary-glow: oklch(0.85 0.01 248);
 
-  --ink: oklch(0.95 0.22 122);
+  /* INK in dark = elevated near-white surface so "bg-ink + text-ink-foreground" stays readable */
+  --ink: oklch(0.98 0.003 248);
   --ink-foreground: oklch(0.13 0.02 260);
 
+  /* BRAND stays the electric lime — used for accents/glow/highlight */
   --brand: oklch(0.95 0.22 122);
   --brand-foreground: oklch(0.13 0.02 260);
 

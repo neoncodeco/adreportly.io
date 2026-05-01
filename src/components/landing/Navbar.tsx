@@ -1,8 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { Zap } from "lucide-react";
+import { Moon, Sun, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "@/lib/theme";
 
 export function Navbar() {
+  const { theme, toggle } = useTheme();
+
   return (
     <header className="sticky top-0 z-50 w-full">
       <div className="glass border-b border-border/60">
@@ -16,6 +19,7 @@ export function Navbar() {
 
           <div className="hidden items-center gap-8 md:flex">
             {[
+              { label: "Home", href: "#top" },
               { label: "Features", href: "#features" },
               { label: "How it works", href: "#how-it-works" },
               { label: "Pricing", href: "#pricing" },
@@ -32,6 +36,19 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggle}
+              aria-label="Toggle theme"
+              className="rounded-full"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
             <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
               <Link to="/login">Sign in</Link>
             </Button>
