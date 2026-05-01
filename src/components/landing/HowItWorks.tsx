@@ -21,19 +21,26 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-24">
+    <section id="how-it-works" className="relative py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+          <span className="inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink">
             How it works
           </span>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            Three steps from raw data to client report
+          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl">
+            Three steps from raw data to{" "}
+            <span className="relative inline-block">
+              <span className="relative z-10">client report</span>
+              <span
+                aria-hidden
+                className="absolute inset-x-0 bottom-1 -z-0 h-3 -skew-x-6 bg-brand"
+              />
+            </span>
           </h2>
         </div>
 
-        <div className="relative mt-16 grid gap-6 lg:grid-cols-3">
-          {/* connecting line */}
+        <div className="relative mt-20 grid gap-8 lg:grid-cols-3">
+          {/* connecting dashed line */}
           <div
             aria-hidden
             className="pointer-events-none absolute left-0 right-0 top-12 hidden h-px bg-gradient-to-r from-transparent via-border to-transparent lg:block"
@@ -41,18 +48,22 @@ export function HowItWorks() {
           {steps.map((s, i) => (
             <motion.div
               key={s.title}
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.5, delay: i * 0.12 }}
-              className="glass relative rounded-3xl p-7 shadow-soft hover-lift"
+              transition={{ duration: 0.55, delay: i * 0.15 }}
+              className="group relative rounded-3xl border border-border bg-card p-8 shadow-soft hover-lift"
             >
-              <div className="absolute -top-5 left-7 flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-primary text-sm font-bold text-primary-foreground shadow-glow">
+              <div className="absolute -top-6 left-7 flex h-12 w-12 items-center justify-center rounded-2xl bg-ink text-base font-bold text-ink-foreground shadow-glow-ink ring-4 ring-background">
                 {i + 1}
               </div>
-              <s.icon className="h-7 w-7 text-primary" />
-              <h3 className="mt-4 text-lg font-bold">{s.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{s.desc}</p>
+              <div className="mt-2 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-accent text-ink transition-all duration-500 group-hover:bg-brand group-hover:rotate-6">
+                <s.icon className="h-6 w-6" />
+              </div>
+              <h3 className="mt-5 text-xl font-bold tracking-tight">{s.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {s.desc}
+              </p>
             </motion.div>
           ))}
         </div>

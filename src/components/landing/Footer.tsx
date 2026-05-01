@@ -47,8 +47,8 @@ export function Footer() {
         <div className="grid gap-10 lg:grid-cols-6">
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">
-                <Zap className="h-4 w-4" />
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink text-brand shadow-glow-ink">
+                <Zap className="h-4 w-4 fill-brand" />
               </span>
               <span className="text-base font-bold tracking-tight">FB Ads Analytics</span>
             </Link>

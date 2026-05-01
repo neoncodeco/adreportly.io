@@ -47,10 +47,10 @@ export function Testimonials() {
     <section className="overflow-hidden py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+          <span className="inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink">
             Loved by agencies
           </span>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl">
             What our customers say
           </h2>
         </div>
@@ -77,7 +77,7 @@ export function Testimonials() {
               </div>
               <p className="mt-4 text-sm leading-relaxed text-foreground">"{t.quote}"</p>
               <div className="mt-5 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-primary text-sm font-semibold text-primary-foreground">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-ink text-sm font-semibold text-ink-foreground">
                   {t.initials}
                 </div>
                 <div>
