@@ -128,8 +128,8 @@
   --sidebar-foreground: oklch(0.16 0.02 260);
   --sidebar-primary: oklch(0.16 0.02 260);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.97 0.01 250);
-  --sidebar-accent-foreground: oklch(0.16 0.02 260);
+  --sidebar-accent: #121B29;
+  --sidebar-accent-foreground: oklch(0.98 0.003 248);
   --sidebar-border: oklch(0.92 0.005 255);
   --sidebar-ring: oklch(0.95 0.22 122);
 
