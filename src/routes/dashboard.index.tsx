@@ -34,6 +34,16 @@ export const Route = createFileRoute("/dashboard/")({
 
 const stats = [
   {
+    label: "Live overview · 30d",
+    value: `৳${totalSpend.toLocaleString()}`,
+    delta: "+18.2%",
+    up: true,
+    icon: Sparkles,
+    accent: "from-primary/25 to-primary/5",
+    iconBg: "bg-primary/15 text-primary",
+    highlight: true,
+  },
+  {
     label: "Total Spend",
     value: `৳${(totalSpend / 1000).toFixed(1)}K`,
     delta: "+12.4%",
@@ -79,40 +89,14 @@ function DashboardHome() {
       transition={{ duration: 0.35 }}
       className="space-y-5 sm:space-y-6"
     >
-      {/* Hero summary card - subtle, matches KPI cards */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-5">
-        <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/15 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-12 -left-8 h-28 w-28 rounded-full bg-primary/10 blur-3xl" />
-        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
-              <Sparkles className="h-3 w-3" /> Live overview
-            </div>
-            <h2 className="mt-2 text-xl font-bold leading-tight sm:text-2xl">
-              ৳{totalSpend.toLocaleString()}
-            </h2>
-            <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
-              Total ad spend · last 30 days
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
-              <TrendingUp className="h-3.5 w-3.5" /> +18.2%
-            </span>
-            <button className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-xs font-semibold text-muted-foreground transition hover:text-foreground">
-              30d <ChevronDown className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* KPI grid - 2 cols on mobile, 4 on desktop */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      {/* KPI grid - 2 cols on mobile, 5 on desktop */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         {stats.map((s) => (
           <div
             key={s.label}
             className={cn(
               "group relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-elegant sm:p-5",
+              s.highlight && "col-span-2 lg:col-span-1",
             )}
           >
             <div
