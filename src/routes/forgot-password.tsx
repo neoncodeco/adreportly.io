@@ -35,13 +35,13 @@ function ForgotPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-hero px-4 py-12">
       <div className="w-full max-w-md">
         <Link to="/" className="mb-8 flex items-center justify-center gap-2">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">
+          <span className="flex h-10 w-10 items-center justify-center rounded card-brutal bg-brand text-ink">
             <Zap className="h-4 w-4" />
           </span>
           <span className="text-base font-bold">AdReportly</span>
         </Link>
 
-        <div className="glass-strong rounded-3xl p-8 shadow-elevated">
+        <div className="rounded card-brutal bg-card p-8">
           <h1 className="text-2xl font-bold">Reset your password</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             We'll email you a link to set a new one.
@@ -67,7 +67,7 @@ function ForgotPasswordPage() {
               <Button
                 type="submit"
                 disabled={submitting}
-                className="w-full rounded-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-95"
+                className="w-full rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand font-semibold"
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send reset link"}
               </Button>
