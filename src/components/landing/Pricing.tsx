@@ -146,7 +146,7 @@ export function Pricing() {
                   "mt-8 w-full rounded font-semibold btn-brutal",
                   p.highlight
                     ? "!bg-brand !text-brand-foreground hover:!bg-brand"
-                    : "!bg-ink !text-ink-foreground hover:!bg-ink",
+                    : "!bg-brand !text-brand-foreground hover:!bg-brand",
                 )}
               >
                 <Link to="/signup">{p.cta}</Link>
