@@ -68,7 +68,7 @@ export function Testimonials() {
           {scrolling.map((t, i) => (
             <div
               key={i}
-              className="w-[340px] shrink-0 rounded-2xl border border-border bg-card p-6 shadow-soft"
+              className="w-[340px] shrink-0 rounded border border-border bg-card p-6 shadow-soft"
             >
               <div className="flex gap-1">
                 {Array.from({ length: 5 }).map((_, k) => (
