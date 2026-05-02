@@ -74,7 +74,7 @@ function StatCard({ stat, index }: { stat: Stat; index: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.5, delay: index * 0.06 }}
-      className="group relative overflow-hidden rounded border border-border bg-card p-6 shadow-soft transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-elegant"
+      className="group relative overflow-hidden rounded card-brutal bg-card p-6 transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-elegant"
     >
       <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-primary/5 blur-2xl transition group-hover:bg-primary/15" />
       <div className="relative">
@@ -154,7 +154,7 @@ function GetStartedCTA() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.5 }}
-      className="relative mt-16 overflow-hidden rounded border border-border bg-card p-8 text-center shadow-soft sm:p-10"
+      className="relative mt-16 overflow-hidden rounded card-brutal bg-card p-8 text-center sm:p-10"
     >
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5" />
       <div className="relative">
