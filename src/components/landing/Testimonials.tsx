@@ -66,9 +66,9 @@ export function Testimonials() {
         </div>
 
         {/* Featured testimonial */}
-        <div className="mt-12 grid gap-8 lg:grid-cols-5 lg:items-center">
-          <div className="lg:col-span-3">
-            <div className="relative rounded card-brutal bg-card p-8 sm:p-10">
+        <div className="mt-12 grid gap-8 lg:grid-cols-5 lg:items-stretch">
+          <div className="lg:col-span-3 flex">
+            <div className="relative flex flex-col w-full rounded card-brutal bg-card p-8 sm:p-10">
               <Quote className="absolute -top-4 -left-4 h-12 w-12 rounded card-brutal bg-brand p-2 text-brand-foreground" />
 
               <div className="flex gap-1">
