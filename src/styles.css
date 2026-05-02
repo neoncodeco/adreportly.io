@@ -344,6 +344,19 @@
     transform: translate(-2px, -2px);
     box-shadow: 8px 8px 0 0 var(--ink);
   }
+  .btn-brutal {
+    border: 2px solid var(--ink);
+    box-shadow: 4px 4px 0 0 var(--ink);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .btn-brutal:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 0 var(--ink);
+  }
+  .btn-brutal:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 0 var(--ink);
+  }
 
   /* Backgrounds */
   .bg-gradient-primary { background-image: var(--gradient-primary); }

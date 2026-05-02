@@ -89,7 +89,7 @@ export function Hero() {
               <Button
                 asChild
                 size="lg"
-                className="rounded bg-ink px-7 text-ink-foreground shadow-glow-ink transition-all hover:bg-ink/90 hover:scale-[1.02]"
+                className="rounded bg-ink px-7 text-ink-foreground btn-brutal hover:bg-ink"
               >
                 <Link to="/signup">
                   Get Started Free
@@ -100,7 +100,7 @@ export function Hero() {
             <Button
               variant="outline"
               size="lg"
-              className="rounded border-border bg-card/70 backdrop-blur transition-all hover:bg-card hover:scale-[1.02]"
+              className="rounded bg-card btn-brutal hover:bg-card"
             >
               <PlayCircle className="mr-2 h-5 w-5" />
               Watch Demo

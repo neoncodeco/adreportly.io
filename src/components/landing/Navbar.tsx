@@ -99,7 +99,7 @@ export function Navbar() {
             <Button
               asChild
               size="sm"
-              className="hidden rounded bg-ink text-ink-foreground shadow-glow-ink transition-all hover:bg-ink/90 hover:scale-105 lg:inline-flex"
+              className="hidden rounded bg-ink text-ink-foreground btn-brutal hover:bg-ink lg:inline-flex"
             >
               <Link to="/signup">Get Started</Link>
             </Button>
@@ -158,14 +158,14 @@ export function Navbar() {
 
                 <div className="mt-auto flex flex-col gap-2 border-t border-border/60 p-4">
                   <SheetClose asChild>
-                    <Button asChild variant="outline" className="w-full rounded">
+                    <Button asChild variant="outline" className="w-full rounded bg-card btn-brutal hover:bg-card">
                       <Link to="/login">Sign in</Link>
                     </Button>
                   </SheetClose>
                   <SheetClose asChild>
                     <Button
                       asChild
-                      className="w-full rounded bg-ink text-ink-foreground shadow-glow-ink hover:bg-ink/90"
+                      className="w-full rounded bg-ink text-ink-foreground btn-brutal hover:bg-ink"
                     >
                       <Link to="/signup">Get Started</Link>
                     </Button>
