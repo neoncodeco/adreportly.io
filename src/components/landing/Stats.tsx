@@ -1,6 +1,19 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { DollarSign, Users, BarChart3, Globe2, ShieldCheck, Clock } from "lucide-react";
+import { DollarSign, Users, BarChart3, Globe2, ShieldCheck, Clock, ArrowRight, Sparkles } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 type Stat = {
   icon: typeof DollarSign;
@@ -126,7 +139,88 @@ export function Stats() {
             <StatCard key={s.label} stat={s} index={i} />
           ))}
         </div>
+
+        <GetStartedCTA />
       </div>
     </section>
+  );
+}
+
+function GetStartedCTA() {
+  const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSubmitting(true);
+    const data = new FormData(e.currentTarget);
+    // Simulated submit — wire up to backend later
+    await new Promise((r) => setTimeout(r, 700));
+    setSubmitting(false);
+    setOpen(false);
+    toast.success("Thanks! We'll be in touch shortly.", {
+      description: `We received your request, ${data.get("name") || "there"}.`,
+    });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.5 }}
+      className="relative mx-auto mt-16 max-w-3xl overflow-hidden rounded-2xl border border-border bg-card p-8 text-center shadow-soft sm:p-10"
+    >
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5" />
+      <div className="relative">
+        <div className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
+          <Sparkles className="h-5 w-5" />
+        </div>
+        <h3 className="mt-4 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+          Ready to join thousands of agencies?
+        </h3>
+        <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
+          Start your 14-day free trial — no credit card required. Connect Meta in
+          minutes and ship branded reports today.
+        </p>
+
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="lg" className="mt-6 gap-2">
+              Get Started <ArrowRight className="h-4 w-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Get started for free</DialogTitle>
+              <DialogDescription>
+                Tell us a bit about you and we'll set up your workspace.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="mt-2 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full name</Label>
+                <Input id="name" name="name" required placeholder="Jane Doe" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Work email</Label>
+                <Input id="email" name="email" type="email" required placeholder="jane@agency.com" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="agency">Agency name</Label>
+                <Input id="agency" name="agency" required placeholder="Acme Ads" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="message">What do you want to achieve? (optional)</Label>
+                <Textarea id="message" name="message" rows={3} placeholder="Tell us about your reporting needs..." />
+              </div>
+              <Button type="submit" className="w-full" disabled={submitting}>
+                {submitting ? "Submitting..." : "Create my account"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </motion.div>
   );
 }
