@@ -72,7 +72,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
-            className="mt-6 max-w-xl text-lg text-muted-foreground"
+            className="mt-6 max-w-xl text-lg text-muted-foreground mx-auto lg:mx-0"
           >
             The all-in-one analytics platform agencies use to track Facebook
             campaigns, generate stunning client reports, and share secure
