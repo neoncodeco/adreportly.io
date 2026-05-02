@@ -143,10 +143,10 @@ export function Pricing() {
               <Button
                 asChild
                 className={cn(
-                  "mt-8 w-full rounded font-semibold transition-all hover:scale-[1.02]",
+                  "mt-8 w-full rounded font-semibold btn-brutal",
                   p.highlight
-                    ? "!bg-brand !text-brand-foreground shadow-glow hover:!bg-brand hover:opacity-90"
-                    : "!bg-ink !text-ink-foreground hover:!bg-ink hover:opacity-90",
+                    ? "!bg-brand !text-brand-foreground hover:!bg-brand"
+                    : "!bg-ink !text-ink-foreground hover:!bg-ink",
                 )}
               >
                 <Link to="/signup">{p.cta}</Link>
