@@ -104,7 +104,6 @@ export function Testimonials() {
               </AnimatePresence>
 
               <div className="mt-auto pt-8 flex items-center justify-between border-t-2 border-ink/10">
-                <div className="pt-5 flex items-center justify-between w-full" style={{display:'none'}}>
                 <div className="flex gap-2">
                   {testimonials.map((_, i) => (
                     <button
