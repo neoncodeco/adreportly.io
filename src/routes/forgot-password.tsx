@@ -55,7 +55,7 @@ function ForgotPasswordPage() {
             <form onSubmit={onSubmit} className="mt-6 space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>
-                <Input
+                <Input className="rounded"
                   id="email"
                   type="email"
                   required
