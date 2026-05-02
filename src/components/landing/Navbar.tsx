@@ -158,7 +158,7 @@ export function Navbar() {
 
                 <div className="mt-auto flex flex-col gap-2 border-t border-border/60 p-4">
                   <SheetClose asChild>
-                    <Button asChild variant="outline" className="w-full rounded">
+                    <Button asChild variant="outline" className="w-full rounded bg-card btn-brutal hover:bg-card">
                       <Link to="/login">Sign in</Link>
                     </Button>
                   </SheetClose>
