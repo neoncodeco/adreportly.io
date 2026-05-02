@@ -1,19 +1,9 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { DollarSign, Users, BarChart3, Globe2, ShieldCheck, Clock, ArrowRight, Sparkles } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
 
 type Stat = {
   icon: typeof DollarSign;
@@ -147,20 +137,15 @@ export function Stats() {
 }
 
 function GetStartedCTA() {
-  const [open, setOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setSubmitting(true);
-    const data = new FormData(e.currentTarget);
-    // Simulated submit — wire up to backend later
-    await new Promise((r) => setTimeout(r, 700));
-    setSubmitting(false);
-    setOpen(false);
-    toast.success("Thanks! We'll be in touch shortly.", {
-      description: `We received your request, ${data.get("name") || "there"}.`,
-    });
+  const handleClick = () => {
+    if (user) {
+      navigate({ to: "/dashboard" });
+    } else {
+      navigate({ to: "/login" });
+    }
   };
 
   return (
@@ -169,7 +154,7 @@ function GetStartedCTA() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.5 }}
-      className="relative mx-auto mt-16 max-w-3xl overflow-hidden rounded-2xl border border-border bg-card p-8 text-center shadow-soft sm:p-10"
+      className="relative mt-16 overflow-hidden rounded-2xl border border-border bg-card p-8 text-center shadow-soft sm:p-10"
     >
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5" />
       <div className="relative">
@@ -184,42 +169,9 @@ function GetStartedCTA() {
           minutes and ship branded reports today.
         </p>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="lg" className="mt-6 gap-2">
-              Get Started <ArrowRight className="h-4 w-4" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Get started for free</DialogTitle>
-              <DialogDescription>
-                Tell us a bit about you and we'll set up your workspace.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="mt-2 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full name</Label>
-                <Input id="name" name="name" required placeholder="Jane Doe" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Work email</Label>
-                <Input id="email" name="email" type="email" required placeholder="jane@agency.com" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="agency">Agency name</Label>
-                <Input id="agency" name="agency" required placeholder="Acme Ads" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="message">What do you want to achieve? (optional)</Label>
-                <Textarea id="message" name="message" rows={3} placeholder="Tell us about your reporting needs..." />
-              </div>
-              <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? "Submitting..." : "Create my account"}
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button size="lg" className="mt-6 gap-2" onClick={handleClick}>
+          Get Started <ArrowRight className="h-4 w-4" />
+        </Button>
       </div>
     </motion.div>
   );
