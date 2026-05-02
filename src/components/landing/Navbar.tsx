@@ -49,7 +49,7 @@ export function Navbar() {
       >
         <nav
           className={cn(
-            "mx-auto flex max-w-7xl items-center justify-between gap-3 rounded card-brutal bg-background px-3 py-2 transition-all duration-300 sm:px-4",
+            "mx-auto flex max-w-7xl items-center justify-between gap-3 rounded card-brutal bg-background px-3 py-3.5 transition-all duration-300 sm:px-4 sm:py-4",
             scrolled ? "shadow-brutal" : "",
           )}
         >
