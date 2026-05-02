@@ -58,7 +58,7 @@ export function FAQ() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-2 lg:gap-12 lg:items-stretch">
           {/* FAQ */}
-          <div>
+          <div className="flex flex-col">
             <div>
               <span className="inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink">
                 FAQ
@@ -71,7 +71,7 @@ export function FAQ() {
               </p>
             </div>
 
-            <Accordion type="single" collapsible className="mt-8 space-y-3">
+            <Accordion type="single" collapsible className="mt-8 flex-1 space-y-3">
               {faqs.map((f, i) => (
                 <AccordionItem
                   key={i}
@@ -90,7 +90,7 @@ export function FAQ() {
           </div>
 
           {/* Contact */}
-          <div id="contact">
+          <div id="contact" className="flex flex-col">
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink">
                 <MessageCircle className="h-3 w-3" />
