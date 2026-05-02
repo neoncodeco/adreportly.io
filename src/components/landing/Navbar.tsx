@@ -43,7 +43,7 @@ export function Navbar() {
     >
       <div
         className={cn(
-          "px-3 sm:px-4 lg:px-6 transition-all duration-300",
+          "bg-gradient-hero px-3 sm:px-4 lg:px-6 transition-all duration-300",
           scrolled ? "pt-3 pb-3" : "pt-4 pb-4 sm:pt-5 sm:pb-5",
         )}
       >
