@@ -328,6 +328,23 @@
   .shadow-glow-ink { box-shadow: var(--shadow-glow-ink); }
   .shadow-elevated { box-shadow: var(--shadow-elevated); }
 
+  /* Neo-brutalist card: thick border + hard offset shadow (no blur) */
+  .shadow-brutal {
+    box-shadow: 6px 6px 0 0 var(--ink);
+  }
+  .shadow-brutal-sm {
+    box-shadow: 4px 4px 0 0 var(--ink);
+  }
+  .card-brutal {
+    border: 2px solid var(--ink);
+    box-shadow: 6px 6px 0 0 var(--ink);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .card-brutal:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0 0 var(--ink);
+  }
+
   /* Backgrounds */
   .bg-gradient-primary { background-image: var(--gradient-primary); }
   .bg-gradient-brand { background-image: var(--gradient-brand); }
