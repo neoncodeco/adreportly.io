@@ -106,9 +106,9 @@ export function FAQ() {
 
             <form
               onSubmit={handleSubmit}
-              className="mt-8 rounded card-brutal bg-card p-6 sm:p-7"
+              className="mt-8 flex-1 rounded card-brutal bg-card p-6 sm:p-7 flex flex-col"
             >
-              <div className="space-y-4">
+              <div className="flex flex-1 flex-col space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="contact-name">Name</Label>
@@ -116,6 +116,8 @@ export function FAQ() {
                       id="contact-name"
                       placeholder="Jane Doe"
                       required
+                      maxLength={100}
+                      className="rounded"
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                     />
@@ -127,18 +129,21 @@ export function FAQ() {
                       type="email"
                       placeholder="jane@agency.com"
                       required
+                      maxLength={255}
+                      className="rounded"
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                     />
                   </div>
                 </div>
-                <div className="space-y-1.5">
+                <div className="flex flex-1 flex-col space-y-1.5">
                   <Label htmlFor="contact-message">Message</Label>
                   <Textarea
                     id="contact-message"
                     placeholder="How can we help?"
-                    rows={5}
                     required
+                    maxLength={1000}
+                    className="rounded flex-1 min-h-[140px]"
                     value={form.message}
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
                   />
