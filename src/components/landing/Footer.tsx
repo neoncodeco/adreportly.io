@@ -107,7 +107,7 @@ export function Footer() {
       {/* Main footer */}
       <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-16 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-10 lg:grid-cols-6">
-          <div className="lg:col-span-2">
+          <div className="col-span-2 lg:col-span-2">
             <Link to="/" className="flex items-center gap-2">
               <span className="flex h-10 w-10 items-center justify-center rounded card-brutal bg-brand text-ink">
                 <Zap className="h-5 w-5 fill-ink" />
