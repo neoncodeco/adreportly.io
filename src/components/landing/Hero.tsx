@@ -111,7 +111,7 @@ export function Hero() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.8 }}
-            className="mt-10 flex items-center gap-6 text-sm text-muted-foreground"
+            className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-muted-foreground lg:justify-start"
           >
             <div className="flex -space-x-2">
               {["F", "T", "A", "M"].map((c) => (
