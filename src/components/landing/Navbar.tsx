@@ -118,8 +118,8 @@ export function Navbar() {
                 </Button>
               </SheetTrigger>
               <SheetContent
-                side="right"
-                className="w-[300px] border-l-2 border-ink bg-background p-0 sm:w-[340px]"
+                side="left"
+                className="w-[300px] border-r-2 border-ink bg-background p-0 sm:w-[340px]"
               >
                 <SheetHeader className="border-b-2 border-ink/10 p-5">
                   <SheetTitle asChild>
@@ -140,7 +140,7 @@ export function Navbar() {
                   {links.map((l, i) => (
                     <SheetClose asChild key={l.label}>
                       <motion.a
-                        initial={{ opacity: 0, x: 16 }}
+                        initial={{ opacity: 0, x: -12 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.05 * i, duration: 0.3 }}
                         href={l.href}
