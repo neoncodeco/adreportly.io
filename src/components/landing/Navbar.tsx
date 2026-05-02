@@ -93,13 +93,13 @@ export function Navbar() {
                 <Moon className="h-4 w-4" />
               )}
             </Button>
-            <Button asChild variant="ghost" size="sm" className="hidden rounded-full lg:inline-flex">
+            <Button asChild variant="ghost" size="sm" className="hidden rounded-lg lg:inline-flex">
               <Link to="/login">Sign in</Link>
             </Button>
             <Button
               asChild
               size="sm"
-              className="hidden rounded-full bg-ink text-ink-foreground shadow-glow-ink transition-all hover:bg-ink/90 hover:scale-105 lg:inline-flex"
+              className="hidden rounded-lg bg-ink text-ink-foreground shadow-glow-ink transition-all hover:bg-ink/90 hover:scale-105 lg:inline-flex"
             >
               <Link to="/signup">Get Started</Link>
             </Button>
