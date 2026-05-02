@@ -31,7 +31,7 @@ export function Features() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.5, delay: (i % 3) * 0.1 }}
-              className="group relative overflow-hidden rounded-2xl border border-border bg-card p-7 shadow-soft hover-lift"
+              className="group relative overflow-hidden rounded border border-border bg-card p-7 shadow-soft hover-lift"
             >
               {/* Always-on gradient accent */}
               <div

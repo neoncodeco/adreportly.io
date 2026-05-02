@@ -138,7 +138,7 @@ export function Hero() {
           className="relative"
         >
           <div className="animate-float">
-            <div className="glass-strong relative overflow-hidden rounded-3xl p-6 shadow-elevated">
+            <div className="glass-strong relative overflow-hidden rounded p-6 shadow-elevated">
               {/* Internal accent gradient */}
               <div
                 aria-hidden
@@ -216,7 +216,7 @@ export function Hero() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 1, duration: 0.5 }}
-            className="absolute -left-6 top-12 hidden rounded-2xl border border-border bg-card px-4 py-3 shadow-elevated backdrop-blur lg:block"
+            className="absolute -left-6 top-12 hidden rounded border border-border bg-card px-4 py-3 shadow-elevated backdrop-blur lg:block"
           >
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Today's spend

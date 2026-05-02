@@ -82,7 +82,7 @@ export function Pricing() {
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.55, delay: i * 0.12 }}
               className={cn(
-                "relative rounded-3xl border p-8 hover-lift",
+                "relative rounded border p-8 hover-lift",
                 p.highlight
                   ? "border-ink bg-ink text-ink-foreground shadow-glow lg:scale-[1.04] lg:-my-2 dark:border-brand/40 dark:shadow-glow"
                   : "border-border bg-card shadow-soft",

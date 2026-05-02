@@ -52,12 +52,12 @@ export function HowItWorks() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.55, delay: i * 0.15 }}
-              className="group relative rounded-3xl border border-border bg-card p-8 shadow-soft hover-lift"
+              className="group relative rounded border border-border bg-card p-8 shadow-soft hover-lift"
             >
-              <div className="absolute -top-6 left-7 flex h-12 w-12 items-center justify-center rounded-2xl bg-ink text-base font-bold text-ink-foreground shadow-glow-ink ring-4 ring-background">
+              <div className="absolute -top-6 left-7 flex h-12 w-12 items-center justify-center rounded bg-ink text-base font-bold text-ink-foreground shadow-glow-ink ring-4 ring-background">
                 {i + 1}
               </div>
-              <div className="mt-2 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-accent text-ink transition-all duration-500 group-hover:bg-brand group-hover:rotate-6">
+              <div className="mt-2 inline-flex h-12 w-12 items-center justify-center rounded bg-accent text-ink transition-all duration-500 group-hover:bg-brand group-hover:rotate-6">
                 <s.icon className="h-6 w-6" />
               </div>
               <h3 className="mt-5 text-xl font-bold tracking-tight">{s.title}</h3>
