@@ -112,7 +112,7 @@ export function Footer() {
               <span className="flex h-10 w-10 items-center justify-center rounded card-brutal bg-brand text-ink">
                 <Zap className="h-5 w-5 fill-ink" />
               </span>
-              <span className="text-base font-bold tracking-tight">FB Ads Analytics</span>
+              <span className="text-base font-bold tracking-tight">AdReportly</span>
             </Link>
             <p className="mt-5 max-w-xs text-sm text-ink-foreground/70">
               The all-in-one platform for tracking Facebook ad campaigns and sharing
@@ -155,7 +155,7 @@ export function Footer() {
         </div>
 
         <div className="mt-14 flex flex-col items-center justify-between gap-3 border-t-2 border-ink-foreground/10 pt-6 text-xs text-ink-foreground/60 sm:flex-row">
-          <span>© {new Date().getFullYear()} FB Ads Analytics. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} AdReportly. All rights reserved.</span>
           <span className="flex items-center gap-2">
             <span className="inline-block h-2 w-2 rounded-full bg-success animate-pulse" />
             All systems operational

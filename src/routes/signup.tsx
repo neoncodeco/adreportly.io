@@ -59,7 +59,7 @@ function SignupPage() {
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">
             <Zap className="h-4 w-4" />
           </span>
-          <span className="text-base font-bold">FB Ads Analytics</span>
+          <span className="text-base font-bold">AdReportly</span>
         </Link>
 
         <div className="glass-strong rounded-3xl p-8 shadow-elevated">
