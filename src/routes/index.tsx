@@ -15,7 +15,7 @@ export const Route = createFileRoute("/")({
 
 function LandingPage() {
   return (
-    <div id="top" className="min-h-screen bg-gradient-hero">
+    <div id="top" className="min-h-screen bg-background">
       <Navbar />
       <main>
         <Hero />
