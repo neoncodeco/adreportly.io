@@ -59,7 +59,7 @@ export function Navbar() {
               <Zap className="h-4 w-4 fill-ink" />
             </span>
             <span className="text-sm font-bold tracking-tight whitespace-nowrap sm:text-base">
-              <span className="hidden sm:inline">FB Ads Analytics</span>
+              <span className="hidden sm:inline">AdReportly</span>
               <span className="sm:hidden">AdReportly</span>
             </span>
           </Link>
@@ -139,7 +139,7 @@ export function Navbar() {
                         <Zap className="h-4 w-4 fill-ink" />
                       </span>
                       <span className="text-base font-bold tracking-tight">
-                        FB Ads Analytics
+                        AdReportly
                       </span>
                     </Link>
                   </SheetTitle>

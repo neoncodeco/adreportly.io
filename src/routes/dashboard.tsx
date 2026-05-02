@@ -108,7 +108,7 @@ function DashboardLayout() {
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">
             <Zap className="h-4 w-4" />
           </span>
-          <span className="text-base font-bold tracking-tight">FB Ads Analytics</span>
+          <span className="text-base font-bold tracking-tight">AdReportly</span>
         </div>
 
         <div className="px-4">
@@ -191,7 +191,7 @@ function DashboardLayout() {
                     <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">
                       <Zap className="h-4 w-4" />
                     </span>
-                    <span className="text-base font-bold tracking-tight">FB Ads Analytics</span>
+                    <span className="text-base font-bold tracking-tight">AdReportly</span>
                   </Link>
                 </SheetTitle>
               </SheetHeader>
