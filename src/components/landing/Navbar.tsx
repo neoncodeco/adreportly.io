@@ -49,10 +49,10 @@ export function Navbar() {
       >
         <nav
           className={cn(
-            "mx-auto flex max-w-6xl items-center justify-between gap-3 rounded bg-background px-3 py-2 transition-all duration-300 sm:px-4",
+            "mx-auto flex max-w-7xl items-center justify-between gap-3 rounded px-3 py-2 transition-all duration-300 sm:px-4",
             scrolled
-              ? "card-brutal shadow-brutal"
-              : "border-2 border-ink/15",
+              ? "card-brutal shadow-brutal bg-background"
+              : "border-2 border-ink/15 bg-transparent backdrop-blur-sm",
           )}
         >
           {/* Logo */}
