@@ -31,7 +31,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1.5 text-xs font-medium text-foreground backdrop-blur-md shadow-soft"
+            className="inline-flex items-center gap-2 rounded-full card-brutal bg-card/70 px-3 py-1.5 text-xs font-medium text-foreground backdrop-blur-md"
           >
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-75" />
@@ -216,7 +216,7 @@ export function Hero() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 1, duration: 0.5 }}
-            className="absolute -left-6 top-12 hidden rounded border border-border bg-card px-4 py-3 shadow-elevated backdrop-blur lg:block"
+            className="absolute -left-6 top-12 hidden rounded card-brutal bg-card px-4 py-3 backdrop-blur lg:block"
           >
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Today's spend
@@ -228,7 +228,7 @@ export function Hero() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 1.2, duration: 0.5 }}
-            className="absolute -right-4 -bottom-2 hidden items-center gap-2 rounded-full border border-border bg-card px-4 py-2 shadow-elevated lg:inline-flex"
+            className="absolute -right-4 -bottom-2 hidden items-center gap-2 rounded-full card-brutal bg-card px-4 py-2 lg:inline-flex"
           >
             <span className="h-2 w-2 rounded-full bg-success" />
             <span className="text-xs font-semibold text-foreground">

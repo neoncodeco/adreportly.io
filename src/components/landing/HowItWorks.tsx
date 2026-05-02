@@ -52,7 +52,7 @@ export function HowItWorks() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.55, delay: i * 0.15 }}
-              className="group relative rounded border border-border bg-card p-8 shadow-soft hover-lift"
+              className="group relative rounded card-brutal bg-card p-8 hover-lift"
             >
               <div className="absolute -top-6 left-7 flex h-12 w-12 items-center justify-center rounded bg-ink text-base font-bold text-ink-foreground shadow-glow-ink ring-4 ring-background">
                 {i + 1}
