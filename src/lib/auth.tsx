@@ -1,10 +1,18 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+"use client";
+
+import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { signIn as nextAuthSignIn, signOut as nextAuthSignOut, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+
+/** Shape compatible with previous Supabase `User` usage in dashboard UI. */
+export type AppUser = {
+  id: string;
+  email: string | null;
+};
 
 interface AuthContextValue {
-  user: User | null;
-  session: Session | null;
+  user: AppUser | null;
+  session: ReturnType<typeof useSession>["data"];
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (
@@ -18,31 +26,32 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const { data: session, status, update } = useSession();
 
-  useEffect(() => {
-    // Set up listener BEFORE checking session (Supabase auth best practice)
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-    });
+  const loading = status === "loading";
 
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const user = useMemo((): AppUser | null => {
+    if (!session?.user?.id) return null;
+    return {
+      id: session.user.id,
+      email: session.user.email ?? null,
+    };
+  }, [session]);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
+    const res = await nextAuthSignIn("credentials", {
+      email: email.trim(),
+      password,
+      redirect: false,
+    });
+    if (res?.error) {
+      return {
+        error: new Error(res.error === "CredentialsSignin" ? "Invalid credentials" : res.error),
+      };
+    }
+    await update();
+    return { error: null };
   };
 
   const signUp = async (
@@ -50,19 +59,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     meta?: { full_name?: string; organization?: string },
   ) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: meta,
-      },
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password,
+        full_name: meta?.full_name ?? "",
+        organization: meta?.organization ?? "",
+      }),
     });
-    return { error: error as Error | null };
+    const data = (await res.json().catch(() => ({}))) as {
+      error?: string | Record<string, unknown>;
+    };
+    if (!res.ok) {
+      const msg =
+        typeof data.error === "string"
+          ? data.error
+          : res.status === 409
+            ? "An account with this email already exists"
+            : "Sign up failed";
+      return { error: new Error(msg) };
+    }
+    const signInRes = await nextAuthSignIn("credentials", {
+      email: email.trim(),
+      password,
+      redirect: false,
+    });
+    if (signInRes?.error) {
+      return { error: new Error("Account created but sign-in failed. Please log in manually.") };
+    }
+    await update();
+    return { error: null };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await nextAuthSignOut({ redirect: false });
+    router.push("/login");
+    router.refresh();
   };
 
   return (

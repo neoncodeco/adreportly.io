@@ -1,7 +1,18 @@
+"use client";
+
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { DollarSign, Users, BarChart3, Globe2, ShieldCheck, Clock, ArrowRight, Sparkles } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
+import {
+  DollarSign,
+  Users,
+  BarChart3,
+  Globe2,
+  ShieldCheck,
+  Clock,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 
@@ -16,12 +27,50 @@ type Stat = {
 };
 
 const stats: Stat[] = [
-  { icon: DollarSign, value: 48, prefix: "৳", suffix: "M+", label: "Ad spend tracked", desc: "Across all connected Meta accounts" },
-  { icon: Users, value: 2400, suffix: "+", label: "Active agencies", desc: "Trust us with their client reporting" },
-  { icon: BarChart3, value: 18500, suffix: "+", label: "Reports generated", desc: "Branded PDFs & live dashboards delivered" },
-  { icon: Globe2, value: 32, suffix: "+", label: "Countries", desc: "Agencies running campaigns worldwide" },
-  { icon: ShieldCheck, value: 99.9, decimals: 1, suffix: "%", label: "Uptime SLA", desc: "Reliable infrastructure, always on" },
-  { icon: Clock, value: 12, suffix: "×", label: "Faster reporting", desc: "Compared to manual spreadsheet workflows" },
+  {
+    icon: DollarSign,
+    value: 48,
+    prefix: "৳",
+    suffix: "M+",
+    label: "Ad spend tracked",
+    desc: "Across all connected Meta accounts",
+  },
+  {
+    icon: Users,
+    value: 2400,
+    suffix: "+",
+    label: "Active agencies",
+    desc: "Trust us with their client reporting",
+  },
+  {
+    icon: BarChart3,
+    value: 18500,
+    suffix: "+",
+    label: "Reports generated",
+    desc: "Branded PDFs & live dashboards delivered",
+  },
+  {
+    icon: Globe2,
+    value: 32,
+    suffix: "+",
+    label: "Countries",
+    desc: "Agencies running campaigns worldwide",
+  },
+  {
+    icon: ShieldCheck,
+    value: 99.9,
+    decimals: 1,
+    suffix: "%",
+    label: "Uptime SLA",
+    desc: "Reliable infrastructure, always on",
+  },
+  {
+    icon: Clock,
+    value: 12,
+    suffix: "×",
+    label: "Faster reporting",
+    desc: "Compared to manual spreadsheet workflows",
+  },
 ];
 
 function useCountUp(target: number, decimals = 0, duration = 1600) {
@@ -126,8 +175,8 @@ export function Stats() {
             Trusted by agencies, proven at scale
           </h2>
           <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-            Real numbers from real teams using our platform every day to manage Meta ad
-            campaigns and deliver client reports.
+            Real numbers from real teams using our platform every day to manage Meta ad campaigns
+            and deliver client reports.
           </p>
         </div>
 
@@ -144,14 +193,14 @@ export function Stats() {
 }
 
 function GetStartedCTA() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { user } = useAuth();
 
   const handleClick = () => {
     if (user) {
-      navigate({ to: "/dashboard" });
+      router.push("/dashboard");
     } else {
-      navigate({ to: "/login" });
+      router.push("/login");
     }
   };
 
@@ -172,11 +221,15 @@ function GetStartedCTA() {
           Ready to join thousands of agencies?
         </h3>
         <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
-          Start your 14-day free trial — no credit card required. Connect Meta in
-          minutes and ship branded reports today.
+          Start your 14-day free trial — no credit card required. Connect Meta in minutes and ship
+          branded reports today.
         </p>
 
-        <Button size="lg" className="mt-6 gap-2 rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand" onClick={handleClick}>
+        <Button
+          size="lg"
+          className="mt-6 gap-2 rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand"
+          onClick={handleClick}
+        >
           Get Started <ArrowRight className="h-4 w-4" />
         </Button>
       </div>

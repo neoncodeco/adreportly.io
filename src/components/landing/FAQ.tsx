@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { Mail, MessageCircle, Send } from "lucide-react";
 import {
@@ -159,7 +161,8 @@ export function FAQ() {
 
                 <div className="flex items-center justify-center gap-2 pt-2 text-xs text-muted-foreground">
                   <Mail className="h-3.5 w-3.5" />
-                  Or email us at <span className="font-medium text-foreground">hello@adgleam.com</span>
+                  Or email us at{" "}
+                  <span className="font-medium text-foreground">hello@adgleam.com</span>
                 </div>
               </div>
             </form>

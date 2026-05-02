@@ -1,4 +1,6 @@
-import { Link } from "@tanstack/react-router";
+"use client";
+
+import Link from "next/link";
 import { Zap, Twitter, Github, Linkedin, Mail, ArrowUpRight, Send } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -108,15 +110,15 @@ export function Footer() {
       <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-16 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-10 lg:grid-cols-6">
           <div className="col-span-2 lg:col-span-2">
-            <Link to="/" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <span className="flex h-10 w-10 items-center justify-center rounded card-brutal bg-brand text-ink">
                 <Zap className="h-5 w-5 fill-ink" />
               </span>
               <span className="text-base font-bold tracking-tight">AdReportly</span>
             </Link>
             <p className="mt-5 max-w-xs text-sm text-ink-foreground/70">
-              The all-in-one platform for tracking Facebook ad campaigns and sharing
-              beautiful reports with clients.
+              The all-in-one platform for tracking Facebook ad campaigns and sharing beautiful
+              reports with clients.
             </p>
             <div className="mt-6 flex gap-3">
               {[Twitter, Github, Linkedin].map((Icon, i) => (
@@ -134,9 +136,7 @@ export function Footer() {
 
           {cols.map((c) => (
             <div key={c.title}>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-brand">
-                {c.title}
-              </h4>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-brand">{c.title}</h4>
               <ul className="mt-5 space-y-3">
                 {c.links.map((l) => (
                   <li key={l.label}>

@@ -1,3 +1,5 @@
+"use client";
+
 import { motion } from "framer-motion";
 import { Facebook, BarChart3, Share2 } from "lucide-react";
 
@@ -31,10 +33,7 @@ export function HowItWorks() {
             Three steps from raw data to{" "}
             <span className="relative inline-block">
               <span className="relative z-10 text-brand-foreground">client report</span>
-              <span
-                aria-hidden
-                className="absolute inset-0 -z-0 -skew-x-6 bg-brand"
-              />
+              <span aria-hidden className="absolute inset-0 -z-0 -skew-x-6 bg-brand" />
             </span>
           </h2>
         </div>
@@ -61,9 +60,7 @@ export function HowItWorks() {
                 <s.icon className="h-6 w-6" />
               </div>
               <h3 className="mt-5 text-xl font-bold tracking-tight">{s.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {s.desc}
-              </p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.desc}</p>
             </motion.div>
           ))}
         </div>

@@ -1,6 +1,8 @@
+"use client";
+
 import { motion } from "framer-motion";
 import { Check, Sparkles } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -10,12 +12,7 @@ const plans = [
     price: "$0",
     period: "/forever",
     desc: "Perfect for solo agencies getting started.",
-    features: [
-      "1 ad account",
-      "Up to 5 campaigns",
-      "7 days data retention",
-      "Basic dashboard",
-    ],
+    features: ["1 ad account", "Up to 5 campaigns", "7 days data retention", "Basic dashboard"],
     cta: "Start Free",
     highlight: false,
   },
@@ -83,9 +80,7 @@ export function Pricing() {
           <h2 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl">
             Simple, transparent pricing
           </h2>
-          <p className="mt-4 text-muted-foreground">
-            Start free. Upgrade when your agency grows.
-          </p>
+          <p className="mt-4 text-muted-foreground">Start free. Upgrade when your agency grows.</p>
         </div>
 
         <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:items-center">
@@ -110,12 +105,22 @@ export function Pricing() {
                 </span>
               )}
 
-              <h3 className={cn("text-sm font-semibold uppercase tracking-wider", p.highlight ? "text-brand" : "text-muted-foreground")}>
+              <h3
+                className={cn(
+                  "text-sm font-semibold uppercase tracking-wider",
+                  p.highlight ? "text-brand" : "text-muted-foreground",
+                )}
+              >
                 {p.name}
               </h3>
 
               <div className="mt-4 flex items-baseline gap-1">
-                <span className={cn("font-display text-5xl font-bold", p.highlight ? "text-ink-foreground" : "text-foreground")}>
+                <span
+                  className={cn(
+                    "font-display text-5xl font-bold",
+                    p.highlight ? "text-ink-foreground" : "text-foreground",
+                  )}
+                >
                   {p.price}
                 </span>
                 <span
@@ -137,11 +142,19 @@ export function Pricing() {
                 {p.desc}
               </p>
 
-              <div className={cn("my-6 h-px", p.highlight ? "bg-ink-foreground/15" : "bg-border")} />
+              <div
+                className={cn("my-6 h-px", p.highlight ? "bg-ink-foreground/15" : "bg-border")}
+              />
 
               <ul className="space-y-3">
                 {p.features.map((f) => (
-                  <li key={f} className={cn("flex items-start gap-2.5 text-sm", p.highlight ? "text-ink-foreground/90" : "text-foreground")}>
+                  <li
+                    key={f}
+                    className={cn(
+                      "flex items-start gap-2.5 text-sm",
+                      p.highlight ? "text-ink-foreground/90" : "text-foreground",
+                    )}
+                  >
                     <span
                       className={cn(
                         "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full",
@@ -164,7 +177,7 @@ export function Pricing() {
                     : "!bg-brand !text-brand-foreground hover:!bg-brand",
                 )}
               >
-                <Link to="/signup">{p.cta}</Link>
+                <Link href="/signup">{p.cta}</Link>
               </Button>
             </motion.div>
           ))}

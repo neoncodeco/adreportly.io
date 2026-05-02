@@ -1,13 +1,27 @@
+"use client";
+
 import { motion } from "framer-motion";
 import { Lock, Zap, LineChart, Users, Globe, FileText } from "lucide-react";
 
 const features = [
-  { icon: Zap, title: "Real-time sync", desc: "Direct Graph API calls — never stale, always live." },
-  { icon: Lock, title: "AES-256 encryption", desc: "Access tokens encrypted at rest and never exposed." },
+  {
+    icon: Zap,
+    title: "Real-time sync",
+    desc: "Direct Graph API calls — never stale, always live.",
+  },
+  {
+    icon: Lock,
+    title: "AES-256 encryption",
+    desc: "Access tokens encrypted at rest and never exposed.",
+  },
   { icon: LineChart, title: "Beautiful charts", desc: "Spend, results, ROAS visualized clearly." },
   { icon: Users, title: "Multi-client", desc: "Manage unlimited clients from a single dashboard." },
   { icon: Globe, title: "Secure share links", desc: "UUID tokens that expire automatically." },
-  { icon: FileText, title: "PDF & CSV export", desc: "One-click branded reports your clients will love." },
+  {
+    icon: FileText,
+    title: "PDF & CSV export",
+    desc: "One-click branded reports your clients will love.",
+  },
 ];
 
 export function Features() {
@@ -41,9 +55,7 @@ export function Features() {
               <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-ink text-brand">
                 <f.icon className="h-5 w-5" />
               </div>
-              <h3 className="relative mt-5 text-base font-bold tracking-tight">
-                {f.title}
-              </h3>
+              <h3 className="relative mt-5 text-base font-bold tracking-tight">{f.title}</h3>
               <p className="relative mt-1.5 text-sm leading-relaxed text-muted-foreground">
                 {f.desc}
               </p>

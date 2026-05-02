@@ -1,5 +1,7 @@
+"use client";
+
 import { motion } from "framer-motion";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { ArrowRight, PlayCircle, Sparkles, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Bar, BarChart, ResponsiveContainer, XAxis, Cell } from "recharts";
@@ -19,10 +21,7 @@ export function Hero() {
         aria-hidden
         className="pointer-events-none absolute -right-24 top-32 h-96 w-96 animate-blob bg-gradient-brand opacity-25 blur-3xl"
       />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-grid opacity-[0.35]"
-      />
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid opacity-[0.35]" />
 
       <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 pt-32 pb-20 sm:px-6 sm:pt-36 sm:pb-24 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:pt-40 lg:pb-32">
         {/* Left: copy */}
@@ -61,10 +60,7 @@ export function Hero() {
               className="relative inline-block"
             >
               <span className="relative z-10 text-brand-foreground">measurable ROI</span>
-              <span
-                aria-hidden
-                className="absolute inset-0 -z-0 -skew-x-6 bg-brand"
-              />
+              <span aria-hidden className="absolute inset-0 -z-0 -skew-x-6 bg-brand" />
             </motion.span>
           </h1>
 
@@ -74,9 +70,8 @@ export function Hero() {
             transition={{ duration: 0.5, delay: 0.5 }}
             className="mt-6 max-w-xl text-lg text-muted-foreground mx-auto lg:mx-0"
           >
-            The all-in-one analytics platform agencies use to track Facebook
-            campaigns, generate stunning client reports, and share secure
-            read-only dashboards in seconds.
+            The all-in-one analytics platform agencies use to track Facebook campaigns, generate
+            stunning client reports, and share secure read-only dashboards in seconds.
           </motion.p>
 
           <motion.div
@@ -91,7 +86,7 @@ export function Hero() {
                 size="lg"
                 className="rounded bg-brand px-7 text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand"
               >
-                <Link to="/signup">
+                <Link href="/signup">
                   Get Started Free
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
@@ -124,8 +119,8 @@ export function Hero() {
               ))}
             </div>
             <span>
-              <span className="font-semibold text-foreground">500+ agencies</span>{" "}
-              tracking ৳120M+ in ad spend
+              <span className="font-semibold text-foreground">500+ agencies</span> tracking ৳120M+
+              in ad spend
             </span>
           </motion.div>
         </div>
@@ -150,9 +145,7 @@ export function Hero() {
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Live ROI Tracking
                   </p>
-                  <h3 className="mt-1 font-display text-3xl font-bold text-ink">
-                    ৳477,710.00
-                  </h3>
+                  <h3 className="mt-1 font-display text-3xl font-bold text-ink">৳477,710.00</h3>
                 </div>
                 <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-3 py-1 text-xs font-semibold text-success">
                   <TrendingUp className="h-3.5 w-3.5" />
@@ -164,20 +157,12 @@ export function Hero() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={mockSpendTrend.slice(-14)} barCategoryGap={4}>
                     <XAxis dataKey="label" hide />
-                    <Bar
-                      dataKey="spend"
-                      radius={[6, 6, 0, 0]}
-                      maxBarSize={14}
-                    >
+                    <Bar dataKey="spend" radius={[6, 6, 0, 0]} maxBarSize={14}>
                       {mockSpendTrend.slice(-14).map((_, i) => (
                         <Cell key={i} fill="var(--ink)" />
                       ))}
                     </Bar>
-                    <Bar
-                      dataKey="results"
-                      radius={[6, 6, 0, 0]}
-                      maxBarSize={14}
-                    >
+                    <Bar dataKey="results" radius={[6, 6, 0, 0]} maxBarSize={14}>
                       {mockSpendTrend.slice(-14).map((_, i) => (
                         <Cell key={i} fill="var(--brand)" />
                       ))}
@@ -202,9 +187,7 @@ export function Hero() {
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       {m.label}
                     </div>
-                    <div className="text-base font-bold text-foreground">
-                      {m.value}
-                    </div>
+                    <div className="text-base font-bold text-foreground">{m.value}</div>
                   </motion.div>
                 ))}
               </div>
@@ -231,9 +214,7 @@ export function Hero() {
             className="absolute -right-4 -bottom-2 hidden items-center gap-2 rounded-full card-brutal bg-card px-4 py-2 lg:inline-flex"
           >
             <span className="h-2 w-2 rounded-full bg-success" />
-            <span className="text-xs font-semibold text-foreground">
-              All accounts synced
-            </span>
+            <span className="text-xs font-semibold text-foreground">All accounts synced</span>
           </motion.div>
         </motion.div>
       </div>
@@ -243,11 +224,13 @@ export function Hero() {
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             <span>Trusted by</span>
-            {["Hive Marketing", "BoostBD", "Pixel & Penny", "Lumen Studio", "Fashion House BD"].map((n) => (
-              <span key={n} className="opacity-70 transition hover:opacity-100">
-                {n}
-              </span>
-            ))}
+            {["Hive Marketing", "BoostBD", "Pixel & Penny", "Lumen Studio", "Fashion House BD"].map(
+              (n) => (
+                <span key={n} className="opacity-70 transition hover:opacity-100">
+                  {n}
+                </span>
+              ),
+            )}
           </div>
         </div>
       </div>
