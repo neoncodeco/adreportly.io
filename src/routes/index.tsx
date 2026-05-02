@@ -17,7 +17,7 @@ function LandingPage() {
   return (
     <div id="top" className="min-h-screen bg-background">
       <Navbar />
-      <main className="-mt-[88px] sm:-mt-[96px]">
+      <main>
         <Hero />
         <HowItWorks />
         <Stats />
