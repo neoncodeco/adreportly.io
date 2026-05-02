@@ -56,9 +56,9 @@ export function FAQ() {
   return (
     <section id="faq" className="py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
+        <div className="grid gap-10 lg:grid-cols-2 lg:gap-12 lg:items-stretch">
           {/* FAQ */}
-          <div>
+          <div className="flex flex-col">
             <div>
               <span className="inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink">
                 FAQ
@@ -71,7 +71,7 @@ export function FAQ() {
               </p>
             </div>
 
-            <Accordion type="single" collapsible className="mt-8 space-y-3">
+            <Accordion type="single" collapsible className="mt-8 flex-1 space-y-3">
               {faqs.map((f, i) => (
                 <AccordionItem
                   key={i}
@@ -90,7 +90,7 @@ export function FAQ() {
           </div>
 
           {/* Contact */}
-          <div id="contact">
+          <div id="contact" className="flex flex-col">
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink">
                 <MessageCircle className="h-3 w-3" />
@@ -106,9 +106,9 @@ export function FAQ() {
 
             <form
               onSubmit={handleSubmit}
-              className="mt-8 rounded card-brutal bg-card p-6 sm:p-7"
+              className="mt-8 flex-1 rounded card-brutal bg-card p-6 sm:p-7 flex flex-col"
             >
-              <div className="space-y-4">
+              <div className="flex flex-1 flex-col space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="contact-name">Name</Label>
@@ -116,6 +116,8 @@ export function FAQ() {
                       id="contact-name"
                       placeholder="Jane Doe"
                       required
+                      maxLength={100}
+                      className="rounded"
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                     />
@@ -127,18 +129,21 @@ export function FAQ() {
                       type="email"
                       placeholder="jane@agency.com"
                       required
+                      maxLength={255}
+                      className="rounded"
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                     />
                   </div>
                 </div>
-                <div className="space-y-1.5">
+                <div className="flex flex-1 flex-col space-y-1.5">
                   <Label htmlFor="contact-message">Message</Label>
                   <Textarea
                     id="contact-message"
                     placeholder="How can we help?"
-                    rows={5}
                     required
+                    maxLength={1000}
+                    className="rounded flex-1 min-h-[140px]"
                     value={form.message}
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
                   />
