@@ -100,7 +100,7 @@ export function Hero() {
             <Button
               variant="outline"
               size="lg"
-              className="rounded border-border bg-card/70 backdrop-blur transition-all hover:bg-card hover:scale-[1.02]"
+              className="rounded bg-card btn-brutal hover:bg-card"
             >
               <PlayCircle className="mr-2 h-5 w-5" />
               Watch Demo
