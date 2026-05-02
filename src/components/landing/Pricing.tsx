@@ -99,7 +99,7 @@ export function Pricing() {
               className={cn(
                 "relative rounded p-8 hover-lift",
                 p.highlight
-                  ? "border-2 border-ink bg-ink text-ink-foreground shadow-brutal lg:scale-[1.04] lg:-my-2"
+                  ? "border-2 border-brand bg-ink text-ink-foreground shadow-brutal lg:scale-[1.04] lg:-my-2"
                   : "card-brutal bg-card",
               )}
             >
