@@ -137,7 +137,7 @@ export function Navbar() {
                       onClick={() => setOpen(false)}
                       className="flex items-center gap-2.5"
                     >
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-ink border-2 border-ink">
+                      <span className="flex h-9 w-9 items-center justify-center rounded bg-brand text-ink border-2 border-ink">
                         <Zap className="h-4 w-4 fill-ink" />
                       </span>
                       <span className="text-base font-bold tracking-tight">
