@@ -60,7 +60,7 @@ export function Navbar() {
             </span>
             <span className="text-sm font-bold tracking-tight whitespace-nowrap sm:text-base">
               <span className="hidden sm:inline">FB Ads Analytics</span>
-              <span className="sm:hidden">FB Ads</span>
+              <span className="sm:hidden">AdReportly</span>
             </span>
           </Link>
 
