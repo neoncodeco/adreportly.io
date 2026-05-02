@@ -1,19 +1,9 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { DollarSign, Users, BarChart3, Globe2, ShieldCheck, Clock, ArrowRight, Sparkles } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
 
 type Stat = {
   icon: typeof DollarSign;
