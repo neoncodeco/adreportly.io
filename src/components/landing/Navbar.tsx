@@ -49,7 +49,7 @@ export function Navbar() {
       >
         <nav
           className={cn(
-            "mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-full bg-card/80 px-3 py-2 backdrop-blur-xl transition-all duration-300 sm:px-4",
+            "mx-auto flex max-w-6xl items-center justify-between gap-3 rounded bg-background px-3 py-2 transition-all duration-300 sm:px-4",
             scrolled
               ? "card-brutal shadow-brutal"
               : "border-2 border-ink/15",
@@ -57,7 +57,7 @@ export function Navbar() {
         >
           {/* Logo */}
           <Link to="/" className="group flex items-center gap-2 shrink-0 pl-1">
-            <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-brand text-ink border-2 border-ink transition-transform duration-300 group-hover:rotate-12">
+            <span className="relative flex h-9 w-9 items-center justify-center rounded bg-brand text-ink border-2 border-ink transition-transform duration-300 group-hover:rotate-12">
               <Zap className="h-4 w-4 fill-ink" />
             </span>
             <span className="text-sm font-bold tracking-tight whitespace-nowrap sm:text-base">
