@@ -89,7 +89,7 @@ export function Hero() {
               <Button
                 asChild
                 size="lg"
-                className="rounded bg-brand px-7 text-brand-foreground btn-brutal hover:bg-brand"
+                className="rounded bg-brand px-7 text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand"
               >
                 <Link to="/signup">
                   Get Started Free
@@ -100,7 +100,7 @@ export function Hero() {
             <Button
               variant="outline"
               size="lg"
-              className="rounded bg-card btn-brutal hover:bg-card"
+              className="rounded bg-card btn-brutal h-auto py-3 hover:bg-card"
             >
               <PlayCircle className="mr-2 h-5 w-5" />
               Watch Demo

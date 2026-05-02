@@ -143,7 +143,7 @@ export function Pricing() {
               <Button
                 asChild
                 className={cn(
-                  "mt-8 w-full rounded font-semibold btn-brutal",
+                  "mt-8 w-full rounded font-semibold btn-brutal h-auto py-3",
                   p.highlight
                     ? "!bg-brand !text-brand-foreground hover:!bg-brand"
                     : "!bg-brand !text-brand-foreground hover:!bg-brand",
