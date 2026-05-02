@@ -1,5 +1,7 @@
-import { motion } from "framer-motion";
-import { Star } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const testimonials = [
   {
@@ -8,6 +10,7 @@ const testimonials = [
     quote:
       "We replaced three tools with this. Our clients adore the share links — no more screenshots in WhatsApp.",
     initials: "SA",
+    accent: "bg-brand text-brand-foreground",
   },
   {
     name: "Rakib Hassan",
@@ -15,6 +18,7 @@ const testimonials = [
     quote:
       "The ROAS dashboard alone saved us hours per week. Reports our team used to build manually now take 30 seconds.",
     initials: "RH",
+    accent: "bg-accent text-ink",
   },
   {
     name: "Mira Chen",
@@ -22,6 +26,7 @@ const testimonials = [
     quote:
       "Beautiful UI, real-time data, and rock-solid encryption. This is the FB ads tool agencies have been waiting for.",
     initials: "MC",
+    accent: "bg-warning text-ink",
   },
   {
     name: "Tomás Vega",
@@ -29,6 +34,7 @@ const testimonials = [
     quote:
       "Onboarded a new client in under 5 minutes. The shareable read-only view is genius — they can't break anything.",
     initials: "TV",
+    accent: "bg-success text-ink",
   },
   {
     name: "Aisha Rahman",
@@ -36,15 +42,19 @@ const testimonials = [
     quote:
       "As a client, I finally get clean weekly reports without back-and-forth emails. Game changer.",
     initials: "AR",
+    accent: "bg-brand text-brand-foreground",
   },
 ];
 
 export function Testimonials() {
-  // Duplicate for seamless infinite scroll
-  const scrolling = [...testimonials, ...testimonials];
+  const [active, setActive] = useState(0);
+  const total = testimonials.length;
+
+  const go = (dir: number) => setActive((a) => (a + dir + total) % total);
+  const current = testimonials[active];
 
   return (
-    <section className="overflow-hidden py-24">
+    <section className="py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <span className="inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink">
@@ -54,40 +64,120 @@ export function Testimonials() {
             What our customers say
           </h2>
         </div>
-      </div>
 
-      <div className="relative mt-12 overflow-hidden">
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-background to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-background to-transparent" />
+        {/* Featured testimonial */}
+        <div className="mt-12 grid gap-8 lg:grid-cols-5 lg:items-center">
+          <div className="lg:col-span-3">
+            <div className="relative rounded card-brutal bg-card p-8 sm:p-10">
+              <Quote className="absolute -top-4 -left-4 h-12 w-12 rounded card-brutal bg-brand p-2 text-brand-foreground" />
 
-        <motion.div
-          className="flex gap-5"
-          animate={{ x: ["0%", "-50%"] }}
-          transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
-        >
-          {scrolling.map((t, i) => (
-            <div
-              key={i}
-              className="w-[340px] shrink-0 rounded card-brutal bg-card p-6"
-            >
               <div className="flex gap-1">
                 {Array.from({ length: 5 }).map((_, k) => (
-                  <Star key={k} className="h-4 w-4 fill-warning text-warning" />
+                  <Star key={k} className="h-5 w-5 fill-warning text-warning" />
                 ))}
               </div>
-              <p className="mt-4 text-sm leading-relaxed text-foreground">"{t.quote}"</p>
-              <div className="mt-5 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-ink text-sm font-semibold text-ink-foreground">
-                  {t.initials}
+
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={active}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <p className="mt-5 text-lg font-medium leading-relaxed text-foreground sm:text-xl">
+                    "{current.quote}"
+                  </p>
+
+                  <div className="mt-7 flex items-center gap-4">
+                    <div
+                      className={`flex h-12 w-12 items-center justify-center rounded card-brutal text-base font-bold ${current.accent}`}
+                    >
+                      {current.initials}
+                    </div>
+                    <div>
+                      <div className="text-base font-semibold">{current.name}</div>
+                      <div className="text-sm text-muted-foreground">{current.role}</div>
+                    </div>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+
+              <div className="mt-8 flex items-center justify-between border-t-2 border-ink/10 pt-5">
+                <div className="flex gap-2">
+                  {testimonials.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActive(i)}
+                      aria-label={`Show testimonial ${i + 1}`}
+                      className={`h-2.5 rounded-full transition-all ${
+                        i === active ? "w-8 bg-ink" : "w-2.5 bg-ink/25 hover:bg-ink/50"
+                      }`}
+                    />
+                  ))}
                 </div>
-                <div>
-                  <div className="text-sm font-semibold">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">{t.role}</div>
+
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => go(-1)}
+                    className="rounded card-brutal h-10 w-10 bg-card"
+                    aria-label="Previous testimonial"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => go(1)}
+                    className="rounded card-brutal h-10 w-10 bg-card"
+                    aria-label="Next testimonial"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </div>
-          ))}
-        </motion.div>
+          </div>
+
+          {/* Side list */}
+          <div className="lg:col-span-2 space-y-3">
+            {testimonials.map((t, i) => (
+              <button
+                key={t.name}
+                onClick={() => setActive(i)}
+                className={`w-full text-left rounded card-brutal p-4 transition-all ${
+                  i === active
+                    ? "bg-brand text-brand-foreground translate-x-0"
+                    : "bg-card hover:-translate-y-0.5"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded text-sm font-bold border-2 border-ink ${
+                      i === active ? "bg-card text-ink" : t.accent
+                    }`}
+                  >
+                    {t.initials}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold truncate">{t.name}</div>
+                    <div
+                      className={`text-xs truncate ${
+                        i === active ? "text-brand-foreground/80" : "text-muted-foreground"
+                      }`}
+                    >
+                      {t.role}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
