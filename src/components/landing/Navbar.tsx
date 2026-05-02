@@ -86,7 +86,7 @@ export function Navbar() {
               size="icon"
               onClick={toggle}
               aria-label="Toggle theme"
-              className="rounded-full h-9 w-9 hover:bg-accent"
+              className="rounded h-9 w-9 hover:bg-accent"
             >
               {theme === "dark" ? (
                 <Sun className="h-4 w-4" />
@@ -99,7 +99,7 @@ export function Navbar() {
               asChild
               variant="ghost"
               size="sm"
-              className="hidden rounded-full lg:inline-flex"
+              className="hidden rounded lg:inline-flex"
             >
               <Link to="/login">Sign in</Link>
             </Button>
@@ -107,7 +107,7 @@ export function Navbar() {
             <Button
               asChild
               size="sm"
-              className="hidden rounded-full bg-brand text-brand-foreground btn-brutal h-9 px-4 hover:bg-brand lg:inline-flex"
+              className="hidden rounded bg-brand text-brand-foreground btn-brutal h-9 px-4 hover:bg-brand lg:inline-flex"
             >
               <Link to="/signup">
                 Get Started <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -121,7 +121,7 @@ export function Navbar() {
                   variant="outline"
                   size="icon"
                   aria-label="Open menu"
-                  className="rounded-full h-9 w-9 border-2 border-ink bg-card lg:hidden"
+                  className="rounded h-9 w-9 border-2 border-ink bg-card lg:hidden"
                 >
                   <Menu className="h-4 w-4" />
                 </Button>
