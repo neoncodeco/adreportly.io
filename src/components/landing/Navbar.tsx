@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Menu, Moon, Sun, Zap } from "lucide-react";
+import { Menu, Moon, Sun, Zap, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -36,56 +36,57 @@ export function Navbar() {
 
   return (
     <motion.header
-      initial={{ y: -80, opacity: 0 }}
+      initial={{ y: -40, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className="sticky top-0 z-50 w-full"
     >
       <div
         className={cn(
-          "transition-all duration-500 ease-out",
-          scrolled
-            ? "border-b border-border/60 bg-background/70 backdrop-blur-xl backdrop-saturate-150 shadow-[0_4px_30px_-10px_rgba(0,0,0,0.15)]"
-            : "border-b border-transparent bg-transparent backdrop-blur-0"
+          "px-3 sm:px-4 lg:px-6 transition-all duration-300",
+          scrolled ? "pt-3" : "pt-4 sm:pt-5",
         )}
       >
         <nav
           className={cn(
-            "mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 transition-all duration-500",
-            scrolled ? "h-16 py-3" : "h-20 py-5"
+            "mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-full bg-card/80 px-3 py-2 backdrop-blur-xl transition-all duration-300 sm:px-4",
+            scrolled
+              ? "card-brutal shadow-brutal"
+              : "border-2 border-ink/15",
           )}
         >
-          <Link to="/" className="group flex items-center gap-2.5 shrink-0">
-            <span className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-ink text-brand shadow-glow-ink transition-transform duration-300 group-hover:rotate-12 group-hover:scale-105">
-              <Zap className="h-4 w-4 fill-brand" />
+          {/* Logo */}
+          <Link to="/" className="group flex items-center gap-2 shrink-0 pl-1">
+            <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-brand text-ink border-2 border-ink transition-transform duration-300 group-hover:rotate-12">
+              <Zap className="h-4 w-4 fill-ink" />
             </span>
-            <span className="text-base font-bold tracking-tight whitespace-nowrap">
+            <span className="text-sm font-bold tracking-tight whitespace-nowrap sm:text-base">
               <span className="hidden sm:inline">FB Ads Analytics</span>
               <span className="sm:hidden">FB Ads</span>
             </span>
           </Link>
 
-          <div className="hidden items-center gap-1 lg:flex">
-            <div className="flex items-center gap-1 rounded-full border border-border/60 bg-background/40 px-1.5 py-1 backdrop-blur-md">
-              {links.map((l) => (
-                <a
-                  key={l.label}
-                  href={l.href}
-                  className="whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground"
-                >
-                  {l.label}
-                </a>
-              ))}
-            </div>
+          {/* Desktop links */}
+          <div className="hidden items-center gap-0.5 lg:flex">
+            {links.map((l) => (
+              <a
+                key={l.label}
+                href={l.href}
+                className="whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-ink"
+              >
+                {l.label}
+              </a>
+            ))}
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Right cluster */}
+          <div className="flex items-center gap-1.5">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggle}
               aria-label="Toggle theme"
-              className="rounded-full hover:bg-accent"
+              className="rounded-full h-9 w-9 hover:bg-accent"
             >
               {theme === "dark" ? (
                 <Sun className="h-4 w-4" />
@@ -93,15 +94,24 @@ export function Navbar() {
                 <Moon className="h-4 w-4" />
               )}
             </Button>
-            <Button asChild variant="ghost" size="sm" className="hidden rounded lg:inline-flex">
+
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="hidden rounded-full lg:inline-flex"
+            >
               <Link to="/login">Sign in</Link>
             </Button>
+
             <Button
               asChild
               size="sm"
-              className="hidden rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand lg:inline-flex"
+              className="hidden rounded-full bg-brand text-brand-foreground btn-brutal h-9 px-4 hover:bg-brand lg:inline-flex"
             >
-              <Link to="/signup">Get Started</Link>
+              <Link to="/signup">
+                Get Started <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              </Link>
             </Button>
 
             {/* Mobile / md menu trigger */}
@@ -111,24 +121,24 @@ export function Navbar() {
                   variant="outline"
                   size="icon"
                   aria-label="Open menu"
-                  className="rounded-full border-border/60 bg-background/60 backdrop-blur-md lg:hidden"
+                  className="rounded-full h-9 w-9 border-2 border-ink bg-card lg:hidden"
                 >
-                  <Menu className="h-5 w-5" />
+                  <Menu className="h-4 w-4" />
                 </Button>
               </SheetTrigger>
               <SheetContent
-                side="left"
-                className="w-[300px] border-r border-border/60 bg-background/95 backdrop-blur-xl p-0 sm:w-[340px]"
+                side="right"
+                className="w-[300px] border-l-2 border-ink bg-background p-0 sm:w-[340px]"
               >
-                <SheetHeader className="border-b border-border/60 p-6">
+                <SheetHeader className="border-b-2 border-ink/10 p-5">
                   <SheetTitle asChild>
                     <Link
                       to="/"
                       onClick={() => setOpen(false)}
                       className="flex items-center gap-2.5"
                     >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink text-brand shadow-glow-ink">
-                        <Zap className="h-4 w-4 fill-brand" />
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-ink border-2 border-ink">
+                        <Zap className="h-4 w-4 fill-ink" />
                       </span>
                       <span className="text-base font-bold tracking-tight">
                         FB Ads Analytics
@@ -141,14 +151,14 @@ export function Navbar() {
                   {links.map((l, i) => (
                     <SheetClose asChild key={l.label}>
                       <motion.a
-                        initial={{ opacity: 0, x: -16 }}
+                        initial={{ opacity: 0, x: 16 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.05 * i, duration: 0.3 }}
                         href={l.href}
-                        className="group flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-foreground transition-all hover:bg-accent hover:pl-5"
+                        className="group flex items-center justify-between rounded px-4 py-3 text-sm font-semibold text-foreground transition-all hover:bg-accent"
                       >
                         <span>{l.label}</span>
-                        <span className="text-muted-foreground transition-all group-hover:text-brand group-hover:translate-x-1">
+                        <span className="text-muted-foreground transition-all group-hover:text-ink group-hover:translate-x-1">
                           →
                         </span>
                       </motion.a>
@@ -156,9 +166,13 @@ export function Navbar() {
                   ))}
                 </nav>
 
-                <div className="mt-auto flex flex-col gap-2 border-t border-border/60 p-4">
+                <div className="mt-auto flex flex-col gap-2 border-t-2 border-ink/10 p-4">
                   <SheetClose asChild>
-                    <Button asChild variant="outline" className="w-full rounded bg-card btn-brutal h-auto py-3 hover:bg-card">
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="w-full rounded bg-card btn-brutal h-auto py-3 hover:bg-card"
+                    >
                       <Link to="/login">Sign in</Link>
                     </Button>
                   </SheetClose>
