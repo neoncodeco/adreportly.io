@@ -72,14 +72,14 @@ function SignupPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="full_name">Your name</Label>
-                <Input id="full_name" placeholder="Jane Doe" {...register("full_name")} />
+                <Input className="rounded" id="full_name" placeholder="Jane Doe" {...register("full_name")} />
                 {errors.full_name && (
                   <p className="text-xs text-destructive">{errors.full_name.message}</p>
                 )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="organization">Agency</Label>
-                <Input id="organization" placeholder="Hive Marketing" {...register("organization")} />
+                <Input className="rounded" id="organization" placeholder="Hive Marketing" {...register("organization")} />
                 {errors.organization && (
                   <p className="text-xs text-destructive">{errors.organization.message}</p>
                 )}
@@ -87,12 +87,12 @@ function SignupPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="you@agency.com" {...register("email")} />
+              <Input className="rounded" id="email" type="email" placeholder="you@agency.com" {...register("email")} />
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" placeholder="At least 8 characters" {...register("password")} />
+              <Input className="rounded" id="password" type="password" placeholder="At least 8 characters" {...register("password")} />
               {errors.password && (
                 <p className="text-xs text-destructive">{errors.password.message}</p>
               )}

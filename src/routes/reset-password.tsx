@@ -48,7 +48,7 @@ function ResetPasswordPage() {
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="password">New password</Label>
-              <Input
+              <Input className="rounded"
                 id="password"
                 type="password"
                 required

@@ -64,7 +64,7 @@ function LoginPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="you@agency.com" {...register("email")} />
+              <Input className="rounded" id="email" type="email" placeholder="you@agency.com" {...register("email")} />
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
             <div className="space-y-1.5">
@@ -74,7 +74,7 @@ function LoginPage() {
                   Forgot password?
                 </Link>
               </div>
-              <Input id="password" type="password" placeholder="••••••••" {...register("password")} />
+              <Input className="rounded" id="password" type="password" placeholder="••••••••" {...register("password")} />
               {errors.password && (
                 <p className="text-xs text-destructive">{errors.password.message}</p>
               )}
