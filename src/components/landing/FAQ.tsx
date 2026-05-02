@@ -56,7 +56,7 @@ export function FAQ() {
   return (
     <section id="faq" className="py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
+        <div className="grid gap-10 lg:grid-cols-2 lg:gap-12 lg:items-stretch">
           {/* FAQ */}
           <div>
             <div>
