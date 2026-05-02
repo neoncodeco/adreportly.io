@@ -72,7 +72,7 @@ export function Navbar() {
               <a
                 key={l.label}
                 href={l.href}
-                className="whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-ink"
+                className="whitespace-nowrap rounded px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-ink"
               >
                 {l.label}
               </a>
