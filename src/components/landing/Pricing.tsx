@@ -20,6 +20,21 @@ const plans = [
     highlight: false,
   },
   {
+    name: "Starter",
+    price: "$19",
+    period: "/month",
+    desc: "For freelancers running a few clients.",
+    features: [
+      "2 ad accounts",
+      "Up to 15 campaigns",
+      "30 days data retention",
+      "Share links",
+      "Email support",
+    ],
+    cta: "Start Starter",
+    highlight: false,
+  },
+  {
     name: "Pro",
     price: "$50",
     period: "/month",
@@ -73,7 +88,7 @@ export function Pricing() {
           </p>
         </div>
 
-        <div className="mt-16 grid gap-6 lg:grid-cols-3 lg:items-center">
+        <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:items-center">
           {plans.map((p, i) => (
             <motion.div
               key={p.name}
