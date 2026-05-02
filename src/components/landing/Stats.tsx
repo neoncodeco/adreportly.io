@@ -169,7 +169,7 @@ function GetStartedCTA() {
           minutes and ship branded reports today.
         </p>
 
-        <Button size="lg" className="mt-6 gap-2 rounded-lg bg-ink text-ink-foreground shadow-glow-ink transition-all hover:bg-ink/90 hover:scale-[1.02]" onClick={handleClick}>
+        <Button size="lg" className="mt-6 gap-2 rounded bg-ink text-ink-foreground shadow-glow-ink transition-all hover:bg-ink/90 hover:scale-[1.02]" onClick={handleClick}>
           Get Started <ArrowRight className="h-4 w-4" />
         </Button>
       </div>

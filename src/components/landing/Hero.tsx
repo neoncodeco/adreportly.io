@@ -85,11 +85,11 @@ export function Hero() {
             transition={{ duration: 0.5, delay: 0.6 }}
             className="mt-8 flex flex-wrap items-center gap-3"
           >
-            <div className="glow-ring rounded-xl">
+            <div className="glow-ring rounded">
               <Button
                 asChild
                 size="lg"
-                className="rounded-xl bg-ink px-7 text-ink-foreground shadow-glow-ink transition-all hover:bg-ink/90 hover:scale-[1.02]"
+                className="rounded bg-ink px-7 text-ink-foreground shadow-glow-ink transition-all hover:bg-ink/90 hover:scale-[1.02]"
               >
                 <Link to="/signup">
                   Get Started Free
@@ -100,7 +100,7 @@ export function Hero() {
             <Button
               variant="outline"
               size="lg"
-              className="rounded-xl border-border bg-card/70 backdrop-blur transition-all hover:bg-card hover:scale-[1.02]"
+              className="rounded border-border bg-card/70 backdrop-blur transition-all hover:bg-card hover:scale-[1.02]"
             >
               <PlayCircle className="mr-2 h-5 w-5" />
               Watch Demo
