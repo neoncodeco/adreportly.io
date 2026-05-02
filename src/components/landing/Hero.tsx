@@ -89,7 +89,7 @@ export function Hero() {
               <Button
                 asChild
                 size="lg"
-                className="rounded bg-ink px-7 text-ink-foreground shadow-glow-ink transition-all hover:bg-ink/90 hover:scale-[1.02]"
+                className="rounded bg-ink px-7 text-ink-foreground btn-brutal hover:bg-ink"
               >
                 <Link to="/signup">
                   Get Started Free
