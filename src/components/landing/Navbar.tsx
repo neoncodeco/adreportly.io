@@ -49,7 +49,7 @@ export function Navbar() {
       >
         <nav
           className={cn(
-            "mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-full bg-card/80 px-3 py-2 backdrop-blur-xl transition-all duration-300 sm:px-4",
+            "mx-auto flex max-w-6xl items-center justify-between gap-3 rounded bg-background px-3 py-2 transition-all duration-300 sm:px-4",
             scrolled
               ? "card-brutal shadow-brutal"
               : "border-2 border-ink/15",
@@ -57,7 +57,7 @@ export function Navbar() {
         >
           {/* Logo */}
           <Link to="/" className="group flex items-center gap-2 shrink-0 pl-1">
-            <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-brand text-ink border-2 border-ink transition-transform duration-300 group-hover:rotate-12">
+            <span className="relative flex h-9 w-9 items-center justify-center rounded bg-brand text-ink border-2 border-ink transition-transform duration-300 group-hover:rotate-12">
               <Zap className="h-4 w-4 fill-ink" />
             </span>
             <span className="text-sm font-bold tracking-tight whitespace-nowrap sm:text-base">
@@ -72,7 +72,7 @@ export function Navbar() {
               <a
                 key={l.label}
                 href={l.href}
-                className="whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-ink"
+                className="whitespace-nowrap rounded px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-ink"
               >
                 {l.label}
               </a>
@@ -86,7 +86,7 @@ export function Navbar() {
               size="icon"
               onClick={toggle}
               aria-label="Toggle theme"
-              className="rounded-full h-9 w-9 hover:bg-accent"
+              className="rounded h-9 w-9 hover:bg-accent"
             >
               {theme === "dark" ? (
                 <Sun className="h-4 w-4" />
@@ -99,7 +99,7 @@ export function Navbar() {
               asChild
               variant="ghost"
               size="sm"
-              className="hidden rounded-full lg:inline-flex"
+              className="hidden rounded lg:inline-flex"
             >
               <Link to="/login">Sign in</Link>
             </Button>
@@ -107,7 +107,7 @@ export function Navbar() {
             <Button
               asChild
               size="sm"
-              className="hidden rounded-full bg-brand text-brand-foreground btn-brutal h-9 px-4 hover:bg-brand lg:inline-flex"
+              className="hidden rounded bg-brand text-brand-foreground btn-brutal h-9 px-4 hover:bg-brand lg:inline-flex"
             >
               <Link to="/signup">
                 Get Started <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -121,7 +121,7 @@ export function Navbar() {
                   variant="outline"
                   size="icon"
                   aria-label="Open menu"
-                  className="rounded-full h-9 w-9 border-2 border-ink bg-card lg:hidden"
+                  className="rounded h-9 w-9 border-2 border-ink bg-card lg:hidden"
                 >
                   <Menu className="h-4 w-4" />
                 </Button>
@@ -137,7 +137,7 @@ export function Navbar() {
                       onClick={() => setOpen(false)}
                       className="flex items-center gap-2.5"
                     >
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-ink border-2 border-ink">
+                      <span className="flex h-9 w-9 items-center justify-center rounded bg-brand text-ink border-2 border-ink">
                         <Zap className="h-4 w-4 fill-ink" />
                       </span>
                       <span className="text-base font-bold tracking-tight">
