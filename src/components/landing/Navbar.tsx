@@ -99,7 +99,7 @@ export function Navbar() {
             <Button
               asChild
               size="sm"
-              className="hidden rounded bg-ink text-ink-foreground btn-brutal hover:bg-ink lg:inline-flex"
+              className="hidden rounded bg-brand text-brand-foreground btn-brutal hover:bg-brand lg:inline-flex"
             >
               <Link to="/signup">Get Started</Link>
             </Button>
@@ -165,7 +165,7 @@ export function Navbar() {
                   <SheetClose asChild>
                     <Button
                       asChild
-                      className="w-full rounded bg-ink text-ink-foreground btn-brutal hover:bg-ink"
+                      className="w-full rounded bg-brand text-brand-foreground btn-brutal hover:bg-brand"
                     >
                       <Link to="/signup">Get Started</Link>
                     </Button>
