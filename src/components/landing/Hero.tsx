@@ -26,7 +26,7 @@ export function Hero() {
 
       <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 sm:py-24 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-32">
         {/* Left: copy */}
-        <div>
+        <div className="text-center lg:text-left">
           <motion.span
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -72,7 +72,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
-            className="mt-6 max-w-xl text-lg text-muted-foreground"
+            className="mt-6 max-w-xl text-lg text-muted-foreground mx-auto lg:mx-0"
           >
             The all-in-one analytics platform agencies use to track Facebook
             campaigns, generate stunning client reports, and share secure
@@ -83,7 +83,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.6 }}
-            className="mt-8 flex flex-wrap items-center gap-3"
+            className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start"
           >
             <div className="glow-ring rounded">
               <Button
@@ -111,7 +111,7 @@ export function Hero() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.8 }}
-            className="mt-10 flex items-center gap-6 text-sm text-muted-foreground"
+            className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-muted-foreground lg:justify-start"
           >
             <div className="flex -space-x-2">
               {["F", "T", "A", "M"].map((c) => (
