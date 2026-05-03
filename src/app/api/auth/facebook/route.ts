@@ -1,6 +1,8 @@
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 
-export async function GET() {
+export async function GET(_request: NextRequest) {
   const appId = process.env.FACEBOOK_APP_ID;
   const site =
     process.env.NEXT_PUBLIC_SITE_URL ??
@@ -20,6 +22,8 @@ export async function GET() {
   url.searchParams.set("state", state);
   url.searchParams.set("scope", scope);
 
+  const session = await auth();
+
   const res = NextResponse.redirect(url.toString());
   res.cookies.set("fb_oauth_state", state, {
     httpOnly: true,
@@ -27,5 +31,21 @@ export async function GET() {
     path: "/",
     maxAge: 600,
   });
+  if (session?.user?.id) {
+    res.cookies.set("fb_oauth_app_user", session.user.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 600,
+    });
+  } else {
+    res.cookies.set("fb_oauth_app_user", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 0,
+    });
+  }
   return res;
 }

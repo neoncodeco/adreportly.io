@@ -1,0 +1,39 @@
+import { NextRequest, NextResponse } from "next/server";
+import { metaAccessContext } from "@/lib/agency-from-request";
+import { listClientEmailsForAgency } from "@/lib/share-service";
+
+export async function GET(request: NextRequest) {
+  const { agencyId, isAuthenticated } = await metaAccessContext(request);
+  if (!isAuthenticated) {
+    return NextResponse.json({ success: false, error: "Sign in required." }, { status: 401 });
+  }
+  if (!agencyId) {
+    return NextResponse.json({ success: true, clients: [] });
+  }
+
+  try {
+    const rows = await listClientEmailsForAgency(agencyId);
+    const clients = rows.map((r) => {
+      const local = r.email.split("@")[0] ?? r.email;
+      const parts = local.replace(/[._]/g, " ").split(" ").filter(Boolean);
+      const initials =
+        parts.length >= 2
+          ? (parts[0][0] + parts[1][0]).toUpperCase()
+          : local.slice(0, 2).toUpperCase();
+      return {
+        id: r.email,
+        initials,
+        name: local,
+        organization: "Shared link recipient",
+        email: r.email,
+        accounts: r.shareCount,
+        status: "active" as const,
+        lastShared: r.lastShared.toISOString(),
+      };
+    });
+    return NextResponse.json({ success: true, clients });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Server error";
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
+  }
+}

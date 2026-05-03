@@ -6,6 +6,15 @@ const UserSchema = new Schema(
     passwordHash: { type: String, required: true },
     fullName: { type: String, default: "" },
     organization: { type: String, default: "" },
+    /** Meta / agency row id after Facebook connect (same as JWT `agencyId`). */
+    agencyId: { type: String, default: null, sparse: true, index: true },
+    /** Set to `"admin"` in DB for platform admins; never accept from public registration. */
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+      index: true,
+    },
     resetPasswordToken: { type: String, default: null },
     resetPasswordExpires: { type: Date, default: null },
   },

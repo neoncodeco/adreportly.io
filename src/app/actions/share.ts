@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
+import { getAgencyIdForAppUser } from "@/lib/agency-service";
 import { buildShareUrl, newShareToken, persistShareLink } from "@/lib/share-service";
 
 export type CreateShareResult =
@@ -14,10 +15,13 @@ export async function createShareLinkAction(input: {
 }): Promise<CreateShareResult> {
   const session = await auth();
   if (!session?.user?.id) {
-    return { ok: false, error: "Unauthorized" };
+    return { ok: false, error: "Sign in required." };
   }
 
-  const agencyId = session.user.id;
+  const agencyId = await getAgencyIdForAppUser(session.user.id);
+  if (!agencyId) {
+    return { ok: false, error: "Connect Meta (Facebook) first to link this account." };
+  }
   const shareToken = newShareToken();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + input.expiryDays * 86400000);

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 export type AppUser = {
   id: string;
   email: string | null;
+  role: "user" | "admin";
 };
 
 interface AuthContextValue {
@@ -36,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {
       id: session.user.id,
       email: session.user.email ?? null,
+      role: session.user.role === "admin" ? "admin" : "user",
     };
   }, [session]);
 

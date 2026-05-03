@@ -61,3 +61,44 @@ export function buildShareUrl(token: string) {
 export function newShareToken() {
   return randomUUID();
 }
+
+/** Distinct client emails this agency has created share links for. */
+export async function listClientEmailsForAgency(
+  agencyId: string,
+): Promise<Array<{ email: string; shareCount: number; lastShared: Date }>> {
+  if (process.env.MONGODB_URI) {
+    await connectDb();
+    const rows = (await SharedLinkModel.aggregate([
+      { $match: { agencyId } },
+      {
+        $group: {
+          _id: "$clientEmail",
+          shareCount: { $sum: 1 },
+          lastShared: { $max: "$createdAt" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]).exec()) as Array<{ _id: string; shareCount: number; lastShared: Date }>;
+    return rows.map((row) => ({
+      email: row._id,
+      shareCount: row.shareCount,
+      lastShared: row.lastShared,
+    }));
+  }
+
+  const fromMem = new Map<string, { shareCount: number; lastShared: Date }>();
+  for (const r of memoryShares.values()) {
+    if (r.agencyId !== agencyId) continue;
+    const prev = fromMem.get(r.clientEmail);
+    const created = r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt);
+    if (!prev) {
+      fromMem.set(r.clientEmail, { shareCount: 1, lastShared: created });
+    } else {
+      prev.shareCount += 1;
+      if (created > prev.lastShared) prev.lastShared = created;
+    }
+  }
+  return [...fromMem.entries()]
+    .map(([email, v]) => ({ email, ...v }))
+    .sort((a, b) => a.email.localeCompare(b.email));
+}

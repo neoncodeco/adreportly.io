@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { metaAccessContext } from "@/lib/agency-from-request";
 import { buildShareUrl, newShareToken, persistShareLink } from "@/lib/share-service";
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  const { agencyId, isAuthenticated } = await metaAccessContext(request);
+  if (!isAuthenticated) {
+    return NextResponse.json({ success: false, error: "Sign in required." }, { status: 401 });
+  }
+  if (!agencyId) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Connect Facebook under Meta Connect first to create share links.",
+      },
+      { status: 400 },
+    );
   }
 
   let body: { campaignId?: string; clientEmail?: string; expiryDays?: number };
@@ -32,7 +41,7 @@ export async function POST(request: NextRequest) {
   await persistShareLink({
     shareToken,
     campaignId,
-    agencyId: session.user.id,
+    agencyId,
     clientEmail,
     expiresAt,
     createdAt: now,
@@ -41,6 +50,8 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     success: true,
     shareUrl: buildShareUrl(shareToken),
+    token: shareToken,
     shareToken,
+    expiresAt: expiresAt.toISOString(),
   });
 }

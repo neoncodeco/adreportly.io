@@ -11,12 +11,20 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request, secret });
   const loggedIn = !!token;
   const path = request.nextUrl.pathname;
+  const isAdmin = token?.role === "admin";
 
   if (path.startsWith("/dashboard") && !loggedIn) {
     return NextResponse.redirect(new URL("/login", request.nextUrl));
   }
-  if ((path === "/login" || path === "/signup") && loggedIn) {
+  if (path.startsWith("/admin") && !loggedIn) {
+    return NextResponse.redirect(new URL("/login", request.nextUrl));
+  }
+  if (path.startsWith("/admin") && loggedIn && !isAdmin) {
     return NextResponse.redirect(new URL("/dashboard", request.nextUrl));
+  }
+  if ((path === "/login" || path === "/signup") && loggedIn) {
+    const dest = isAdmin ? "/admin" : "/dashboard";
+    return NextResponse.redirect(new URL(dest, request.nextUrl));
   }
 
   return NextResponse.next();

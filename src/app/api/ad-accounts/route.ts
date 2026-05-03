@@ -1,28 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { verifyAgencyJwt, COOKIE_NAME } from "@/lib/jwt";
+import { metaAccessContext } from "@/lib/agency-from-request";
 import { getDecryptedTokenForAgency } from "@/lib/agency-service";
 import { fetchAdAccounts } from "@/services/facebook";
 
-async function agencyIdFromRequest(request: NextRequest): Promise<string | null> {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader?.startsWith("Bearer ")) {
-    const payload = await verifyAgencyJwt(authHeader.slice(7));
-    if (payload?.agencyId) return payload.agencyId;
-  }
-  const cookie = request.cookies.get(COOKIE_NAME)?.value;
-  if (cookie) {
-    const payload = await verifyAgencyJwt(cookie);
-    if (payload?.agencyId) return payload.agencyId;
-  }
-  const session = await auth();
-  return session?.user?.id ?? null;
-}
-
 export async function GET(request: NextRequest) {
-  const agencyId = await agencyIdFromRequest(request);
+  const { agencyId, isAuthenticated } = await metaAccessContext(request);
+  if (!isAuthenticated) {
+    return NextResponse.json({ success: false, error: "Sign in required." }, { status: 401 });
+  }
   if (!agencyId) {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ success: true, adAccounts: [] as unknown[] });
   }
 
   const token = await getDecryptedTokenForAgency(agencyId);

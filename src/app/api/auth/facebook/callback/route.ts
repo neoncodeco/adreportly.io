@@ -43,11 +43,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/dashboard/meta-connect?error=profile", site));
     }
 
+    const appUserId = request.cookies.get("fb_oauth_app_user")?.value;
     const agencyId = await upsertAgencyFromFacebook({
       accessToken: tokenRes.access_token,
       fbUserId: me.id,
       name: me.name,
       email: me.email,
+      appUserId: appUserId && appUserId.length > 0 ? appUserId : undefined,
     });
 
     const jwt = await signAgencyJwt({ agencyId });
@@ -60,6 +62,12 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 30,
     });
     res.cookies.delete("fb_oauth_state");
+    res.cookies.set("fb_oauth_app_user", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 0,
+    });
     return res;
   } catch {
     return NextResponse.redirect(new URL("/dashboard/meta-connect?error=token", site));

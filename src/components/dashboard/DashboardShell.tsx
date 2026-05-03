@@ -20,6 +20,9 @@ import {
   Download,
   Plus,
   Menu,
+  Building2,
+  Shield,
+  ArrowLeftRight,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
@@ -43,19 +46,38 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
-const nav: Array<{ to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }> = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/dashboard/campaigns", label: "Campaigns", icon: PieChart },
-  { to: "/dashboard/clients", label: "Clients", icon: Users },
-  { to: "/dashboard/reports", label: "Reports", icon: FileText },
-  { to: "/dashboard/meta-connect", label: "Meta Connect", icon: Link2 },
-  { to: "/dashboard/settings", label: "Settings", icon: Settings },
+const userNav: Array<{ to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }> =
+  [
+    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
+    { to: "/dashboard/campaigns", label: "Campaigns", icon: PieChart },
+    { to: "/dashboard/clients", label: "Clients", icon: Users },
+    { to: "/dashboard/reports", label: "Reports", icon: FileText },
+    { to: "/dashboard/meta-connect", label: "Meta Connect", icon: Link2 },
+    { to: "/dashboard/settings", label: "Settings", icon: Settings },
+  ];
+
+const adminNav: Array<{
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  exact?: boolean;
+}> = [
+  { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
+  { to: "/admin/users", label: "Users", icon: Users },
+  { to: "/admin/agencies", label: "Agencies", icon: Building2 },
 ];
 
-export function DashboardShell({ children }: { children: ReactNode }) {
+export function DashboardShell({
+  children,
+  variant = "user",
+}: {
+  children: ReactNode;
+  variant?: "user" | "admin";
+}) {
   const { user, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const pathname = usePathname();
+  const nav = variant === "admin" ? adminNav : userNav;
   const [greeting, setGreeting] = useState("Good Morning");
   const [profile, setProfile] = useState<{
     full_name: string | null;
@@ -101,9 +123,16 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       <aside className="sticky top-0 hidden h-screen w-[260px] shrink-0 flex-col border-r border-border bg-sidebar lg:flex">
         <div className="flex items-center gap-2 px-6 py-6">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">
-            <Zap className="h-4 w-4" />
+            {variant === "admin" ? <Shield className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
           </span>
-          <span className="text-base font-bold tracking-tight">AdReportly</span>
+          <div className="min-w-0">
+            <span className="block text-base font-bold tracking-tight">AdReportly</span>
+            {variant === "admin" ? (
+              <span className="mt-0.5 inline-flex items-center rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                Admin
+              </span>
+            ) : null}
+          </div>
         </div>
 
         <div className="px-4">
@@ -180,9 +209,16 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             >
               <SheetHeader className="border-b border-border p-6">
                 <SheetTitle asChild>
-                  <Link href="/dashboard" className="flex items-center gap-2">
+                  <Link
+                    href={variant === "admin" ? "/admin" : "/dashboard"}
+                    className="flex items-center gap-2"
+                  >
                     <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">
-                      <Zap className="h-4 w-4" />
+                      {variant === "admin" ? (
+                        <Shield className="h-4 w-4" />
+                      ) : (
+                        <Zap className="h-4 w-4" />
+                      )}
                     </span>
                     <span className="text-base font-bold tracking-tight">AdReportly</span>
                   </Link>
@@ -305,6 +341,20 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>My account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                {variant === "user" && user?.role === "admin" ? (
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin">
+                      <Shield className="mr-2 h-4 w-4" /> Admin dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                ) : null}
+                {variant === "admin" ? (
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard">
+                      <ArrowLeftRight className="mr-2 h-4 w-4" /> Agency dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/settings">Settings</Link>
                 </DropdownMenuItem>
@@ -314,17 +364,41 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="outline" size="sm" className="hidden rounded-full xl:inline-flex">
-              <Download className="mr-2 h-4 w-4" /> Export
-            </Button>
             <Button
+              variant="outline"
               size="sm"
-              aria-label="Add new entry"
-              className="rounded-full bg-primary text-primary-foreground shadow-soft hover:bg-primary/90"
+              className="hidden rounded-full xl:inline-flex"
+              asChild
             >
-              <Plus className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Add new entry</span>
+              <Link href="/dashboard/reports">
+                <Download className="mr-2 h-4 w-4" /> Reports
+              </Link>
             </Button>
+            {variant === "admin" ? (
+              <Button
+                size="sm"
+                aria-label="Open agency dashboard"
+                className="rounded-full bg-primary text-primary-foreground shadow-soft hover:bg-primary/90"
+                asChild
+              >
+                <Link href="/dashboard">
+                  <ArrowLeftRight className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Agency</span>
+                </Link>
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                aria-label="Connect Meta or manage ads"
+                className="rounded-full bg-primary text-primary-foreground shadow-soft hover:bg-primary/90"
+                asChild
+              >
+                <Link href="/dashboard/meta-connect">
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Meta</span>
+                </Link>
+              </Button>
+            )}
           </div>
         </header>
 

@@ -1,12 +1,81 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Eye, Pencil, Plus, Filter, Search, Mail } from "lucide-react";
-import { mockClients } from "@/lib/mock-data";
+import { Eye, Pencil, Plus, Filter, Search, Mail, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+type ClientRow = {
+  id: string;
+  initials: string;
+  name: string;
+  organization: string;
+  email: string;
+  accounts: number;
+  status: "active";
+  lastShared: string;
+};
+
 export function ClientsPage() {
+  const [clients, setClients] = useState<ClientRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+  const [q, setQ] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/clients", { credentials: "include" });
+      const data = (await res.json()) as {
+        success?: boolean;
+        clients?: ClientRow[];
+        error?: string;
+      };
+      if (!res.ok || data.success === false) {
+        setErr(typeof data.error === "string" ? data.error : "Could not load clients");
+        setClients([]);
+        return;
+      }
+      setClients(data.clients ?? []);
+    } catch {
+      setErr("Network error");
+      setClients([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const filtered = !q.trim()
+    ? clients
+    : clients.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q.toLowerCase()) ||
+          c.email.toLowerCase().includes(q.toLowerCase()),
+      );
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-label="Loading" />
+      </div>
+    );
+  }
+
+  if (err) {
+    return (
+      <div className="rounded-3xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
+        {err}
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -17,30 +86,52 @@ export function ClientsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-xl font-bold sm:text-2xl">Clients</h1>
-          <p className="text-xs text-muted-foreground sm:text-sm">Manage your agency clients</p>
+          <p className="text-xs text-muted-foreground sm:text-sm">
+            Emails you have shared campaign links with (from MongoDB)
+          </p>
         </div>
-        <Button className="rounded-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-95 sm:w-auto">
-          <Plus className="mr-2 h-4 w-4" /> Add new client
+        <Button
+          className="rounded-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-95 sm:w-auto"
+          asChild
+        >
+          <Link href="/dashboard/reports">
+            <Plus className="mr-2 h-4 w-4" /> New share link
+          </Link>
         </Button>
       </div>
 
-      {/* Search + filter */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search clients..."
+            placeholder="Search clients…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
             className="h-10 rounded-full border-border bg-card pl-9"
           />
         </div>
-        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 rounded-full">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-10 w-10 shrink-0 rounded-full"
+          type="button"
+        >
           <Filter className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Mobile cards */}
+      {filtered.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No shared clients yet. Create a link under{" "}
+          <Link href="/dashboard/reports" className="font-semibold text-primary hover:underline">
+            Reports
+          </Link>
+          .
+        </p>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2 lg:hidden">
-        {mockClients.map((c) => (
+        {filtered.map((c) => (
           <div
             key={c.id}
             className="group relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-elegant"
@@ -54,7 +145,7 @@ export function ClientsPage() {
                 <p className="truncate text-sm font-bold">{c.name}</p>
                 <p className="truncate text-xs text-muted-foreground">{c.organization}</p>
                 <span className="mt-1.5 inline-flex items-center rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-success">
-                  Active
+                  {c.status}
                 </span>
               </div>
             </div>
@@ -67,15 +158,27 @@ export function ClientsPage() {
             <div className="relative mt-3 flex items-center justify-between border-t border-border/60 pt-3">
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Accounts
+                  Shares
                 </div>
                 <div className="text-base font-bold tabular-nums">{c.accounts}</div>
               </div>
               <div className="flex gap-1">
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-full"
+                  type="button"
+                  disabled
+                >
                   <Eye className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-full"
+                  type="button"
+                  disabled
+                >
                   <Pencil className="h-4 w-4" />
                 </Button>
               </div>
@@ -84,7 +187,6 @@ export function ClientsPage() {
         ))}
       </div>
 
-      {/* Desktop table */}
       <div className="hidden rounded-3xl border border-border bg-card p-6 shadow-soft lg:block">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -92,14 +194,14 @@ export function ClientsPage() {
               <tr className="text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <th className="pb-3 pr-4">Client</th>
                 <th className="pb-3 pr-4">Email</th>
-                <th className="pb-3 pr-4 text-center">Accounts</th>
+                <th className="pb-3 pr-4 text-center">Shares</th>
                 <th className="pb-3 pr-4">Status</th>
-                <th className="pb-3 pr-4">Last Login</th>
+                <th className="pb-3 pr-4">Last shared</th>
                 <th className="pb-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {mockClients.map((c) => (
+              {filtered.map((c) => (
                 <tr key={c.id} className="border-t border-border/60">
                   <td className="py-4 pr-4">
                     <div className="flex items-center gap-3">
@@ -116,19 +218,16 @@ export function ClientsPage() {
                   <td className="py-4 pr-4 text-center tabular-nums">{c.accounts}</td>
                   <td className="py-4 pr-4">
                     <span className="inline-flex items-center rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
-                      Active
+                      {c.status}
                     </span>
                   </td>
-                  <td className="py-4 pr-4 text-muted-foreground">{c.last_login || "Never"}</td>
+                  <td className="py-4 pr-4 text-xs text-muted-foreground">
+                    {new Date(c.lastShared).toLocaleDateString()}
+                  </td>
                   <td className="py-4 text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Button variant="ghost" size="sm" className="rounded-full" asChild>
+                      <Link href="/dashboard/reports">Reports</Link>
+                    </Button>
                   </td>
                 </tr>
               ))}
