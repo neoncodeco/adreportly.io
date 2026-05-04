@@ -1,8 +1,7 @@
 "use client";
 
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import { signIn as nextAuthSignIn, signOut as nextAuthSignOut, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { signIn as nextAuthSignIn, useSession } from "next-auth/react";
 
 /** Shape compatible with previous Supabase `User` usage in dashboard UI. */
 export type AppUser = {
@@ -27,7 +26,6 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const { data: session, status, update } = useSession();
 
   const loading = status === "loading";
@@ -96,9 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await nextAuthSignOut({ redirect: false });
-    router.push("/login");
-    router.refresh();
+    // Single full navigation: server clears httpOnly cookies (session + agency) then redirects to /login.
+    window.location.assign("/api/auth/logout");
   };
 
   return (

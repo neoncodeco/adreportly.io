@@ -39,7 +39,10 @@ export async function middleware(request: NextRequest) {
   if (path.startsWith("/admin") && loggedIn && !isAdmin) {
     return NextResponse.redirect(new URL("/dashboard", request.nextUrl));
   }
-  if ((path === "/login" || path === "/signup") && (loggedIn || hasAgencySession)) {
+  // Only skip login/signup when there is a real NextAuth session. `ar_agency` alone must NOT
+  // redirect away from /login — otherwise after logout (or if agency cookie lingers) users
+  // bounce /login → /dashboard and appear "not logged out".
+  if ((path === "/login" || path === "/signup") && loggedIn) {
     const dest = isAdmin ? "/admin" : "/dashboard";
     return NextResponse.redirect(new URL(dest, request.nextUrl));
   }

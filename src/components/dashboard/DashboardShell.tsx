@@ -74,7 +74,7 @@ export function DashboardShell({
   children: ReactNode;
   variant?: "user" | "admin";
 }) {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { theme, toggle } = useTheme();
   const pathname = usePathname();
   const nav = variant === "admin" ? adminNav : userNav;
@@ -178,14 +178,13 @@ export function DashboardShell({
               <div className="truncate text-sm font-semibold">{profile?.full_name || "Agency"}</div>
               <div className="truncate text-xs text-muted-foreground">{user?.email}</div>
             </div>
-            <button
-              type="button"
-              onClick={() => void signOut()}
+            <a
+              href="/api/auth/logout"
               aria-label="Sign out"
               className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <LogOut className="h-4 w-4" />
-            </button>
+            </a>
           </div>
         </div>
       </aside>
@@ -271,14 +270,13 @@ export function DashboardShell({
                     </div>
                     <div className="truncate text-xs text-muted-foreground">{user?.email}</div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => void signOut()}
+                  <a
+                    href="/api/auth/logout"
                     aria-label="Sign out"
                     className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                   >
                     <LogOut className="h-4 w-4" />
-                  </button>
+                  </a>
                 </div>
               </div>
             </SheetContent>
@@ -358,8 +356,10 @@ export function DashboardShell({
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/settings">Settings</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => void signOut()}>
-                  <LogOut className="mr-2 h-4 w-4" /> Sign out
+                <DropdownMenuItem asChild>
+                  <a href="/api/auth/logout">
+                    <LogOut className="mr-2 h-4 w-4" /> Sign out
+                  </a>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
