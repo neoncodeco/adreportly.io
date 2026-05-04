@@ -1,7 +1,9 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { getAgencyIdForAppUser } from "@/lib/agency-service";
+import { verifyAgencyJwt, COOKIE_NAME } from "@/lib/jwt";
 import { buildShareUrl, newShareToken, persistShareLink } from "@/lib/share-service";
 
 export type CreateShareResult =
@@ -13,12 +15,25 @@ export async function createShareLinkAction(input: {
   clientEmail: string;
   expiryDays: number;
 }): Promise<CreateShareResult> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { ok: false, error: "Sign in required." };
+  let agencyId: string | null = null;
+
+  // 1. Try ar_agency cookie (set after Facebook OAuth — user may not have email/password session)
+  const cookieStore = await cookies();
+  const agencyCookie = cookieStore.get(COOKIE_NAME)?.value;
+  if (agencyCookie) {
+    const payload = await verifyAgencyJwt(agencyCookie);
+    if (payload?.agencyId) agencyId = payload.agencyId;
   }
 
-  const agencyId = await getAgencyIdForAppUser(session.user.id);
+  // 2. Fallback to next-auth session
+  if (!agencyId) {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return { ok: false, error: "Sign in required." };
+    }
+    agencyId = await getAgencyIdForAppUser(session.user.id);
+  }
+
   if (!agencyId) {
     return { ok: false, error: "Connect Meta (Facebook) first to link this account." };
   }

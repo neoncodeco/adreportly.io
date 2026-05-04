@@ -79,6 +79,10 @@ export function MetaConnectPage() {
   }, [loadAccounts]);
 
   useEffect(() => {
+    if (window.location.hash === "#_=_") {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+
     if (searchParams.get("connected") === "1") {
       setBanner({ kind: "ok", text: "Facebook connected. Ad accounts refreshed below." });
       void loadAccounts();

@@ -19,8 +19,21 @@ export default function LoginPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
 
+  const getSafeNext = () => {
+    if (typeof window === "undefined") return null;
+    const nextParam = new URLSearchParams(window.location.search).get("next");
+    return nextParam?.startsWith("/") ? nextParam : null;
+  };
+
   useEffect(() => {
-    if (user) router.replace(user.role === "admin" ? "/admin" : "/dashboard");
+    // Facebook sometimes appends `#_=_` in callback flows; remove it for cleaner URL/state.
+    if (window.location.hash === "#_=_") {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+    const safeNext = getSafeNext();
+    if (user) {
+      router.replace(safeNext ?? (user.role === "admin" ? "/admin" : "/dashboard"));
+    }
   }, [user, router]);
 
   const {
@@ -39,6 +52,11 @@ export default function LoginPage() {
       toast.error(error.message || "Invalid credentials");
     } else {
       toast.success("Welcome back!");
+      const safeNext = getSafeNext();
+      if (safeNext) {
+        router.replace(safeNext);
+        return;
+      }
       const s = await getSession();
       const dest =
         (s?.user as { role?: string } | undefined)?.role === "admin" ? "/admin" : "/dashboard";
