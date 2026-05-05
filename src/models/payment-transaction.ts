@@ -1,8 +1,25 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, type Document } from "mongoose";
 
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded" | "canceled";
 
-const PaymentTransactionSchema = new Schema(
+export interface IPaymentTransaction extends Document {
+  userId: string;
+  subscriptionId: string | null;
+  planId: string;
+  provider: string;
+  providerPaymentId: string;
+  providerSubscriptionId: string | null;
+  providerReference: string | null;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  paidAt: Date | null;
+  raw: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const PaymentTransactionSchema = new Schema<IPaymentTransaction>(
   {
     userId: { type: String, required: true, index: true },
     subscriptionId: { type: String, default: null, index: true },
@@ -28,5 +45,5 @@ const PaymentTransactionSchema = new Schema(
 PaymentTransactionSchema.index({ userId: 1, createdAt: -1 });
 
 export const PaymentTransactionModel =
-  mongoose.models.PaymentTransaction ??
-  mongoose.model("PaymentTransaction", PaymentTransactionSchema);
+  (mongoose.models.PaymentTransaction as mongoose.Model<IPaymentTransaction>) ??
+  mongoose.model<IPaymentTransaction>("PaymentTransaction", PaymentTransactionSchema);

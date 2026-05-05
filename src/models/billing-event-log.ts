@@ -1,6 +1,18 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, type Document } from "mongoose";
 
-const BillingEventLogSchema = new Schema(
+export interface IBillingEventLog extends Document {
+  provider: string;
+  eventId: string;
+  eventType: string;
+  processedAt: Date | null;
+  status: "received" | "processed" | "ignored" | "failed";
+  error: string | null;
+  payload: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const BillingEventLogSchema = new Schema<IBillingEventLog>(
   {
     provider: { type: String, default: "uddoktapay", index: true },
     eventId: { type: String, required: true, unique: true, index: true },
@@ -18,4 +30,5 @@ const BillingEventLogSchema = new Schema(
 );
 
 export const BillingEventLogModel =
-  mongoose.models.BillingEventLog ?? mongoose.model("BillingEventLog", BillingEventLogSchema);
+  (mongoose.models.BillingEventLog as mongoose.Model<IBillingEventLog>) ??
+  mongoose.model<IBillingEventLog>("BillingEventLog", BillingEventLogSchema);

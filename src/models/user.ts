@@ -1,6 +1,22 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, type Document } from "mongoose";
 
-const UserSchema = new Schema(
+export interface IUser extends Document {
+  email: string;
+  passwordHash: string;
+  fullName: string;
+  organization: string;
+  agencyId: string | null;
+  role: "user" | "admin";
+  billingPlanId: "free" | "starter" | "pro" | "enterprise";
+  billingStatus: "inactive" | "pending" | "active" | "past_due" | "canceled" | "expired";
+  billingCurrentPeriodEnd: Date | null;
+  resetPasswordToken: string | null;
+  resetPasswordExpires: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const UserSchema = new Schema<IUser>(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
     passwordHash: { type: String, required: true },
@@ -34,4 +50,5 @@ const UserSchema = new Schema(
   { timestamps: true, versionKey: false },
 );
 
-export const UserModel = mongoose.models.User ?? mongoose.model("User", UserSchema);
+export const UserModel =
+  (mongoose.models.User as mongoose.Model<IUser>) ?? mongoose.model<IUser>("User", UserSchema);

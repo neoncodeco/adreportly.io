@@ -17,8 +17,6 @@ import {
   ChevronRight,
   Zap,
   LogOut,
-  Download,
-  Plus,
   Menu,
   Building2,
   Shield,
@@ -380,16 +378,6 @@ export function DashboardShell({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button
-              variant="outline"
-              size="sm"
-              className="hidden rounded-full xl:inline-flex"
-              asChild
-            >
-              <Link href="/dashboard/reports">
-                <Download className="mr-2 h-4 w-4" /> Reports
-              </Link>
-            </Button>
             {variant === "admin" ? (
               <Button
                 size="sm"
@@ -402,19 +390,7 @@ export function DashboardShell({
                   <span className="hidden sm:inline">Agency</span>
                 </Link>
               </Button>
-            ) : (
-              <Button
-                size="sm"
-                aria-label="Connect Meta or manage ads"
-                className="rounded-full bg-primary text-primary-foreground shadow-soft hover:bg-primary/90"
-                asChild
-              >
-                <Link href="/dashboard/meta-connect">
-                  <Plus className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Meta</span>
-                </Link>
-              </Button>
-            )}
+            ) : null}
           </div>
         </header>
 

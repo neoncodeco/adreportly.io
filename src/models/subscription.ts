@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, type Document } from "mongoose";
 import type { BillingPlanId } from "@/lib/billing/plans";
 
 export type SubscriptionStatus =
@@ -9,7 +9,27 @@ export type SubscriptionStatus =
   | "expired"
   | "incomplete";
 
-const SubscriptionSchema = new Schema(
+export interface ISubscription extends Document {
+  userId: string;
+  agencyId: string | null;
+  planId: BillingPlanId;
+  status: SubscriptionStatus;
+  currency: string;
+  amount: number;
+  provider: string;
+  providerCustomerId: string | null;
+  providerSubscriptionId: string | null;
+  providerReference: string | null;
+  periodStartAt: Date | null;
+  periodEndAt: Date | null;
+  nextBillingAt: Date | null;
+  canceledAt: Date | null;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const SubscriptionSchema = new Schema<ISubscription>(
   {
     userId: { type: String, required: true, index: true },
     agencyId: { type: String, default: null, index: true },
@@ -49,4 +69,5 @@ const SubscriptionSchema = new Schema(
 SubscriptionSchema.index({ userId: 1, status: 1, updatedAt: -1 });
 
 export const SubscriptionModel =
-  mongoose.models.Subscription ?? mongoose.model("Subscription", SubscriptionSchema);
+  (mongoose.models.Subscription as mongoose.Model<ISubscription>) ??
+  mongoose.model<ISubscription>("Subscription", SubscriptionSchema);

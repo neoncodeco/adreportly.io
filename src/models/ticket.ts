@@ -1,10 +1,38 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, type Document } from "mongoose";
 
 export type TicketStatus = "open" | "in_progress" | "waiting_user" | "resolved" | "closed";
 export type TicketPriority = "low" | "medium" | "high" | "urgent";
 export type TicketCategory = "billing" | "technical" | "feature_request" | "account" | "general";
 
-const ReplySchema = new Schema(
+export interface IReply {
+  authorId: string;
+  authorName: string;
+  authorEmail: string;
+  isAdmin: boolean;
+  message: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ITicket extends Document {
+  ticketNumber: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  subject: string;
+  category: TicketCategory;
+  priority: TicketPriority;
+  status: TicketStatus;
+  description: string;
+  replies: IReply[];
+  resolvedAt: Date | null;
+  lastRepliedAt: Date | null;
+  lastRepliedByAdmin: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const ReplySchema = new Schema<IReply>(
   {
     authorId: { type: String, required: true },
     authorName: { type: String, default: "" },
@@ -15,7 +43,7 @@ const ReplySchema = new Schema(
   { timestamps: true, versionKey: false },
 );
 
-const TicketSchema = new Schema(
+const TicketSchema = new Schema<ITicket>(
   {
     ticketNumber: { type: String, unique: true, index: true },
     userId: { type: String, required: true, index: true },
@@ -52,7 +80,6 @@ const TicketSchema = new Schema(
 TicketSchema.index({ userId: 1, status: 1, updatedAt: -1 });
 TicketSchema.index({ status: 1, priority: 1, updatedAt: -1 });
 
-// Auto-generate a short readable ticket number before saving
 TicketSchema.pre("save", async function (next) {
   if (!this.ticketNumber) {
     const count = await (this.constructor as typeof mongoose.Model).countDocuments();
@@ -63,4 +90,6 @@ TicketSchema.pre("save", async function (next) {
   next();
 });
 
-export const TicketModel = mongoose.models.Ticket ?? mongoose.model("Ticket", TicketSchema);
+export const TicketModel =
+  (mongoose.models.Ticket as mongoose.Model<ITicket>) ??
+  mongoose.model<ITicket>("Ticket", TicketSchema);

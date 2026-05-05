@@ -84,7 +84,7 @@ export function Pricing() {
                   p.highlight ? "text-ink-foreground/80" : "text-muted-foreground",
                 )}
               >
-                {p.desc}
+                {p.description}
               </p>
 
               <div

@@ -52,6 +52,8 @@ type Reply = {
 type TicketDetail = TicketRow & {
   description: string;
   replies: Reply[];
+  userName?: string;
+  userEmail?: string;
 };
 
 type View = "list" | "create" | "detail";
