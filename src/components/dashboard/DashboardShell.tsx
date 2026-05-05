@@ -23,6 +23,8 @@ import {
   Building2,
   Shield,
   ArrowLeftRight,
+  CreditCard,
+  LifeBuoy,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
@@ -52,7 +54,9 @@ const userNav: Array<{ to: string; label: string; icon: typeof LayoutDashboard; 
     { to: "/dashboard/campaigns", label: "Campaigns", icon: PieChart },
     { to: "/dashboard/clients", label: "Clients", icon: Users },
     { to: "/dashboard/reports", label: "Reports", icon: FileText },
+    { to: "/dashboard/billing", label: "Billing", icon: CreditCard },
     { to: "/dashboard/meta-connect", label: "Meta Connect", icon: Link2 },
+    { to: "/dashboard/support", label: "Support", icon: LifeBuoy },
     { to: "/dashboard/settings", label: "Settings", icon: Settings },
   ];
 
@@ -65,6 +69,8 @@ const adminNav: Array<{
   { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/agencies", label: "Agencies", icon: Building2 },
+  { to: "/admin/billing", label: "Billing", icon: CreditCard },
+  { to: "/admin/tickets", label: "Support Tickets", icon: LifeBuoy },
 ];
 
 export function DashboardShell({
@@ -355,6 +361,16 @@ export function DashboardShell({
                 ) : null}
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/settings">Settings</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={variant === "admin" ? "/admin/billing" : "/dashboard/billing"}>
+                    Billing
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={variant === "admin" ? "/admin/tickets" : "/dashboard/support"}>
+                    Support
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <a href="/api/auth/logout">

@@ -4,67 +4,12 @@ import { motion } from "framer-motion";
 import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth";
+import { BILLING_PLANS } from "@/lib/billing/plans";
 import { cn } from "@/lib/utils";
 
-const plans = [
-  {
-    name: "Free",
-    price: "$0",
-    period: "/forever",
-    desc: "Perfect for solo agencies getting started.",
-    features: ["1 ad account", "Up to 5 campaigns", "7 days data retention", "Basic dashboard"],
-    cta: "Start Free",
-    highlight: false,
-  },
-  {
-    name: "Starter",
-    price: "$19",
-    period: "/month",
-    desc: "For freelancers running a few clients.",
-    features: [
-      "2 ad accounts",
-      "Up to 15 campaigns",
-      "30 days data retention",
-      "Share links",
-      "Email support",
-    ],
-    cta: "Start Starter",
-    highlight: false,
-  },
-  {
-    name: "Pro",
-    price: "$50",
-    period: "/month",
-    desc: "Everything growing agencies need.",
-    features: [
-      "5 ad accounts",
-      "Up to 50 campaigns",
-      "90 days data retention",
-      "Unlimited share links",
-      "PDF & CSV reports",
-      "Priority support",
-    ],
-    cta: "Start Pro Trial",
-    highlight: true,
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    period: "",
-    desc: "For large agencies & networks.",
-    features: [
-      "Unlimited everything",
-      "API access",
-      "Custom integrations",
-      "White-label options",
-      "Dedicated success manager",
-    ],
-    cta: "Contact Sales",
-    highlight: false,
-  },
-];
-
 export function Pricing() {
+  const { user } = useAuth();
   return (
     <section id="pricing" className="relative py-28">
       <div
@@ -84,7 +29,7 @@ export function Pricing() {
         </div>
 
         <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:items-center">
-          {plans.map((p, i) => (
+          {BILLING_PLANS.map((p, i) => (
             <motion.div
               key={p.name}
               initial={{ opacity: 0, y: 30 }}
@@ -121,7 +66,7 @@ export function Pricing() {
                     p.highlight ? "text-ink-foreground" : "text-foreground",
                   )}
                 >
-                  {p.price}
+                  {p.priceLabel}
                 </span>
                 <span
                   className={cn(
@@ -129,7 +74,7 @@ export function Pricing() {
                     p.highlight ? "text-ink-foreground/70" : "text-muted-foreground",
                   )}
                 >
-                  {p.period}
+                  {p.interval ? `/${p.interval}` : ""}
                 </span>
               </div>
 
@@ -177,7 +122,9 @@ export function Pricing() {
                     : "!bg-brand !text-brand-foreground hover:!bg-brand",
                 )}
               >
-                <Link href="/signup">{p.cta}</Link>
+                <Link href={p.isPaid ? `/checkout?plan=${p.id}` : user ? "/dashboard" : "/signup"}>
+                  {p.isPaid && user ? `Choose ${p.name}` : p.cta}
+                </Link>
               </Button>
             </motion.div>
           ))}
