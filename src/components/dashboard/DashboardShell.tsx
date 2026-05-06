@@ -14,7 +14,6 @@ import {
   Sun,
   Moon,
   Bell,
-  ChevronRight,
   Zap,
   LogOut,
   Menu,
@@ -23,6 +22,7 @@ import {
   ArrowLeftRight,
   CreditCard,
   LifeBuoy,
+  BookOpen,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
@@ -54,6 +54,7 @@ const userNav: Array<{ to: string; label: string; icon: typeof LayoutDashboard; 
     { to: "/dashboard/reports", label: "Reports", icon: FileText },
     { to: "/dashboard/billing", label: "Billing", icon: CreditCard },
     { to: "/dashboard/meta-connect", label: "Meta Connect", icon: Link2 },
+    { to: "/dashboard/docs", label: "Docs", icon: BookOpen },
     { to: "/dashboard/support", label: "Support", icon: LifeBuoy },
     { to: "/dashboard/settings", label: "Settings", icon: Settings },
   ];
@@ -88,6 +89,17 @@ export function DashboardShell({
     organization: string | null;
   } | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifications, setNotifications] = useState<
+    Array<{
+      id: string;
+      title: string;
+      message: string;
+      link: string | null;
+      createdAt: string;
+      read: boolean;
+    }>
+  >([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -111,6 +123,76 @@ export function DashboardShell({
         }
       });
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    const loadNotifications = async () => {
+      try {
+        const res = await fetch("/api/notifications/me", { credentials: "include" });
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          success?: boolean;
+          notifications?: Array<{
+            id: string;
+            title: string;
+            message: string;
+            link: string | null;
+            createdAt: string;
+            read: boolean;
+          }>;
+          unreadCount?: number;
+        };
+        if (cancelled || json.success === false) return;
+        setNotifications(json.notifications ?? []);
+        setUnreadCount(json.unreadCount ?? 0);
+      } catch {
+        // noop
+      }
+    };
+
+    void loadNotifications();
+    const timer = setInterval(() => {
+      void loadNotifications();
+    }, 20000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [user]);
+  const markAllNotificationsRead = async () => {
+    if (unreadCount === 0) return;
+    setUnreadCount(0);
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await fetch("/api/notifications/read", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ all: true }),
+      });
+    } catch {
+      // noop
+    }
+  };
+
+  const markOneNotificationRead = async (id: string) => {
+    const target = notifications.find((n) => n.id === id);
+    if (!target || target.read) return;
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    setUnreadCount((c) => Math.max(0, c - 1));
+    try {
+      await fetch("/api/notifications/read", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id }),
+      });
+    } catch {
+      // noop
+    }
+  };
 
   const initials = (profile?.full_name || user?.email || "AU")
     .split(" ")
@@ -262,27 +344,6 @@ export function DashboardShell({
                   })}
                 </nav>
               </div>
-
-              <div className="mt-auto p-4">
-                <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-soft">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-primary text-xs font-semibold text-primary-foreground">
-                    {initials}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold">
-                      {profile?.full_name || "Agency"}
-                    </div>
-                    <div className="truncate text-xs text-muted-foreground">{user?.email}</div>
-                  </div>
-                  <a
-                    href="/api/auth/logout"
-                    aria-label="Sign out"
-                    className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </a>
-                </div>
-              </div>
             </SheetContent>
           </Sheet>
 
@@ -319,26 +380,96 @@ export function DashboardShell({
             >
               {theme === "light" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
-            <button
-              type="button"
-              className="hidden h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:text-foreground sm:flex"
-              aria-label="Notifications"
+            <DropdownMenu
+              onOpenChange={(open) => (open ? void markAllNotificationsRead() : undefined)}
             >
-              <Bell className="h-4 w-4" />
-            </button>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="relative hidden h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:text-foreground sm:flex"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-4 w-4" />
+                  {unreadCount > 0 ? (
+                    <span className="absolute right-1.5 top-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  ) : null}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[360px] p-0">
+                <div className="border-b border-border px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold">Notifications</p>
+                    <span className="text-xs text-muted-foreground">
+                      {unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
+                    </span>
+                  </div>
+                </div>
+                <div className="max-h-[340px] overflow-auto">
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      No notifications yet.
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <DropdownMenuItem
+                        key={n.id}
+                        className="cursor-pointer items-start gap-3 px-4 py-3"
+                        asChild={Boolean(n.link)}
+                        onSelect={() => {
+                          void markOneNotificationRead(n.id);
+                        }}
+                      >
+                        {n.link ? (
+                          <Link href={n.link}>
+                            <span
+                              className={cn(
+                                "mt-1 h-2.5 w-2.5 shrink-0 rounded-full",
+                                n.read ? "bg-muted-foreground/30" : "bg-brand",
+                              )}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-semibold">{n.title}</div>
+                              <div className="line-clamp-2 text-xs text-muted-foreground">
+                                {n.message}
+                              </div>
+                              <div className="mt-1 text-[10px] text-muted-foreground">
+                                {new Date(n.createdAt).toLocaleString()}
+                              </div>
+                            </div>
+                          </Link>
+                        ) : (
+                          <>
+                            <span
+                              className={cn(
+                                "mt-1 h-2.5 w-2.5 shrink-0 rounded-full",
+                                n.read ? "bg-muted-foreground/30" : "bg-brand",
+                              )}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-semibold">{n.title}</div>
+                              <div className="line-clamp-2 text-xs text-muted-foreground">
+                                {n.message}
+                              </div>
+                              <div className="mt-1 text-[10px] text-muted-foreground">
+                                {new Date(n.createdAt).toLocaleString()}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 rounded-full border border-border bg-card p-1 text-left transition hover:bg-muted sm:px-2 sm:py-1.5">
+              <DropdownMenuTrigger className="flex items-center rounded-full border border-border bg-card p-1 text-left transition hover:bg-muted">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-primary text-[11px] font-semibold text-primary-foreground sm:h-7 sm:w-7">
                   {initials}
                 </span>
-                <span className="hidden text-sm xl:block">
-                  <span className="block font-semibold leading-tight">
-                    {profile?.full_name || "User"}
-                  </span>
-                  <span className="block text-xs text-muted-foreground">{user?.email}</span>
-                </span>
-                <ChevronRight className="hidden h-4 w-4 text-muted-foreground xl:block" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>My account</DropdownMenuLabel>

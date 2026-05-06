@@ -1,11 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Facebook, RefreshCw, MoreVertical, Loader2 } from "lucide-react";
+import { Facebook, RefreshCw, MoreVertical, Loader2, Settings, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type AdAccountRow = {
   id: string;
@@ -49,6 +58,7 @@ export function MetaConnectPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [showSetupModal, setShowSetupModal] = useState(false);
 
   const loadAccounts = useCallback(async () => {
     setLoading(true);
@@ -103,6 +113,24 @@ export function MetaConnectPage() {
     }
   }, [searchParams, loadAccounts]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/user/fb-app", { credentials: "include" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { fbAppId?: string | null; hasSecret?: boolean };
+        const needsSetup = !data.fbAppId || !data.hasSecret;
+        if (!cancelled && needsSetup) setShowSetupModal(true);
+      } catch {
+        // ignore silently
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const connectHref = "/api/auth/facebook";
 
   return (
@@ -112,6 +140,33 @@ export function MetaConnectPage() {
       transition={{ duration: 0.35 }}
       className="space-y-5"
     >
+      <Dialog open={showSetupModal} onOpenChange={setShowSetupModal}>
+        <DialogContent className="w-[calc(100%-2rem)] max-w-[420px] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Add your App ID & Secret first</DialogTitle>
+            <DialogDescription>
+              Meta connect করতে আগে `Settings` থেকে Facebook App ID এবং App Secret save করতে হবে.
+              চাইলে `Docs` পেজে step-by-step guide দেখে নাও.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-row flex-wrap justify-center gap-2 sm:justify-center sm:space-x-0">
+            <Button
+              asChild
+              className="rounded-full bg-[#c9f742] text-[#0b1220] hover:bg-[#b9ea35] dark:text-[#0b1220]"
+            >
+              <Link href="/dashboard/settings">
+                <Settings className="mr-2 h-4 w-4" /> Go to Settings
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-full">
+              <Link href="/dashboard/docs">
+                <BookOpen className="mr-2 h-4 w-4" /> Read Docs
+              </Link>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {banner ? (
         <div
           role="status"
@@ -125,23 +180,13 @@ export function MetaConnectPage() {
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
         <div>
-          <h1 className="text-xl font-bold sm:text-2xl">Meta Connection</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Meta Connect</h1>
           <p className="text-xs text-muted-foreground sm:text-sm">
-            Connect and manage your Facebook Ad Accounts. Sign in first so Meta links to your user
-            (MongoDB User.agencyId); then APIs and share links resolve the same agency id as the
-            JWT.
+            Manage your Facebook ad accounts and sync live data.
           </p>
         </div>
-        <Button
-          className="rounded-full bg-[#1877F2] text-white shadow-glow hover:opacity-95"
-          asChild
-        >
-          <a href={connectHref}>
-            <Facebook className="mr-2 h-4 w-4" /> Connect Facebook
-          </a>
-        </Button>
       </div>
 
       {accounts.length === 0 && !loading && (

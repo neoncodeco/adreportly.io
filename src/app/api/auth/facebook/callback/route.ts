@@ -2,27 +2,61 @@ import { NextRequest, NextResponse } from "next/server";
 import { exchangeCodeForToken } from "@/services/facebook";
 import { upsertAgencyFromFacebook } from "@/lib/agency-service";
 import { signAgencyJwt, COOKIE_NAME } from "@/lib/jwt";
+import { connectDb } from "@/lib/db";
+import { decryptSecret } from "@/lib/encryption";
+import { UserModel } from "@/models/user";
+
+async function getUserFbCredentials(
+  userId: string,
+): Promise<{ appId: string; appSecret: string } | null> {
+  if (!process.env.MONGODB_URI) return null;
+  try {
+    await connectDb();
+    const u = await UserModel.findById(userId).select("fbAppId encryptedFbAppSecret").lean().exec();
+    if (!u?.fbAppId || !u?.encryptedFbAppSecret) return null;
+    const appSecret = decryptSecret(u.encryptedFbAppSecret);
+    return { appId: u.fbAppId, appSecret };
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(request: NextRequest) {
   const site =
     process.env.NEXT_PUBLIC_SITE_URL ??
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
   const redirectUri =
     process.env.FACEBOOK_REDIRECT_URI ?? `${site.replace(/\/$/, "")}/api/auth/facebook/callback`;
 
-  const appId = process.env.FACEBOOK_APP_ID;
-  const appSecret = process.env.FACEBOOK_APP_SECRET;
   const url = request.nextUrl;
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const cookieState = request.cookies.get("fb_oauth_state")?.value;
+  const appUserId = request.cookies.get("fb_oauth_app_user")?.value;
 
-  if (!appId || !appSecret || !code || !state || state !== cookieState) {
+  if (!code || !state || state !== cookieState) {
     return NextResponse.redirect(new URL("/dashboard/meta-connect?error=oauth", site));
   }
 
   if (!process.env.JWT_SECRET || !process.env.ENCRYPTION_KEY) {
     return NextResponse.redirect(new URL("/dashboard/meta-connect?error=secrets", site));
+  }
+
+  // Resolve App ID and Secret: DB credentials take priority over .env
+  let appId = process.env.FACEBOOK_APP_ID ?? null;
+  let appSecret = process.env.FACEBOOK_APP_SECRET ?? null;
+
+  if (appUserId) {
+    const dbCreds = await getUserFbCredentials(appUserId);
+    if (dbCreds) {
+      appId = dbCreds.appId;
+      appSecret = dbCreds.appSecret;
+    }
+  }
+
+  if (!appId || !appSecret) {
+    return NextResponse.redirect(new URL("/dashboard/meta-connect?error=token", site));
   }
 
   try {
@@ -43,7 +77,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/dashboard/meta-connect?error=profile", site));
     }
 
-    const appUserId = request.cookies.get("fb_oauth_app_user")?.value;
     const agencyId = await upsertAgencyFromFacebook({
       accessToken: tokenRes.access_token,
       fbUserId: me.id,

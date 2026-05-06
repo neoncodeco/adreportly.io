@@ -1,17 +1,42 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { connectDb } from "@/lib/db";
+import { UserModel } from "@/models/user";
+
+async function getUserFbAppId(userId: string): Promise<string | null> {
+  if (!process.env.MONGODB_URI) return null;
+  try {
+    await connectDb();
+    const u = await UserModel.findById(userId).select("fbAppId").lean().exec();
+    return u?.fbAppId ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(_request: NextRequest) {
-  const appId = process.env.FACEBOOK_APP_ID;
+  const session = await auth();
+
   const site =
     process.env.NEXT_PUBLIC_SITE_URL ??
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
   const redirectUri =
     process.env.FACEBOOK_REDIRECT_URI ?? `${site.replace(/\/$/, "")}/api/auth/facebook/callback`;
 
+  // Per-user App ID from DB takes priority over .env
+  let appId = process.env.FACEBOOK_APP_ID ?? null;
+  if (session?.user?.id) {
+    const dbAppId = await getUserFbAppId(session.user.id);
+    if (dbAppId) appId = dbAppId;
+  }
+
   if (!appId) {
-    return NextResponse.json({ error: "FACEBOOK_APP_ID is not configured" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Facebook App ID not configured. Add it in Dashboard → Settings." },
+      { status: 500 },
+    );
   }
 
   const state = crypto.randomUUID();
@@ -21,8 +46,6 @@ export async function GET(_request: NextRequest) {
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("state", state);
   url.searchParams.set("scope", scope);
-
-  const session = await auth();
 
   const res = NextResponse.redirect(url.toString());
   res.cookies.set("fb_oauth_state", state, {

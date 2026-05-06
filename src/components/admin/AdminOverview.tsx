@@ -3,8 +3,12 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Users, Shield, Building2, Link2, Share2, Loader2 } from "lucide-react";
+import { Users, Shield, Building2, Link2, Share2, Loader2, BellRing, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 type Totals = {
   totalUsers: number;
@@ -56,6 +60,11 @@ export function AdminOverview() {
   const [totals, setTotals] = useState<Totals | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+  const [targetRole, setTargetRole] = useState<"all" | "user" | "admin">("all");
+  const [link, setLink] = useState("");
+  const [sending, setSending] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -84,6 +93,37 @@ export function AdminOverview() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const sendNotification = async () => {
+    if (!title.trim() || !message.trim()) return;
+    setSending(true);
+    try {
+      const res = await fetch("/api/admin/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title: title.trim(),
+          message: message.trim(),
+          targetRole,
+          link: link.trim() || "",
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string };
+      if (!res.ok || json.success === false) {
+        toast.error(typeof json.error === "string" ? json.error : "Could not send notification.");
+        return;
+      }
+      toast.success("Notification sent.");
+      setTitle("");
+      setMessage("");
+      setLink("");
+    } catch {
+      toast.error("Network error.");
+    } finally {
+      setSending(false);
+    }
+  };
 
   const values = useMemo(() => {
     const t = totals;
@@ -141,6 +181,69 @@ export function AdminOverview() {
           Users
         </Link>
         .
+      </div>
+
+      <div className="rounded-3xl border border-border bg-card p-5 shadow-soft">
+        <div className="mb-4 flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <BellRing className="h-4 w-4" />
+          </span>
+          <div>
+            <h3 className="text-base font-bold">Send Notification</h3>
+            <p className="text-xs text-muted-foreground">Broadcast to user dashboards instantly.</p>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label className="text-xs font-semibold">Title</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="System maintenance notice"
+              className="h-10 rounded-xl"
+            />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label className="text-xs font-semibold">Message</Label>
+            <Input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="We will update servers tonight at 2 AM UTC."
+              className="h-10 rounded-xl"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Audience</Label>
+            <select
+              value={targetRole}
+              onChange={(e) => setTargetRole(e.target.value as "all" | "user" | "admin")}
+              className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm"
+            >
+              <option value="all">All users + admins</option>
+              <option value="user">Users only</option>
+              <option value="admin">Admins only</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Optional Link</Label>
+            <Input
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              placeholder="/dashboard/docs"
+              className="h-10 rounded-xl"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Button
+              type="button"
+              disabled={sending || !title.trim() || !message.trim()}
+              onClick={() => void sendNotification()}
+              className="h-10 rounded-full bg-gradient-primary text-primary-foreground"
+            >
+              <Send className="mr-2 h-4 w-4" /> {sending ? "Sending..." : "Send notification"}
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">

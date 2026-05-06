@@ -6,6 +6,14 @@ import {
 } from "@/lib/billing/env";
 import type { BillingPlan } from "@/lib/billing/plans";
 
+type BillingDetails = {
+  company?: string | null;
+  phone?: string | null;
+  addressLine?: string | null;
+  city?: string | null;
+  country?: string | null;
+};
+
 type CreateSessionInput = {
   plan: BillingPlan;
   userId: string;
@@ -13,6 +21,7 @@ type CreateSessionInput = {
   userName?: string | null;
   agencyId?: string | null;
   existingSubscriptionId?: string | null;
+  billingDetails?: BillingDetails | null;
 };
 
 type UddoktaPayCreateSessionResponse = {
@@ -67,6 +76,9 @@ export async function createUddoktaPayCheckoutSession(
       id: input.userId,
       email: input.userEmail,
       name: input.userName || input.userEmail,
+      ...(input.billingDetails?.phone ? { phone: input.billingDetails.phone } : {}),
+      ...(input.billingDetails?.company ? { company: input.billingDetails.company } : {}),
+      ...(input.billingDetails?.country ? { country: input.billingDetails.country } : {}),
     },
     metadata: {
       userId: input.userId,

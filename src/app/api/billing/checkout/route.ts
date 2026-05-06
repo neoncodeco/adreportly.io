@@ -7,8 +7,21 @@ import { requireMongo } from "@/lib/db";
 import { SubscriptionModel } from "@/models/subscription";
 import { UserModel } from "@/models/user";
 
+const billingSchema = z
+  .object({
+    fullName: z.string().min(2).max(100),
+    email: z.string().email(),
+    company: z.string().max(120).nullish(),
+    phone: z.string().max(30).nullish(),
+    addressLine: z.string().max(200).nullish(),
+    city: z.string().max(80).nullish(),
+    country: z.string().max(80).nullish(),
+  })
+  .optional();
+
 const bodySchema = z.object({
   planId: z.enum(["starter", "pro", "enterprise"]),
+  billing: billingSchema,
 });
 
 export async function POST(request: Request) {
@@ -52,13 +65,26 @@ export async function POST(request: Request) {
     UserModel.findById(session.user.id).select("agencyId fullName").lean().exec(),
   ]);
 
+  const billingInfo = parsed.data.billing;
+  const resolvedName = billingInfo?.fullName ?? userRow?.fullName ?? session.user.name ?? null;
+  const resolvedEmail = billingInfo?.email ?? session.user.email;
+
   const checkout = await createUddoktaPayCheckoutSession({
     plan,
     userId: session.user.id,
-    userEmail: session.user.email,
-    userName: userRow?.fullName ?? session.user.name ?? null,
+    userEmail: resolvedEmail,
+    userName: resolvedName,
     agencyId: userRow?.agencyId ?? null,
     existingSubscriptionId: existingSubscription?._id?.toString() ?? null,
+    billingDetails: billingInfo
+      ? {
+          company: billingInfo.company ?? null,
+          phone: billingInfo.phone ?? null,
+          addressLine: billingInfo.addressLine ?? null,
+          city: billingInfo.city ?? null,
+          country: billingInfo.country ?? null,
+        }
+      : null,
   });
 
   const checkoutUrl = resolveCheckoutUrl(checkout);
@@ -80,7 +106,10 @@ export async function POST(request: Request) {
     providerCustomerId: typeof checkout.customer_id === "string" ? checkout.customer_id : null,
     providerSubscriptionId:
       typeof checkout.subscription_id === "string" ? checkout.subscription_id : null,
-    metadata: checkout,
+    metadata: {
+      ...checkout,
+      billingInfo: billingInfo ?? null,
+    },
   });
 
   return NextResponse.json({

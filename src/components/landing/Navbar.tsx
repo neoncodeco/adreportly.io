@@ -14,6 +14,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { useTheme } from "@/lib/theme";
+import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -26,6 +27,7 @@ const links = [
 
 export function Navbar() {
   const { theme, toggle } = useTheme();
+  const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -91,19 +93,32 @@ export function Navbar() {
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
 
-            <Button asChild variant="ghost" size="sm" className="hidden rounded lg:inline-flex">
-              <Link href="/login">Sign in</Link>
-            </Button>
-
-            <Button
-              asChild
-              size="sm"
-              className="hidden rounded bg-brand text-brand-foreground btn-brutal h-9 px-4 hover:bg-brand lg:inline-flex"
-            >
-              <Link href="/signup">
-                Get Started <ArrowRight className="ml-1 h-3.5 w-3.5" />
-              </Link>
-            </Button>
+            {user ? (
+              <Button
+                asChild
+                size="sm"
+                className="hidden rounded bg-brand text-brand-foreground btn-brutal h-9 px-4 hover:bg-brand lg:inline-flex"
+              >
+                <Link href="/dashboard">
+                  Dashboard <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Button asChild variant="ghost" size="sm" className="hidden rounded lg:inline-flex">
+                  <Link href="/login">Sign in</Link>
+                </Button>
+                <Button
+                  asChild
+                  size="sm"
+                  className="hidden rounded bg-brand text-brand-foreground btn-brutal h-9 px-4 hover:bg-brand lg:inline-flex"
+                >
+                  <Link href="/signup">
+                    Get Started <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </>
+            )}
 
             {/* Mobile / md menu trigger */}
             <Sheet open={open} onOpenChange={setOpen}>
@@ -156,23 +171,36 @@ export function Navbar() {
                 </nav>
 
                 <div className="mt-auto flex flex-col gap-2 border-t-2 border-ink/10 p-4">
-                  <SheetClose asChild>
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="w-full rounded bg-card btn-brutal h-auto py-3 hover:bg-card"
-                    >
-                      <Link href="/login">Sign in</Link>
-                    </Button>
-                  </SheetClose>
-                  <SheetClose asChild>
-                    <Button
-                      asChild
-                      className="w-full rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand"
-                    >
-                      <Link href="/signup">Get Started</Link>
-                    </Button>
-                  </SheetClose>
+                  {user ? (
+                    <SheetClose asChild>
+                      <Button
+                        asChild
+                        className="w-full rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand"
+                      >
+                        <Link href="/dashboard">Dashboard</Link>
+                      </Button>
+                    </SheetClose>
+                  ) : (
+                    <>
+                      <SheetClose asChild>
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="w-full rounded bg-card btn-brutal h-auto py-3 hover:bg-card"
+                        >
+                          <Link href="/login">Sign in</Link>
+                        </Button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Button
+                          asChild
+                          className="w-full rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand"
+                        >
+                          <Link href="/signup">Get Started</Link>
+                        </Button>
+                      </SheetClose>
+                    </>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
