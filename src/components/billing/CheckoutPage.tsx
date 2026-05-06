@@ -160,7 +160,12 @@ export function CheckoutPage() {
           },
         }),
       });
-      const json = (await res.json()) as { error?: string; checkout_url?: string };
+      let json: { error?: string; checkout_url?: string } = {};
+      try {
+        json = (await res.json()) as { error?: string; checkout_url?: string };
+      } catch {
+        // Non-JSON response (e.g. provider/network upstream errors)
+      }
       if (res.status === 401) {
         router.push(`/login?next=${encodeURIComponent(`/checkout?plan=${plan.id}`)}`);
         return;
@@ -171,7 +176,7 @@ export function CheckoutPage() {
       }
       window.location.assign(json.checkout_url);
     } catch {
-      setError("Network issue while creating checkout.");
+      setError("Could not reach checkout service. Please try again.");
     } finally {
       setLoading(false);
     }

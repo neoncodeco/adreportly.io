@@ -69,23 +69,29 @@ export async function POST(request: Request) {
   const resolvedName = billingInfo?.fullName ?? userRow?.fullName ?? session.user.name ?? null;
   const resolvedEmail = billingInfo?.email ?? session.user.email;
 
-  const checkout = await createUddoktaPayCheckoutSession({
-    plan,
-    userId: session.user.id,
-    userEmail: resolvedEmail,
-    userName: resolvedName,
-    agencyId: userRow?.agencyId ?? null,
-    existingSubscriptionId: existingSubscription?._id?.toString() ?? null,
-    billingDetails: billingInfo
-      ? {
-          company: billingInfo.company ?? null,
-          phone: billingInfo.phone ?? null,
-          addressLine: billingInfo.addressLine ?? null,
-          city: billingInfo.city ?? null,
-          country: billingInfo.country ?? null,
-        }
-      : null,
-  });
+  let checkout: Awaited<ReturnType<typeof createUddoktaPayCheckoutSession>>;
+  try {
+    checkout = await createUddoktaPayCheckoutSession({
+      plan,
+      userId: session.user.id,
+      userEmail: resolvedEmail,
+      userName: resolvedName,
+      agencyId: userRow?.agencyId ?? null,
+      existingSubscriptionId: existingSubscription?._id?.toString() ?? null,
+      billingDetails: billingInfo
+        ? {
+            company: billingInfo.company ?? null,
+            phone: billingInfo.phone ?? null,
+            addressLine: billingInfo.addressLine ?? null,
+            city: billingInfo.city ?? null,
+            country: billingInfo.country ?? null,
+          }
+        : null,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Checkout provider request failed.";
+    return NextResponse.json({ error: msg }, { status: 502 });
+  }
 
   const checkoutUrl = resolveCheckoutUrl(checkout);
   if (!checkoutUrl) {
