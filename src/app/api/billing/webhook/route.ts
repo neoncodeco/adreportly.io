@@ -41,7 +41,8 @@ function parseDate(value: unknown): Date | null {
 
 export async function POST(request: Request) {
   const raw = await request.text();
-  const signature = request.headers.get("x-uddoktapay-signature");
+  const signature =
+    request.headers.get("x-uddoktapay-signature") || request.headers.get("rt-uddoktapay-api-key");
   if (!verifyUddoktaPayWebhook(raw, signature)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }

@@ -33,7 +33,7 @@ export function getBillingEnv(): BillingEnv {
 
 export function assertBillingEnvForCheckout() {
   const env = getBillingEnv();
-  if (!env.apiBaseUrl || !env.merchantId || !env.apiKey || !env.apiSecret) {
+  if (!env.apiBaseUrl || !env.apiKey) {
     throw new Error("UddoktaPay is not configured. Set UDDOKTAPAY_* values in .env.");
   }
   return env;
@@ -41,8 +41,8 @@ export function assertBillingEnvForCheckout() {
 
 export function assertBillingEnvForWebhook() {
   const env = getBillingEnv();
-  if (!env.webhookSecret) {
-    throw new Error("UDDOKTAPAY_WEBHOOK_SECRET is not configured.");
+  if (!env.apiKey && !env.webhookSecret) {
+    throw new Error("UDDOKTAPAY_API_KEY or UDDOKTAPAY_WEBHOOK_SECRET is not configured.");
   }
   return env;
 }

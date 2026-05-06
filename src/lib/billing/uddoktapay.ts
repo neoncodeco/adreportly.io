@@ -65,49 +65,68 @@ export async function createUddoktaPayCheckoutSession(
   const env = assertBillingEnvForCheckout();
   const successUrl = `${env.publicSiteUrl}/checkout/success`;
   const cancelUrl = `${env.publicSiteUrl}/checkout/cancel`;
+  const webhookUrl = `${env.publicSiteUrl}/api/billing/webhook`;
 
   const payload = {
-    merchant_id: env.merchantId,
-    amount: input.plan.amount,
-    currency: input.plan.currency,
-    frequency: input.plan.interval ?? "month",
-    plan_code: input.plan.id,
-    customer: {
-      id: input.userId,
-      email: input.userEmail,
-      name: input.userName || input.userEmail,
-      ...(input.billingDetails?.phone ? { phone: input.billingDetails.phone } : {}),
-      ...(input.billingDetails?.company ? { company: input.billingDetails.company } : {}),
-      ...(input.billingDetails?.country ? { country: input.billingDetails.country } : {}),
-    },
+    // Keep request shape aligned with UddoktaPay docs/examples.
+    full_name: input.userName || input.userEmail,
+    email: input.userEmail,
+    amount: String(input.plan.amount),
     metadata: {
       userId: input.userId,
       planId: input.plan.id,
       agencyId: input.agencyId ?? null,
       existingSubscriptionId: input.existingSubscriptionId ?? null,
+      ...(input.billingDetails?.phone ? { phone: input.billingDetails.phone } : {}),
+      ...(input.billingDetails?.company ? { company: input.billingDetails.company } : {}),
+      ...(input.billingDetails?.addressLine
+        ? { addressLine: input.billingDetails.addressLine }
+        : {}),
+      ...(input.billingDetails?.city ? { city: input.billingDetails.city } : {}),
+      ...(input.billingDetails?.country ? { country: input.billingDetails.country } : {}),
     },
-    success_url: successUrl,
+    redirect_url: successUrl,
+    return_type: "GET",
     cancel_url: cancelUrl,
+    webhook_url: webhookUrl,
   };
 
-  const res = await fetch(`${env.apiBaseUrl}/api/checkout/session`, {
+  const endpoint = `${env.apiBaseUrl}/checkout-v2`;
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: {
+      accept: "application/json",
       "Content-Type": "application/json",
-      "x-api-key": env.apiKey,
-      "x-api-secret": env.apiSecret,
+      "RT-UDDOKTAPAY-API-KEY": env.apiKey,
     },
     body: JSON.stringify(payload),
     cache: "no-store",
   });
 
-  const json = (await res.json().catch(() => ({}))) as UddoktaPayCreateSessionResponse & {
+  const raw = await res.text();
+  let parsed: unknown = {};
+  try {
+    parsed = raw ? JSON.parse(raw) : {};
+  } catch {
+    parsed = {};
+  }
+  const json = parsed as UddoktaPayCreateSessionResponse & {
+    status?: boolean | string;
     message?: string;
     error?: string;
   };
-  if (!res.ok) {
-    throw new Error(json.error || json.message || "Could not create UddoktaPay checkout session.");
+  const providerRejected =
+    json.status === false || String(json.status || "").toLowerCase() === "false";
+
+  if (!res.ok || providerRejected) {
+    const reason =
+      json.error ||
+      json.message ||
+      (raw && raw.length > 0 ? raw : "") ||
+      "Could not create UddoktaPay checkout session.";
+    throw new Error(reason);
   }
+
   return json;
 }
 
@@ -117,22 +136,78 @@ export function verifyUddoktaPayWebhook(
 ): boolean {
   if (!providedSignature) return false;
   const env = assertBillingEnvForWebhook();
-  const digest = crypto.createHmac("sha256", env.webhookSecret).update(rawBody).digest("hex");
   const provided = providedSignature.trim();
-  if (digest.length !== provided.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(provided));
+  if (env.webhookSecret) {
+    const digest = crypto.createHmac("sha256", env.webhookSecret).update(rawBody).digest("hex");
+    if (digest.length !== provided.length) return false;
+    return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(provided));
+  }
+  if (!env.apiKey) return false;
+  return provided === env.apiKey;
 }
 
 export function resolveCheckoutUrl(payload: UddoktaPayCreateSessionResponse): string | null {
-  const candidate = payload.checkout_url || payload.payment_url;
-  if (!candidate || typeof candidate !== "string") return null;
-  return candidate;
+  const isValidUrl = (value: unknown): value is string =>
+    typeof value === "string" && /^https?:\/\//i.test(value.trim());
+
+  const directCandidates = [
+    payload.checkout_url,
+    payload.payment_url,
+    (payload as { url?: unknown }).url,
+    (payload as { checkoutUrl?: unknown }).checkoutUrl,
+  ];
+  for (const value of directCandidates) {
+    if (isValidUrl(value)) return value;
+  }
+
+  const nestedData = (payload as { data?: Record<string, unknown> }).data;
+  if (nestedData && typeof nestedData === "object") {
+    const nestedCandidates = [
+      nestedData.checkout_url,
+      nestedData.payment_url,
+      nestedData.url,
+      nestedData.checkoutUrl,
+      nestedData.paymentUrl,
+    ];
+    for (const value of nestedCandidates) {
+      if (isValidUrl(value)) return value;
+    }
+  }
+
+  const visited = new Set<unknown>();
+  const scan = (value: unknown): string | null => {
+    if (!value || typeof value !== "object") return null;
+    if (visited.has(value)) return null;
+    visited.add(value);
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const found = scan(item);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    for (const [k, v] of Object.entries(value)) {
+      if (isValidUrl(v) && /(checkout|payment|redirect|url)/i.test(k)) {
+        return v;
+      }
+      const found = scan(v);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  const fallbackUrl = scan(payload);
+  if (fallbackUrl) return fallbackUrl;
+
+  return null;
 }
 
 export function getUddoktaPayDebugConfig() {
   const env = getBillingEnv();
   return {
-    configured: Boolean(env.apiBaseUrl && env.merchantId && env.apiKey && env.apiSecret),
+    configured: Boolean(env.apiBaseUrl && env.apiKey),
     baseUrl: env.apiBaseUrl || null,
   };
 }

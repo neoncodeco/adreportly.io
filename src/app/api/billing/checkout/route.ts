@@ -95,8 +95,12 @@ export async function POST(request: Request) {
 
   const checkoutUrl = resolveCheckoutUrl(checkout);
   if (!checkoutUrl) {
+    console.error("UddoktaPay checkout response missing URL", checkout);
     return NextResponse.json(
-      { error: "Provider response did not include checkout URL." },
+      {
+        error: "Provider response did not include checkout URL.",
+        providerResponseKeys: Object.keys(checkout ?? {}),
+      },
       { status: 502 },
     );
   }
