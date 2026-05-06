@@ -36,7 +36,21 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Ticket not found." }, { status: 404 });
   }
 
-  return NextResponse.json({ ticket });
+  const t = ticket as typeof ticket & {
+    _id: { toString(): string };
+    replies?: Array<{ _id?: { toString(): string } }>;
+  };
+
+  return NextResponse.json({
+    ticket: {
+      ...ticket,
+      id: t._id.toString(),
+      replies: (ticket.replies ?? []).map((r) => ({
+        ...r,
+        _id: (r as { _id?: { toString(): string } })._id?.toString?.() ?? "",
+      })),
+    },
+  });
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
