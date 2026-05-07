@@ -96,6 +96,30 @@ export async function POST(request: Request) {
     const providerSubscriptionId = payload.subscription_id || null;
     const providerPaymentId = payload.payment_id || payload.transaction_id || eventId;
 
+    const subUpdate: {
+      $set: Record<string, unknown>;
+      $unset?: Record<string, 1>;
+    } = {
+      $set: {
+        userId,
+        agencyId: payload.metadata?.agencyId ?? null,
+        planId,
+        status: normalized.subscriptionStatus,
+        amount: typeof payload.amount === "number" ? payload.amount : 0,
+        currency: payload.currency || "USD",
+        providerReference: payload.reference || null,
+        nextBillingAt: parseDate(payload.next_billing_at) || parseDate(payload.period_end),
+        periodEndAt: parseDate(payload.period_end),
+        canceledAt: parseDate(payload.canceled_at),
+        metadata: payload,
+      },
+    };
+    if (providerSubscriptionId) {
+      subUpdate.$set.providerSubscriptionId = providerSubscriptionId;
+    } else {
+      subUpdate.$unset = { providerSubscriptionId: 1 };
+    }
+
     const sub = await SubscriptionModel.findOneAndUpdate(
       {
         $or: [
@@ -104,22 +128,7 @@ export async function POST(request: Request) {
           { userId, planId },
         ],
       },
-      {
-        $set: {
-          userId,
-          agencyId: payload.metadata?.agencyId ?? null,
-          planId,
-          status: normalized.subscriptionStatus,
-          amount: typeof payload.amount === "number" ? payload.amount : 0,
-          currency: payload.currency || "USD",
-          providerReference: payload.reference || null,
-          providerSubscriptionId,
-          nextBillingAt: parseDate(payload.next_billing_at) || parseDate(payload.period_end),
-          periodEndAt: parseDate(payload.period_end),
-          canceledAt: parseDate(payload.canceled_at),
-          metadata: payload,
-        },
-      },
+      subUpdate,
       { upsert: true, new: true },
     );
 

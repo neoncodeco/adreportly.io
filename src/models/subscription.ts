@@ -51,7 +51,6 @@ const SubscriptionSchema = new Schema<ISubscription>(
     providerCustomerId: { type: String, default: null, index: true, sparse: true },
     providerSubscriptionId: {
       type: String,
-      default: null,
       index: true,
       sparse: true,
       unique: true,

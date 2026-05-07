@@ -105,6 +105,9 @@ export async function POST(request: Request) {
     );
   }
 
+  const providerSubscriptionId =
+    typeof checkout.subscription_id === "string" ? checkout.subscription_id : undefined;
+
   const sub = await SubscriptionModel.create({
     userId: session.user.id,
     agencyId: userRow?.agencyId ?? null,
@@ -114,8 +117,7 @@ export async function POST(request: Request) {
     currency: plan.currency,
     providerReference: typeof checkout.reference === "string" ? checkout.reference : null,
     providerCustomerId: typeof checkout.customer_id === "string" ? checkout.customer_id : null,
-    providerSubscriptionId:
-      typeof checkout.subscription_id === "string" ? checkout.subscription_id : null,
+    ...(providerSubscriptionId ? { providerSubscriptionId } : {}),
     metadata: {
       ...checkout,
       billingInfo: billingInfo ?? null,
