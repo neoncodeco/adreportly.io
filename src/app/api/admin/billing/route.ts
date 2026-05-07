@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/require-admin";
+import { ADMIN_CACHE_HEADERS, getOrSetCache } from "@/lib/server-cache";
 import { SubscriptionModel } from "@/models/subscription";
 
 export async function GET(request: NextRequest) {
@@ -24,25 +25,29 @@ export async function GET(request: NextRequest) {
     ];
   }
 
-  const [rows, total] = await Promise.all([
-    SubscriptionModel.find(filter).sort({ updatedAt: -1 }).skip(skip).limit(limit).lean().exec(),
-    SubscriptionModel.countDocuments(filter),
-  ]);
+  const payload = await getOrSetCache(`admin:billing:${request.url}`, 12_000, async () => {
+    const [rows, total] = await Promise.all([
+      SubscriptionModel.find(filter).sort({ updatedAt: -1 }).skip(skip).limit(limit).lean().exec(),
+      SubscriptionModel.countDocuments(filter),
+    ]);
 
-  return NextResponse.json({
-    success: true,
-    total,
-    subscriptions: rows.map((row) => ({
-      id: row._id.toString(),
-      userId: row.userId,
-      planId: row.planId,
-      status: row.status,
-      amount: row.amount,
-      currency: row.currency,
-      providerSubscriptionId: row.providerSubscriptionId,
-      providerReference: row.providerReference,
-      nextBillingAt: row.nextBillingAt,
-      updatedAt: row.updatedAt,
-    })),
+    return {
+      success: true,
+      total,
+      subscriptions: rows.map((row) => ({
+        id: row._id.toString(),
+        userId: row.userId,
+        planId: row.planId,
+        status: row.status,
+        amount: row.amount,
+        currency: row.currency,
+        providerSubscriptionId: row.providerSubscriptionId,
+        providerReference: row.providerReference,
+        nextBillingAt: row.nextBillingAt,
+        updatedAt: row.updatedAt,
+      })),
+    };
   });
+
+  return NextResponse.json(payload, { headers: ADMIN_CACHE_HEADERS });
 }

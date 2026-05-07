@@ -1,1 +1,2351 @@
-(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[8974],{3998:(e,t,a)=>{"use strict";a.d(t,{$:()=>o});var s=a(95155),r=a(12115),n=a(32467),i=a(83101),l=a(64269);let d=(0,i.F)("inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",{variants:{variant:{default:"bg-primary text-primary-foreground shadow hover:bg-primary/90",destructive:"bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",outline:"border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",secondary:"bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",ghost:"hover:bg-accent hover:text-accent-foreground",link:"text-primary underline-offset-4 hover:underline"},size:{default:"h-9 px-4 py-2",sm:"h-8 rounded-md px-3 text-xs",lg:"h-10 rounded-md px-8",icon:"h-9 w-9"}},defaultVariants:{variant:"default",size:"default"}}),o=r.forwardRef((e,t)=>{let{className:a,variant:r,size:i,asChild:o=!1,...c}=e,x=o?n.DX:"button";return(0,s.jsx)(x,{className:(0,l.cn)(d({variant:r,size:i,className:a})),ref:t,...c})});o.displayName="Button"},9880:(e,t,a)=>{"use strict";a.d(t,{Footer:()=>b});var s=a(95155),r=a(52619),n=a.n(r),i=a(23664),l=a(18085),d=a(56154),o=a(97378),c=a(94684),x=a(67333),m=a(7013),u=a(12115),h=a(65142),p=a(3998),g=a(18720);let f=[{title:"Product",links:[{label:"Features",href:"#features"},{label:"Pricing",href:"#pricing"},{label:"Changelog",href:"#"},{label:"Roadmap",href:"#"}]},{title:"Company",links:[{label:"About",href:"#"},{label:"Careers",href:"#"},{label:"Press",href:"#"},{label:"Contact",href:"#contact"}]},{title:"Resources",links:[{label:"Documentation",href:"#"},{label:"API reference",href:"#"},{label:"Help center",href:"#"},{label:"Status",href:"#"}]},{title:"Legal",links:[{label:"Privacy",href:"#"},{label:"Terms",href:"#"},{label:"Security",href:"#"},{label:"DPA",href:"#"}]}];function b(){let[e,t]=(0,u.useState)("");return(0,s.jsxs)("footer",{className:"relative overflow-hidden bg-ink text-ink-foreground",children:[(0,s.jsx)("div",{"aria-hidden":!0,className:"pointer-events-none absolute -top-40 left-1/2 h-[420px] w-[820px] -translate-x-1/2 rounded-full bg-brand/20 blur-[140px]"}),(0,s.jsx)("div",{"aria-hidden":!0,className:"pointer-events-none absolute -bottom-32 right-0 h-[320px] w-[420px] rounded-full bg-primary/15 blur-[120px]"}),(0,s.jsx)("div",{className:"relative mx-auto max-w-7xl px-4 pt-16 sm:px-6 lg:px-8",children:(0,s.jsx)("div",{className:"rounded card-brutal bg-card p-6 text-foreground sm:p-10",children:(0,s.jsxs)("div",{className:"grid gap-6 lg:grid-cols-5 lg:items-center lg:gap-10",children:[(0,s.jsxs)("div",{className:"lg:col-span-3",children:[(0,s.jsxs)("span",{className:"inline-flex items-center gap-1.5 rounded-full bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-foreground",children:[(0,s.jsx)(i.A,{className:"h-3 w-3"})," Newsletter"]}),(0,s.jsx)("h3",{className:"mt-3 font-display text-2xl font-bold tracking-tight sm:text-3xl",children:"Get growth tips for ad agencies"}),(0,s.jsx)("p",{className:"mt-2 text-sm text-muted-foreground sm:text-base",children:"Monthly playbooks, product updates, and reporting templates. No spam, ever."})]}),(0,s.jsxs)("form",{onSubmit:a=>{a.preventDefault(),e&&(g.oR.success("Subscribed!",{description:"We'll keep ".concat(e," in the loop.")}),t(""))},className:"flex flex-col gap-3 sm:flex-row lg:col-span-2",children:[(0,s.jsx)(h.p,{type:"email",required:!0,value:e,onChange:e=>t(e.target.value),placeholder:"you@agency.com",className:"rounded card-brutal h-12 bg-background"}),(0,s.jsxs)(p.$,{type:"submit",className:"h-12 rounded bg-brand text-brand-foreground btn-brutal hover:bg-brand sm:shrink-0",children:[(0,s.jsx)(l.A,{className:"h-4 w-4"})," Subscribe"]})]})]})})}),(0,s.jsxs)("div",{className:"relative mx-auto max-w-7xl px-4 pb-10 pt-16 sm:px-6 lg:px-8",children:[(0,s.jsxs)("div",{className:"grid grid-cols-2 gap-10 lg:grid-cols-6",children:[(0,s.jsxs)("div",{className:"col-span-2 lg:col-span-2",children:[(0,s.jsxs)(n(),{href:"/",className:"flex items-center gap-2",children:[(0,s.jsx)("span",{className:"flex h-10 w-10 items-center justify-center rounded card-brutal bg-brand text-ink",children:(0,s.jsx)(d.A,{className:"h-5 w-5 fill-ink"})}),(0,s.jsx)("span",{className:"text-base font-bold tracking-tight",children:"AdReportly"})]}),(0,s.jsx)("p",{className:"mt-5 max-w-xs text-sm text-ink-foreground/70",children:"The all-in-one platform for tracking Facebook ad campaigns and sharing beautiful reports with clients."}),(0,s.jsx)("div",{className:"mt-6 flex gap-3",children:[o.A,c.A,x.A].map((e,t)=>(0,s.jsx)("a",{href:"#",className:"group flex h-10 w-10 items-center justify-center rounded border-2 border-ink-foreground/15 bg-ink-foreground/5 text-ink-foreground transition hover:-translate-y-0.5 hover:border-brand hover:bg-brand hover:text-ink","aria-label":"Social",children:(0,s.jsx)(e,{className:"h-4 w-4"})},t))})]}),f.map(e=>(0,s.jsxs)("div",{children:[(0,s.jsx)("h4",{className:"text-xs font-bold uppercase tracking-wider text-brand",children:e.title}),(0,s.jsx)("ul",{className:"mt-5 space-y-3",children:e.links.map(e=>(0,s.jsx)("li",{children:(0,s.jsxs)("a",{href:e.href,className:"group inline-flex items-center gap-1 text-sm text-ink-foreground/70 transition hover:text-brand",children:[e.label,(0,s.jsx)(m.A,{className:"h-3 w-3 opacity-0 transition group-hover:opacity-100"})]})},e.label))})]},e.title))]}),(0,s.jsxs)("div",{className:"mt-14 flex flex-col items-center justify-between gap-3 border-t-2 border-ink-foreground/10 pt-6 text-xs text-ink-foreground/60 sm:flex-row",children:[(0,s.jsxs)("span",{children:["\xa9 ",new Date().getFullYear()," AdReportly. All rights reserved."]}),(0,s.jsxs)("span",{className:"flex items-center gap-2",children:[(0,s.jsx)("span",{className:"inline-block h-2 w-2 rounded-full bg-success animate-pulse"}),"All systems operational"]})]})]})]})}},27063:(e,t,a)=>{"use strict";a.d(t,{CG:()=>c,Fm:()=>g,cj:()=>o,h:()=>p,kN:()=>x,qp:()=>f});var s=a(95155),r=a(12115),n=a(93409),i=a(83101),l=a(65229),d=a(64269);let o=n.bL,c=n.l9,x=n.bm,m=n.ZL,u=r.forwardRef((e,t)=>{let{className:a,...r}=e;return(0,s.jsx)(n.hJ,{className:(0,d.cn)("fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",a),...r,ref:t})});u.displayName=n.hJ.displayName;let h=(0,i.F)("fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out",{variants:{side:{top:"inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",bottom:"inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",left:"inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",right:"inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm"}},defaultVariants:{side:"right"}}),p=r.forwardRef((e,t)=>{let{side:a="right",className:r,children:i,...o}=e;return(0,s.jsxs)(m,{children:[(0,s.jsx)(u,{}),(0,s.jsxs)(n.UC,{ref:t,className:(0,d.cn)(h({side:a}),r),...o,children:[(0,s.jsxs)(n.bm,{className:"absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary",children:[(0,s.jsx)(l.A,{className:"h-4 w-4"}),(0,s.jsx)("span",{className:"sr-only",children:"Close"})]}),i]})]})});p.displayName=n.UC.displayName;let g=e=>{let{className:t,...a}=e;return(0,s.jsx)("div",{className:(0,d.cn)("flex flex-col space-y-2 text-center sm:text-left",t),...a})};g.displayName="SheetHeader";let f=r.forwardRef((e,t)=>{let{className:a,...r}=e;return(0,s.jsx)(n.hE,{ref:t,className:(0,d.cn)("text-lg font-semibold text-foreground",a),...r})});f.displayName=n.hE.displayName,r.forwardRef((e,t)=>{let{className:a,...r}=e;return(0,s.jsx)(n.VY,{ref:t,className:(0,d.cn)("text-sm text-muted-foreground",a),...r})}).displayName=n.VY.displayName},27776:(e,t,a)=>{"use strict";a.d(t,{Features:()=>m});var s=a(95155),r=a(9924),n=a(56154),i=a(99708),l=a(82214),d=a(91169),o=a(39068),c=a(89715);let x=[{icon:n.A,title:"Real-time sync",desc:"Direct Graph API calls — never stale, always live."},{icon:i.A,title:"AES-256 encryption",desc:"Access tokens encrypted at rest and never exposed."},{icon:l.A,title:"Beautiful charts",desc:"Spend, results, ROAS visualized clearly."},{icon:d.A,title:"Multi-client",desc:"Manage unlimited clients from a single dashboard."},{icon:o.A,title:"Secure share links",desc:"UUID tokens that expire automatically."},{icon:c.A,title:"PDF & CSV export",desc:"One-click branded reports your clients will love."}];function m(){return(0,s.jsx)("section",{id:"features",className:"relative py-28",children:(0,s.jsxs)("div",{className:"mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",children:[(0,s.jsxs)("div",{className:"mx-auto max-w-2xl text-center",children:[(0,s.jsx)("span",{className:"inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink",children:"Features"}),(0,s.jsx)("h2",{className:"mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl",children:"Built for ads agencies that ship reports daily"})]}),(0,s.jsx)("div",{className:"mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3",children:x.map((e,t)=>(0,s.jsxs)(r.P.div,{initial:{opacity:0,y:24},whileInView:{opacity:1,y:0},viewport:{once:!0,margin:"-80px"},transition:{duration:.5,delay:t%3*.1},className:"group relative overflow-hidden rounded card-brutal bg-card p-7 hover-lift",children:[(0,s.jsx)("div",{"aria-hidden":!0,className:"pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-brand/40 blur-3xl"}),(0,s.jsx)("div",{className:"relative flex h-12 w-12 items-center justify-center rounded-xl bg-ink text-brand",children:(0,s.jsx)(e.icon,{className:"h-5 w-5"})}),(0,s.jsx)("h3",{className:"relative mt-5 text-base font-bold tracking-tight",children:e.title}),(0,s.jsx)("p",{className:"relative mt-1.5 text-sm leading-relaxed text-muted-foreground",children:e.desc})]},e.title))})]})})}},32055:(e,t,a)=>{Promise.resolve().then(a.bind(a,38016)),Promise.resolve().then(a.bind(a,27776)),Promise.resolve().then(a.bind(a,9880)),Promise.resolve().then(a.bind(a,76654)),Promise.resolve().then(a.bind(a,40024)),Promise.resolve().then(a.bind(a,76479)),Promise.resolve().then(a.bind(a,40005)),Promise.resolve().then(a.bind(a,80030)),Promise.resolve().then(a.bind(a,37857))},37857:(e,t,a)=>{"use strict";a.d(t,{Testimonials:()=>u});var s=a(95155),r=a(12115),n=a(26497),i=a(9924),l=a(5789),d=a(39347),o=a(90368),c=a(27937),x=a(3998);let m=[{name:"Sarah Ahmed",role:"Founder, Hive Marketing",quote:"We replaced three tools with this. Our clients adore the share links — no more screenshots in WhatsApp.",initials:"SA",accent:"bg-brand text-brand-foreground"},{name:"Rakib Hassan",role:"Performance Lead, BoostBD",quote:"The ROAS dashboard alone saved us hours per week. Reports our team used to build manually now take 30 seconds.",initials:"RH",accent:"bg-accent text-ink"},{name:"Mira Chen",role:"Director, Pixel & Penny",quote:"Beautiful UI, real-time data, and rock-solid encryption. This is the FB ads tool agencies have been waiting for.",initials:"MC",accent:"bg-warning text-ink"},{name:"Tom\xe1s Vega",role:"Growth, Lumen Studio",quote:"Onboarded a new client in under 5 minutes. The shareable read-only view is genius — they can't break anything.",initials:"TV",accent:"bg-success text-ink"},{name:"Aisha Rahman",role:"CEO, Fashion House BD",quote:"As a client, I finally get clean weekly reports without back-and-forth emails. Game changer.",initials:"AR",accent:"bg-brand text-brand-foreground"}];function u(){let[e,t]=(0,r.useState)(0),a=m.length,u=e=>t(t=>(t+e+a)%a),h=m[e];return(0,s.jsx)("section",{className:"py-24",children:(0,s.jsxs)("div",{className:"mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",children:[(0,s.jsxs)("div",{className:"mx-auto max-w-2xl text-center",children:[(0,s.jsx)("span",{className:"inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink",children:"Loved by agencies"}),(0,s.jsx)("h2",{className:"mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl",children:"What our customers say"})]}),(0,s.jsxs)("div",{className:"mt-12 grid gap-8 lg:grid-cols-5 lg:items-stretch",children:[(0,s.jsx)("div",{className:"lg:col-span-3 flex",children:(0,s.jsxs)("div",{className:"relative flex flex-col w-full rounded card-brutal bg-card p-8 sm:p-10",children:[(0,s.jsx)(l.A,{className:"absolute -top-4 -left-4 h-12 w-12 rounded card-brutal bg-brand p-2 text-brand-foreground"}),(0,s.jsx)("div",{className:"flex gap-1",children:Array.from({length:5}).map((e,t)=>(0,s.jsx)(d.A,{className:"h-5 w-5 fill-warning text-warning"},t))}),(0,s.jsx)(n.N,{mode:"wait",children:(0,s.jsxs)(i.P.div,{initial:{opacity:0,y:12},animate:{opacity:1,y:0},exit:{opacity:0,y:-12},transition:{duration:.25},children:[(0,s.jsxs)("p",{className:"mt-5 text-lg font-medium leading-relaxed text-foreground sm:text-xl",children:['"',h.quote,'"']}),(0,s.jsxs)("div",{className:"mt-7 flex items-center gap-4",children:[(0,s.jsx)("div",{className:"flex h-12 w-12 items-center justify-center rounded card-brutal text-base font-bold ".concat(h.accent),children:h.initials}),(0,s.jsxs)("div",{children:[(0,s.jsx)("div",{className:"text-base font-semibold",children:h.name}),(0,s.jsx)("div",{className:"text-sm text-muted-foreground",children:h.role})]})]})]},e)}),(0,s.jsxs)("div",{className:"mt-auto pt-8 flex items-center justify-between border-t-2 border-ink/10",children:[(0,s.jsx)("div",{className:"flex gap-2",children:m.map((a,r)=>(0,s.jsx)("button",{onClick:()=>t(r),"aria-label":"Show testimonial ".concat(r+1),className:"h-2.5 rounded-full transition-all ".concat(r===e?"w-8 bg-ink":"w-2.5 bg-ink/25 hover:bg-ink/50")},r))}),(0,s.jsxs)("div",{className:"flex gap-2",children:[(0,s.jsx)(x.$,{type:"button",variant:"outline",size:"icon",onClick:()=>u(-1),className:"rounded card-brutal h-10 w-10 bg-card","aria-label":"Previous testimonial",children:(0,s.jsx)(o.A,{className:"h-4 w-4"})}),(0,s.jsx)(x.$,{type:"button",variant:"outline",size:"icon",onClick:()=>u(1),className:"rounded card-brutal h-10 w-10 bg-card","aria-label":"Next testimonial",children:(0,s.jsx)(c.A,{className:"h-4 w-4"})})]})]})]})}),(0,s.jsx)("div",{className:"lg:col-span-2 space-y-3",children:m.map((a,r)=>(0,s.jsx)("button",{onClick:()=>t(r),className:"w-full text-left rounded card-brutal p-4 transition-all ".concat(r===e?"bg-brand text-brand-foreground translate-x-0":"bg-card hover:-translate-y-0.5"),children:(0,s.jsxs)("div",{className:"flex items-center gap-3",children:[(0,s.jsx)("div",{className:"flex h-10 w-10 shrink-0 items-center justify-center rounded text-sm font-bold border-2 border-ink ".concat(r===e?"bg-card text-ink":a.accent),children:a.initials}),(0,s.jsxs)("div",{className:"min-w-0",children:[(0,s.jsx)("div",{className:"text-sm font-semibold truncate",children:a.name}),(0,s.jsx)("div",{className:"text-xs truncate ".concat(r===e?"text-brand-foreground/80":"text-muted-foreground"),children:a.role})]})]})},a.name))})]})]})})}},38016:(e,t,a)=>{"use strict";a.d(t,{FAQ:()=>j});var s=a(95155),r=a(12115),n=a(5937),i=a(18085),l=a(23664),d=a(16083),o=a(24033),c=a(64269);let x=d.bL,m=r.forwardRef((e,t)=>{let{className:a,...r}=e;return(0,s.jsx)(d.q7,{ref:t,className:(0,c.cn)("border-b",a),...r})});m.displayName="AccordionItem";let u=r.forwardRef((e,t)=>{let{className:a,children:r,...n}=e;return(0,s.jsx)(d.Y9,{className:"flex",children:(0,s.jsxs)(d.l9,{ref:t,className:(0,c.cn)("flex flex-1 items-center justify-between py-4 text-sm font-medium transition-all hover:underline text-left [&[data-state=open]>svg]:rotate-180",a),...n,children:[r,(0,s.jsx)(o.A,{className:"h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200"})]})})});u.displayName=d.l9.displayName;let h=r.forwardRef((e,t)=>{let{className:a,children:r,...n}=e;return(0,s.jsx)(d.UC,{ref:t,className:"overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down",...n,children:(0,s.jsx)("div",{className:(0,c.cn)("pb-4 pt-0",a),children:r})})});h.displayName=d.UC.displayName;var p=a(3998),g=a(65142);let f=r.forwardRef((e,t)=>{let{className:a,...r}=e;return(0,s.jsx)("textarea",{className:(0,c.cn)("flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",a),ref:t,...r})});f.displayName="Textarea";var b=a(76444),v=a(18720);let y=[{q:"Is my Facebook access token safe?",a:"Yes. Tokens are encrypted with AES-256-GCM before being stored, and only the server can decrypt them when calling the Graph API. They are never sent to the browser."},{q:"How do client share links work?",a:"When you click 'Share with Client', we generate a unique random UUID token tied to a single campaign with an expiry date you choose (7 / 30 / 60 / 90 days). The client opens a read-only dashboard — they cannot see any other campaign or your account."},{q:"Do you cache data or always pull fresh?",a:"By default we call the Graph API directly so you always see real-time data. Pro and Enterprise plans include optional 1-hour caching to reduce API calls."},{q:"What happens when a share link expires?",a:"The link returns a friendly 'expired' page. You can generate a new one anytime from the campaign or Reports page."},{q:"Can I export reports as PDF or CSV?",a:"Yes. The Reports page lets you generate branded PDF or CSV reports for any client and date range with one click."},{q:"Does it work on mobile?",a:"Absolutely. Both the agency dashboard and client share view are fully responsive and look great on any device."}];function j(){let[e,t]=(0,r.useState)({name:"",email:"",message:""}),[a,d]=(0,r.useState)(!1);return(0,s.jsx)("section",{id:"faq",className:"py-24",children:(0,s.jsx)("div",{className:"mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",children:(0,s.jsxs)("div",{className:"grid gap-10 lg:grid-cols-2 lg:gap-12 lg:items-stretch",children:[(0,s.jsxs)("div",{className:"flex flex-col",children:[(0,s.jsxs)("div",{children:[(0,s.jsx)("span",{className:"inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink",children:"FAQ"}),(0,s.jsx)("h2",{className:"mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl",children:"Frequently asked questions"}),(0,s.jsx)("p",{className:"mt-3 text-muted-foreground",children:"Everything you need to know about the product."})]}),(0,s.jsx)(x,{type:"single",collapsible:!0,className:"mt-8 flex-1 space-y-3",children:y.map((e,t)=>(0,s.jsxs)(m,{value:"item-".concat(t),className:"rounded card-brutal bg-card px-5",children:[(0,s.jsx)(u,{className:"text-left text-base font-semibold hover:no-underline",children:e.q}),(0,s.jsx)(h,{className:"text-sm text-muted-foreground",children:e.a})]},t))})]}),(0,s.jsxs)("div",{id:"contact",className:"flex flex-col",children:[(0,s.jsxs)("div",{children:[(0,s.jsxs)("span",{className:"inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink",children:[(0,s.jsx)(n.A,{className:"h-3 w-3"}),"Contact us"]}),(0,s.jsx)("h2",{className:"mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl",children:"Still have questions?"}),(0,s.jsx)("p",{className:"mt-3 text-muted-foreground",children:"Send us a message and our team will reply within 24 hours."})]}),(0,s.jsx)("form",{onSubmit:e=>{e.preventDefault(),d(!0),setTimeout(()=>{v.oR.success("Message sent! We'll get back to you within 24 hours."),t({name:"",email:"",message:""}),d(!1)},700)},className:"mt-8 flex-1 rounded card-brutal bg-card p-6 sm:p-7 flex flex-col",children:(0,s.jsxs)("div",{className:"flex flex-1 flex-col space-y-4",children:[(0,s.jsxs)("div",{className:"grid gap-4 sm:grid-cols-2",children:[(0,s.jsxs)("div",{className:"space-y-1.5",children:[(0,s.jsx)(b.J,{htmlFor:"contact-name",children:"Name"}),(0,s.jsx)(g.p,{id:"contact-name",placeholder:"Jane Doe",required:!0,maxLength:100,className:"rounded",value:e.name,onChange:a=>t({...e,name:a.target.value})})]}),(0,s.jsxs)("div",{className:"space-y-1.5",children:[(0,s.jsx)(b.J,{htmlFor:"contact-email",children:"Email"}),(0,s.jsx)(g.p,{id:"contact-email",type:"email",placeholder:"jane@agency.com",required:!0,maxLength:255,className:"rounded",value:e.email,onChange:a=>t({...e,email:a.target.value})})]})]}),(0,s.jsxs)("div",{className:"flex flex-1 flex-col space-y-1.5",children:[(0,s.jsx)(b.J,{htmlFor:"contact-message",children:"Message"}),(0,s.jsx)(f,{id:"contact-message",placeholder:"How can we help?",required:!0,maxLength:1e3,className:"rounded flex-1 min-h-[140px]",value:e.message,onChange:a=>t({...e,message:a.target.value})})]}),(0,s.jsxs)(p.$,{type:"submit",disabled:a,className:"w-full rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand font-semibold",children:[(0,s.jsx)(i.A,{className:"h-4 w-4"}),a?"Sending...":"Send message"]}),(0,s.jsxs)("div",{className:"flex items-center justify-center gap-2 pt-2 text-xs text-muted-foreground",children:[(0,s.jsx)(l.A,{className:"h-3.5 w-3.5"}),"Or email us at"," ",(0,s.jsx)("span",{className:"font-medium text-foreground",children:"hello@adgleam.com"})]})]})})]})]})})})}},40005:(e,t,a)=>{"use strict";a.d(t,{Pricing:()=>m});var s=a(95155),r=a(9924),n=a(95740),i=a(5917),l=a(52619),d=a.n(l),o=a(3998),c=a(64269);let x=[{name:"Free",price:"$0",period:"/forever",desc:"Perfect for solo agencies getting started.",features:["1 ad account","Up to 5 campaigns","7 days data retention","Basic dashboard"],cta:"Start Free",highlight:!1},{name:"Starter",price:"$19",period:"/month",desc:"For freelancers running a few clients.",features:["2 ad accounts","Up to 15 campaigns","30 days data retention","Share links","Email support"],cta:"Start Starter",highlight:!1},{name:"Pro",price:"$50",period:"/month",desc:"Everything growing agencies need.",features:["5 ad accounts","Up to 50 campaigns","90 days data retention","Unlimited share links","PDF & CSV reports","Priority support"],cta:"Start Pro Trial",highlight:!0},{name:"Enterprise",price:"Custom",period:"",desc:"For large agencies & networks.",features:["Unlimited everything","API access","Custom integrations","White-label options","Dedicated success manager"],cta:"Contact Sales",highlight:!1}];function m(){return(0,s.jsxs)("section",{id:"pricing",className:"relative py-28",children:[(0,s.jsx)("div",{"aria-hidden":!0,className:"pointer-events-none absolute inset-0 bg-gradient-mesh opacity-50"}),(0,s.jsxs)("div",{className:"relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",children:[(0,s.jsxs)("div",{className:"mx-auto max-w-2xl text-center",children:[(0,s.jsxs)("span",{className:"inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink",children:[(0,s.jsx)(n.A,{className:"h-3 w-3"}),"Pricing"]}),(0,s.jsx)("h2",{className:"mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl",children:"Simple, transparent pricing"}),(0,s.jsx)("p",{className:"mt-4 text-muted-foreground",children:"Start free. Upgrade when your agency grows."})]}),(0,s.jsx)("div",{className:"mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:items-center",children:x.map((e,t)=>(0,s.jsxs)(r.P.div,{initial:{opacity:0,y:30},whileInView:{opacity:1,y:0},viewport:{once:!0,margin:"-80px"},transition:{duration:.55,delay:.12*t},className:(0,c.cn)("relative rounded p-8 hover-lift",e.highlight?"border-2 border-brand bg-ink text-ink-foreground shadow-brutal lg:scale-[1.04] lg:-my-2":"card-brutal bg-card"),children:[e.highlight&&(0,s.jsxs)("span",{className:"absolute -top-3.5 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-foreground shadow-glow",children:[(0,s.jsx)(n.A,{className:"h-3 w-3"}),"Most popular"]}),(0,s.jsx)("h3",{className:(0,c.cn)("text-sm font-semibold uppercase tracking-wider",e.highlight?"text-brand":"text-muted-foreground"),children:e.name}),(0,s.jsxs)("div",{className:"mt-4 flex items-baseline gap-1",children:[(0,s.jsx)("span",{className:(0,c.cn)("font-display text-5xl font-bold",e.highlight?"text-ink-foreground":"text-foreground"),children:e.price}),(0,s.jsx)("span",{className:(0,c.cn)("text-sm",e.highlight?"text-ink-foreground/70":"text-muted-foreground"),children:e.period})]}),(0,s.jsx)("p",{className:(0,c.cn)("mt-3 text-sm",e.highlight?"text-ink-foreground/80":"text-muted-foreground"),children:e.desc}),(0,s.jsx)("div",{className:(0,c.cn)("my-6 h-px",e.highlight?"bg-ink-foreground/15":"bg-border")}),(0,s.jsx)("ul",{className:"space-y-3",children:e.features.map(t=>(0,s.jsxs)("li",{className:(0,c.cn)("flex items-start gap-2.5 text-sm",e.highlight?"text-ink-foreground/90":"text-foreground"),children:[(0,s.jsx)("span",{className:(0,c.cn)("mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full",e.highlight?"bg-brand text-brand-foreground":"bg-accent text-ink"),children:(0,s.jsx)(i.A,{className:"h-3 w-3",strokeWidth:3})}),t]},t))}),(0,s.jsx)(o.$,{asChild:!0,className:(0,c.cn)("mt-8 w-full rounded font-semibold btn-brutal h-auto py-3",(e.highlight,"!bg-brand !text-brand-foreground hover:!bg-brand")),children:(0,s.jsx)(d(),{href:"/signup",children:e.cta})})]},e.name))})]})]})}},40024:(e,t,a)=>{"use strict";a.d(t,{HowItWorks:()=>o});var s=a(95155),r=a(9924),n=a(73155),i=a(80534),l=a(17181);let d=[{icon:n.A,title:"Connect Facebook",desc:"Securely link your ad accounts in one click. Tokens are encrypted with AES-256 — never stored in plaintext."},{icon:i.A,title:"Analyze Data",desc:"Real-time insights pulled directly from the Graph API. Spend, ROAS, CTR, CPC — all updated live."},{icon:l.A,title:"Share Reports",desc:"Generate secure UUID share links that expire automatically. Clients view read-only dashboards — no login required."}];function o(){return(0,s.jsx)("section",{id:"how-it-works",className:"relative py-28",children:(0,s.jsxs)("div",{className:"mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",children:[(0,s.jsxs)("div",{className:"mx-auto max-w-2xl text-center",children:[(0,s.jsx)("span",{className:"inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink",children:"How it works"}),(0,s.jsxs)("h2",{className:"mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl",children:["Three steps from raw data to"," ",(0,s.jsxs)("span",{className:"relative inline-block",children:[(0,s.jsx)("span",{className:"relative z-10 text-brand-foreground",children:"client report"}),(0,s.jsx)("span",{"aria-hidden":!0,className:"absolute inset-0 -z-0 -skew-x-6 bg-brand"})]})]})]}),(0,s.jsxs)("div",{className:"relative mt-20 grid gap-8 lg:grid-cols-3",children:[(0,s.jsx)("div",{"aria-hidden":!0,className:"pointer-events-none absolute left-0 right-0 top-12 hidden h-px bg-gradient-to-r from-transparent via-border to-transparent lg:block"}),d.map((e,t)=>(0,s.jsxs)(r.P.div,{initial:{opacity:0,y:30},whileInView:{opacity:1,y:0},viewport:{once:!0,margin:"-80px"},transition:{duration:.55,delay:.15*t},className:"group relative rounded card-brutal bg-card p-8 hover-lift",children:[(0,s.jsx)("div",{className:"absolute -top-6 left-7 flex h-12 w-12 items-center justify-center rounded bg-ink text-base font-bold text-ink-foreground shadow-glow-ink ring-4 ring-background",children:t+1}),(0,s.jsx)("div",{className:"mt-2 inline-flex h-12 w-12 items-center justify-center rounded bg-accent text-ink transition-all duration-500 group-hover:bg-brand group-hover:rotate-6",children:(0,s.jsx)(e.icon,{className:"h-6 w-6"})}),(0,s.jsx)("h3",{className:"mt-5 text-xl font-bold tracking-tight",children:e.title}),(0,s.jsx)("p",{className:"mt-2 text-sm leading-relaxed text-muted-foreground",children:e.desc})]},e.title))]})]})})}},64269:(e,t,a)=>{"use strict";a.d(t,{cn:()=>n});var s=a(2821),r=a(75889);function n(){for(var e=arguments.length,t=Array(e),a=0;a<e;a++)t[a]=arguments[a];return(0,r.QP)((0,s.$)(t))}},65142:(e,t,a)=>{"use strict";a.d(t,{p:()=>i});var s=a(95155),r=a(12115),n=a(64269);let i=r.forwardRef((e,t)=>{let{className:a,type:r,...i}=e;return(0,s.jsx)("input",{type:r,className:(0,n.cn)("flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",a),ref:t,...i})});i.displayName="Input"},76444:(e,t,a)=>{"use strict";a.d(t,{J:()=>o});var s=a(95155),r=a(12115),n=a(32894),i=a(83101),l=a(64269);let d=(0,i.F)("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"),o=r.forwardRef((e,t)=>{let{className:a,...r}=e;return(0,s.jsx)(n.b,{ref:t,className:(0,l.cn)(d(),a),...r})});o.displayName=n.b.displayName},76479:(e,t,a)=>{"use strict";a.d(t,{Navbar:()=>b});var s=a(95155),r=a(52619),n=a.n(r),i=a(56154),l=a(59427),d=a(37494),o=a(52987),c=a(9540),x=a(12115),m=a(9924),u=a(3998),h=a(27063),p=a(77845),g=a(64269);let f=[{label:"Home",href:"#top"},{label:"Features",href:"#features"},{label:"How it works",href:"#how-it-works"},{label:"Pricing",href:"#pricing"},{label:"FAQ",href:"#faq"}];function b(){let{theme:e,toggle:t}=(0,p.D)(),[a,r]=(0,x.useState)(!1),[b,v]=(0,x.useState)(!1);return(0,x.useEffect)(()=>{let e=()=>r(window.scrollY>8);return e(),window.addEventListener("scroll",e,{passive:!0}),()=>window.removeEventListener("scroll",e)},[]),(0,s.jsx)(m.P.header,{initial:{y:-40,opacity:0},animate:{y:0,opacity:1},transition:{duration:.5,ease:[.16,1,.3,1]},className:"fixed top-0 left-0 right-0 z-50 w-full",children:(0,s.jsx)("div",{className:(0,g.cn)("px-3 sm:px-4 lg:px-6 transition-all duration-300",a?"pt-3 pb-3":"pt-4 pb-4 sm:pt-5 sm:pb-5"),children:(0,s.jsxs)("nav",{className:(0,g.cn)("mx-auto flex max-w-7xl items-center justify-between gap-3 rounded card-brutal bg-background px-3 py-3.5 transition-all duration-300 sm:px-4 sm:py-4",a?"shadow-brutal":""),children:[(0,s.jsxs)(n(),{href:"/",className:"group flex items-center gap-2 shrink-0 pl-1",children:[(0,s.jsx)("span",{className:"relative flex h-9 w-9 items-center justify-center rounded bg-brand text-ink border-2 border-ink transition-transform duration-300 group-hover:rotate-12",children:(0,s.jsx)(i.A,{className:"h-4 w-4 fill-ink"})}),(0,s.jsxs)("span",{className:"text-sm font-bold tracking-tight whitespace-nowrap sm:text-base",children:[(0,s.jsx)("span",{className:"hidden sm:inline",children:"AdReportly"}),(0,s.jsx)("span",{className:"sm:hidden",children:"AdReportly"})]})]}),(0,s.jsx)("div",{className:"hidden items-center gap-0.5 lg:flex",children:f.map(e=>(0,s.jsx)("a",{href:e.href,className:"whitespace-nowrap rounded px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-ink",children:e.label},e.label))}),(0,s.jsxs)("div",{className:"flex items-center gap-1.5",children:[(0,s.jsx)(u.$,{variant:"ghost",size:"icon",onClick:t,"aria-label":"Toggle theme",className:"rounded h-9 w-9 hover:bg-accent",children:"dark"===e?(0,s.jsx)(l.A,{className:"h-4 w-4"}):(0,s.jsx)(d.A,{className:"h-4 w-4"})}),(0,s.jsx)(u.$,{asChild:!0,variant:"ghost",size:"sm",className:"hidden rounded lg:inline-flex",children:(0,s.jsx)(n(),{href:"/login",children:"Sign in"})}),(0,s.jsx)(u.$,{asChild:!0,size:"sm",className:"hidden rounded bg-brand text-brand-foreground btn-brutal h-9 px-4 hover:bg-brand lg:inline-flex",children:(0,s.jsxs)(n(),{href:"/signup",children:["Get Started ",(0,s.jsx)(o.A,{className:"ml-1 h-3.5 w-3.5"})]})}),(0,s.jsxs)(h.cj,{open:b,onOpenChange:v,children:[(0,s.jsx)(h.CG,{asChild:!0,children:(0,s.jsx)(u.$,{variant:"outline",size:"icon","aria-label":"Open menu",className:"rounded h-9 w-9 border-2 border-ink bg-card lg:hidden",children:(0,s.jsx)(c.A,{className:"h-4 w-4"})})}),(0,s.jsxs)(h.h,{side:"left",className:"w-[300px] border-r-2 border-ink bg-background p-0 sm:w-[340px]",children:[(0,s.jsx)(h.Fm,{className:"border-b-2 border-ink/10 p-5",children:(0,s.jsx)(h.qp,{asChild:!0,children:(0,s.jsxs)(n(),{href:"/",onClick:()=>v(!1),className:"flex items-center gap-2.5",children:[(0,s.jsx)("span",{className:"flex h-9 w-9 items-center justify-center rounded bg-brand text-ink border-2 border-ink",children:(0,s.jsx)(i.A,{className:"h-4 w-4 fill-ink"})}),(0,s.jsx)("span",{className:"text-base font-bold tracking-tight",children:"AdReportly"})]})})}),(0,s.jsx)("nav",{className:"flex flex-col gap-1 p-4",children:f.map((e,t)=>(0,s.jsx)(h.kN,{asChild:!0,children:(0,s.jsxs)(m.P.a,{initial:{opacity:0,x:-12},animate:{opacity:1,x:0},transition:{delay:.05*t,duration:.3},href:e.href,className:"group flex items-center justify-between rounded px-4 py-3 text-sm font-semibold text-foreground transition-all hover:bg-accent",children:[(0,s.jsx)("span",{children:e.label}),(0,s.jsx)("span",{className:"text-muted-foreground transition-all group-hover:text-ink group-hover:translate-x-1",children:"→"})]})},e.label))}),(0,s.jsxs)("div",{className:"mt-auto flex flex-col gap-2 border-t-2 border-ink/10 p-4",children:[(0,s.jsx)(h.kN,{asChild:!0,children:(0,s.jsx)(u.$,{asChild:!0,variant:"outline",className:"w-full rounded bg-card btn-brutal h-auto py-3 hover:bg-card",children:(0,s.jsx)(n(),{href:"/login",children:"Sign in"})})}),(0,s.jsx)(h.kN,{asChild:!0,children:(0,s.jsx)(u.$,{asChild:!0,className:"w-full rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand",children:(0,s.jsx)(n(),{href:"/signup",children:"Get Started"})})})]})]})]})]})]})})})}},76654:(e,t,a)=>{"use strict";a.d(t,{Hero:()=>v});var s=a(95155),r=a(9924),n=a(52619),i=a.n(n),l=a(95740),d=a(52987),o=a(36168),c=a(1524),x=a(3998),m=a(26991),u=a(98128),h=a(47734),p=a(16533),g=a(69386);let f=Array.from({length:30},(e,t)=>{let a=new Date;a.setDate(a.getDate()-(29-t));let s=.5*Math.sin(1.7*t)+.5;return{date:a.toISOString().slice(0,10),label:a.toLocaleDateString("en-US",{month:"short",day:"numeric"}),spend:Math.round(8e3+18e3*s+4e3*Math.random()),results:Math.round(4e3+14e3*s+3e3*Math.random())}});f.reduce((e,t)=>e+t.spend,0);let b=["Turn","ad","spend","into"];function v(){return(0,s.jsxs)("section",{className:"relative overflow-hidden bg-gradient-hero",children:[(0,s.jsx)("div",{"aria-hidden":!0,className:"pointer-events-none absolute -left-32 top-10 h-[28rem] w-[28rem] rounded-full bg-brand/30 opacity-70 blur-3xl animate-float-slow"}),(0,s.jsx)("div",{"aria-hidden":!0,className:"pointer-events-none absolute -right-24 top-32 h-96 w-96 animate-blob bg-gradient-brand opacity-25 blur-3xl"}),(0,s.jsx)("div",{"aria-hidden":!0,className:"pointer-events-none absolute inset-0 bg-grid opacity-[0.35]"}),(0,s.jsxs)("div",{className:"relative mx-auto grid max-w-7xl items-center gap-12 px-4 pt-32 pb-20 sm:px-6 sm:pt-36 sm:pb-24 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:pt-40 lg:pb-32",children:[(0,s.jsxs)("div",{className:"text-center lg:text-left",children:[(0,s.jsxs)(r.P.span,{initial:{opacity:0,y:12},animate:{opacity:1,y:0},transition:{duration:.5},className:"inline-flex items-center gap-2 rounded-full card-brutal bg-card/70 px-3 py-1.5 text-xs font-medium text-foreground backdrop-blur-md",children:[(0,s.jsxs)("span",{className:"relative flex h-2 w-2",children:[(0,s.jsx)("span",{className:"absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-75"}),(0,s.jsx)("span",{className:"relative inline-flex h-2 w-2 rounded-full bg-brand"})]}),(0,s.jsx)(l.A,{className:"h-3.5 w-3.5 text-ink"}),"Real-time Facebook Ads insights"]}),(0,s.jsxs)("h1",{className:"mt-6 font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-[4.25rem] lg:leading-[1.02]",children:[b.map((e,t)=>(0,s.jsx)(r.P.span,{initial:{opacity:0,y:24,filter:"blur(8px)"},animate:{opacity:1,y:0,filter:"blur(0px)"},transition:{duration:.55,delay:.05*t,ease:"easeOut"},className:"mr-3 inline-block text-ink",children:e},t)),(0,s.jsx)("br",{}),(0,s.jsxs)(r.P.span,{initial:{opacity:0,y:24},animate:{opacity:1,y:0},transition:{duration:.6,delay:.3,ease:"easeOut"},className:"relative inline-block",children:[(0,s.jsx)("span",{className:"relative z-10 text-brand-foreground",children:"measurable ROI"}),(0,s.jsx)("span",{"aria-hidden":!0,className:"absolute inset-0 -z-0 -skew-x-6 bg-brand"})]})]}),(0,s.jsx)(r.P.p,{initial:{opacity:0,y:16},animate:{opacity:1,y:0},transition:{duration:.5,delay:.5},className:"mt-6 max-w-xl text-lg text-muted-foreground mx-auto lg:mx-0",children:"The all-in-one analytics platform agencies use to track Facebook campaigns, generate stunning client reports, and share secure read-only dashboards in seconds."}),(0,s.jsxs)(r.P.div,{initial:{opacity:0,y:16},animate:{opacity:1,y:0},transition:{duration:.5,delay:.6},className:"mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start",children:[(0,s.jsx)("div",{className:"glow-ring rounded",children:(0,s.jsx)(x.$,{asChild:!0,size:"lg",className:"rounded bg-brand px-7 text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand",children:(0,s.jsxs)(i(),{href:"/signup",children:["Get Started Free",(0,s.jsx)(d.A,{className:"ml-2 h-4 w-4 transition-transform group-hover:translate-x-1"})]})})}),(0,s.jsxs)(x.$,{variant:"outline",size:"lg",className:"rounded bg-card btn-brutal h-auto py-3 hover:bg-card",children:[(0,s.jsx)(o.A,{className:"mr-2 h-5 w-5"}),"Watch Demo"]})]}),(0,s.jsxs)(r.P.div,{initial:{opacity:0},animate:{opacity:1},transition:{duration:.6,delay:.8},className:"mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-muted-foreground lg:justify-start",children:[(0,s.jsx)("div",{className:"flex -space-x-2",children:["F","T","A","M"].map(e=>(0,s.jsx)("div",{className:"flex h-9 w-9 items-center justify-center rounded-full border-2 border-background bg-ink text-xs font-semibold text-ink-foreground shadow-soft",children:e},e))}),(0,s.jsxs)("span",{children:[(0,s.jsx)("span",{className:"font-semibold text-foreground",children:"500+ agencies"})," tracking ৳120M+ in ad spend"]})]})]}),(0,s.jsxs)(r.P.div,{initial:{opacity:0,y:50,scale:.94},animate:{opacity:1,y:0,scale:1},transition:{duration:.85,delay:.2,ease:"easeOut"},className:"relative",children:[(0,s.jsx)("div",{className:"animate-float",children:(0,s.jsxs)("div",{className:"glass-strong relative overflow-hidden rounded p-6 shadow-elevated",children:[(0,s.jsx)("div",{"aria-hidden":!0,className:"pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-brand/40 blur-2xl"}),(0,s.jsxs)("div",{className:"relative flex items-center justify-between",children:[(0,s.jsxs)("div",{children:[(0,s.jsx)("p",{className:"text-[11px] font-semibold uppercase tracking-wider text-muted-foreground",children:"Live ROI Tracking"}),(0,s.jsx)("h3",{className:"mt-1 font-display text-3xl font-bold text-ink",children:"৳477,710.00"})]}),(0,s.jsxs)("span",{className:"inline-flex items-center gap-1 rounded-full bg-success/15 px-3 py-1 text-xs font-semibold text-success",children:[(0,s.jsx)(c.A,{className:"h-3.5 w-3.5"}),"+4,397.8%"]})]}),(0,s.jsx)("div",{className:"relative mt-6 h-44",children:(0,s.jsx)(m.u,{width:"100%",height:"100%",children:(0,s.jsxs)(u.E,{data:f.slice(-14),barCategoryGap:4,children:[(0,s.jsx)(h.W,{dataKey:"label",hide:!0}),(0,s.jsx)(p.y,{dataKey:"spend",radius:[6,6,0,0],maxBarSize:14,children:f.slice(-14).map((e,t)=>(0,s.jsx)(g.f,{fill:"var(--ink)"},t))}),(0,s.jsx)(p.y,{dataKey:"results",radius:[6,6,0,0],maxBarSize:14,children:f.slice(-14).map((e,t)=>(0,s.jsx)(g.f,{fill:"var(--brand)"},t))})]})})}),(0,s.jsx)("div",{className:"mt-4 grid grid-cols-3 gap-3 text-center",children:[{label:"ROAS",value:"6.55\xd7"},{label:"CTR",value:"2.4%"},{label:"CPC",value:"৳12.7"}].map((e,t)=>(0,s.jsxs)(r.P.div,{initial:{opacity:0,y:10},animate:{opacity:1,y:0},transition:{delay:.6+.1*t},className:"rounded-xl border border-border/60 bg-background/60 px-3 py-2 backdrop-blur",children:[(0,s.jsx)("div",{className:"text-[10px] font-semibold uppercase tracking-wider text-muted-foreground",children:e.label}),(0,s.jsx)("div",{className:"text-base font-bold text-foreground",children:e.value})]},e.label))})]})}),(0,s.jsxs)(r.P.div,{initial:{opacity:0,scale:.8},animate:{opacity:1,scale:1},transition:{delay:1,duration:.5},className:"absolute -left-6 top-12 hidden rounded card-brutal bg-card px-4 py-3 backdrop-blur lg:block",children:[(0,s.jsx)("div",{className:"text-[10px] font-semibold uppercase tracking-wider text-muted-foreground",children:"Today's spend"}),(0,s.jsx)("div",{className:"mt-1 text-lg font-bold text-ink",children:"৳18,420"})]}),(0,s.jsxs)(r.P.div,{initial:{opacity:0,scale:.8},animate:{opacity:1,scale:1},transition:{delay:1.2,duration:.5},className:"absolute -right-4 -bottom-2 hidden items-center gap-2 rounded-full card-brutal bg-card px-4 py-2 lg:inline-flex",children:[(0,s.jsx)("span",{className:"h-2 w-2 rounded-full bg-success"}),(0,s.jsx)("span",{className:"text-xs font-semibold text-foreground",children:"All accounts synced"})]})]})]}),(0,s.jsx)("div",{className:"relative border-t border-border/60 bg-background/40 backdrop-blur",children:(0,s.jsx)("div",{className:"mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8",children:(0,s.jsxs)("div",{className:"flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground",children:[(0,s.jsx)("span",{children:"Trusted by"}),["Hive Marketing","BoostBD","Pixel & Penny","Lumen Studio","Fashion House BD"].map(e=>(0,s.jsx)("span",{className:"opacity-70 transition hover:opacity-100",children:e},e))]})})})]})}},76924:(e,t,a)=>{"use strict";a.d(t,{A:()=>o,AuthProvider:()=>d});var s=a(95155),r=a(12115),n=a(96199),i=a(20063);let l=(0,r.createContext)(null);function d(e){let{children:t}=e,a=(0,i.useRouter)(),{data:d,status:o,update:c}=(0,n.wV)(),x=(0,r.useMemo)(()=>{var e,t;return(null==d||null==(e=d.user)?void 0:e.id)?{id:d.user.id,email:null!=(t=d.user.email)?t:null}:null},[d]),m=async(e,t)=>{let a=await (0,n.Jv)("credentials",{email:e.trim(),password:t,redirect:!1});return(null==a?void 0:a.error)?{error:Error("CredentialsSignin"===a.error?"Invalid credentials":a.error)}:(await c(),{error:null})},u=async(e,t,a)=>{var s,r;let i=await fetch("/api/auth/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:e,password:t,full_name:null!=(s=null==a?void 0:a.full_name)?s:"",organization:null!=(r=null==a?void 0:a.organization)?r:""})}),l=await i.json().catch(()=>({}));if(!i.ok)return{error:Error("string"==typeof l.error?l.error:409===i.status?"An account with this email already exists":"Sign up failed")};let d=await (0,n.Jv)("credentials",{email:e.trim(),password:t,redirect:!1});return(null==d?void 0:d.error)?{error:Error("Account created but sign-in failed. Please log in manually.")}:(await c(),{error:null})},h=async()=>{await (0,n.CI)({redirect:!1}),a.push("/login"),a.refresh()};return(0,s.jsx)(l.Provider,{value:{user:x,session:d,loading:"loading"===o,signIn:m,signUp:u,signOut:h},children:t})}function o(){let e=(0,r.useContext)(l);if(!e)throw Error("useAuth must be used within AuthProvider");return e}},77845:(e,t,a)=>{"use strict";a.d(t,{D:()=>l,ThemeProvider:()=>i});var s=a(95155),r=a(12115);let n=(0,r.createContext)(null);function i(e){let{children:t}=e,[a,i]=(0,r.useState)("light");return(0,r.useEffect)(()=>{let e="dark"===localStorage.getItem("theme")?"dark":"light";i(e),document.documentElement.classList.toggle("dark","dark"===e)},[]),(0,s.jsx)(n.Provider,{value:{theme:a,toggle:()=>{i(e=>{let t="light"===e?"dark":"light";return document.documentElement.classList.toggle("dark","dark"===t),localStorage.setItem("theme",t),t})}},children:t})}function l(){let e=(0,r.useContext)(n);return e||{theme:"light",toggle:()=>{}}}},80030:(e,t,a)=>{"use strict";a.d(t,{Stats:()=>v});var s=a(95155),r=a(9924),n=a(12115),i=a(91761),l=a(91169),d=a(80534),o=a(65341),c=a(76907),x=a(26983),m=a(95740),u=a(52987),h=a(20063),p=a(3998),g=a(76924);let f=[{icon:i.A,value:48,prefix:"৳",suffix:"M+",label:"Ad spend tracked",desc:"Across all connected Meta accounts"},{icon:l.A,value:2400,suffix:"+",label:"Active agencies",desc:"Trust us with their client reporting"},{icon:d.A,value:18500,suffix:"+",label:"Reports generated",desc:"Branded PDFs & live dashboards delivered"},{icon:o.A,value:32,suffix:"+",label:"Countries",desc:"Agencies running campaigns worldwide"},{icon:c.A,value:99.9,decimals:1,suffix:"%",label:"Uptime SLA",desc:"Reliable infrastructure, always on"},{icon:x.A,value:12,suffix:"\xd7",label:"Faster reporting",desc:"Compared to manual spreadsheet workflows"}];function b(e){var t;let{stat:a,index:i}=e,{ref:l,formatted:d}=function(e){let t=arguments.length>1&&void 0!==arguments[1]?arguments[1]:0,a=arguments.length>2&&void 0!==arguments[2]?arguments[2]:1600,[s,r]=(0,n.useState)(0),i=(0,n.useRef)(null),l=(0,n.useRef)(!1);return(0,n.useEffect)(()=>{let t=i.current;if(!t)return;let s=new IntersectionObserver(t=>{t.forEach(t=>{if(t.isIntersecting&&!l.current){l.current=!0;let t=performance.now(),s=n=>{let i=Math.min((n-t)/a,1);r(e*(1-Math.pow(1-i,3))),i<1&&requestAnimationFrame(s)};requestAnimationFrame(s)}})},{threshold:.3});return s.observe(t),()=>s.disconnect()},[e,a]),{ref:i,formatted:t>0?s.toFixed(t):s>=1e3?Math.floor(s).toLocaleString():Math.floor(s).toString()}}(a.value,null!=(t=a.decimals)?t:0),o=a.icon;return(0,s.jsxs)(r.P.div,{initial:{opacity:0,y:24},whileInView:{opacity:1,y:0},viewport:{once:!0,margin:"-80px"},transition:{duration:.5,delay:.06*i},className:"group relative overflow-hidden rounded card-brutal bg-card p-6 transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-elegant",children:[(0,s.jsx)("div",{className:"absolute -right-6 -top-6 h-24 w-24 rounded-full bg-primary/5 blur-2xl transition group-hover:bg-primary/15"}),(0,s.jsxs)("div",{className:"relative",children:[(0,s.jsx)("div",{className:"inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary",children:(0,s.jsx)(o,{className:"h-5 w-5"})}),(0,s.jsxs)("div",{className:"mt-5 flex items-baseline gap-1",children:[a.prefix&&(0,s.jsx)("span",{className:"font-display text-2xl font-bold text-foreground sm:text-3xl",children:a.prefix}),(0,s.jsx)("span",{ref:l,className:"font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl",children:d}),a.suffix&&(0,s.jsx)("span",{className:"font-display text-2xl font-bold text-primary sm:text-3xl",children:a.suffix})]}),(0,s.jsx)("h3",{className:"mt-2 text-sm font-semibold text-foreground",children:a.label}),(0,s.jsx)("p",{className:"mt-1 text-sm text-muted-foreground",children:a.desc})]})]})}function v(){return(0,s.jsxs)("section",{id:"stats",className:"relative py-24",children:[(0,s.jsx)("div",{"aria-hidden":!0,className:"pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand/15 via-brand/5 to-transparent"}),(0,s.jsx)("div",{"aria-hidden":!0,className:"pointer-events-none absolute left-1/2 top-1/3 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-primary/15 blur-[120px]"}),(0,s.jsxs)("div",{className:"relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",children:[(0,s.jsxs)("div",{className:"mx-auto max-w-2xl text-center",children:[(0,s.jsx)("span",{className:"inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink",children:"By the numbers"}),(0,s.jsx)("h2",{className:"mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl",children:"Trusted by agencies, proven at scale"}),(0,s.jsx)("p",{className:"mt-4 text-base text-muted-foreground sm:text-lg",children:"Real numbers from real teams using our platform every day to manage Meta ad campaigns and deliver client reports."})]}),(0,s.jsx)("div",{className:"mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3",children:f.map((e,t)=>(0,s.jsx)(b,{stat:e,index:t},e.label))}),(0,s.jsx)(y,{})]})]})}function y(){let e=(0,h.useRouter)(),{user:t}=(0,g.A)();return(0,s.jsxs)(r.P.div,{initial:{opacity:0,y:24},whileInView:{opacity:1,y:0},viewport:{once:!0,margin:"-80px"},transition:{duration:.5},className:"relative mt-16 overflow-hidden rounded card-brutal bg-card p-8 text-center sm:p-10",children:[(0,s.jsx)("div",{className:"pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5"}),(0,s.jsxs)("div",{className:"relative",children:[(0,s.jsx)("div",{className:"mx-auto inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary",children:(0,s.jsx)(m.A,{className:"h-5 w-5"})}),(0,s.jsx)("h3",{className:"mt-4 font-display text-2xl font-bold tracking-tight sm:text-3xl",children:"Ready to join thousands of agencies?"}),(0,s.jsx)("p",{className:"mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:text-base",children:"Start your 14-day free trial — no credit card required. Connect Meta in minutes and ship branded reports today."}),(0,s.jsxs)(p.$,{size:"lg",className:"mt-6 gap-2 rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand",onClick:()=>{t?e.push("/dashboard"):e.push("/login")},children:["Get Started ",(0,s.jsx)(u.A,{className:"h-4 w-4"})]})]})]})}}},e=>{e.O(0,[8909,2619,9924,8720,6856,3503,1583,884,4366,7246,8441,1255,7358],()=>e(e.s=32055)),_N_E=e.O()}]);
+(self.webpackChunk_N_E = self.webpackChunk_N_E || []).push([
+  [8974],
+  {
+    3998: (e, t, a) => {
+      "use strict";
+      a.d(t, { $: () => o });
+      var s = a(95155),
+        r = a(12115),
+        n = a(32467),
+        i = a(83101),
+        l = a(64269);
+      let d = (0, i.F)(
+          "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+          {
+            variants: {
+              variant: {
+                default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
+                destructive:
+                  "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+                outline:
+                  "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+                secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
+                ghost: "hover:bg-accent hover:text-accent-foreground",
+                link: "text-primary underline-offset-4 hover:underline",
+              },
+              size: {
+                default: "h-9 px-4 py-2",
+                sm: "h-8 rounded-md px-3 text-xs",
+                lg: "h-10 rounded-md px-8",
+                icon: "h-9 w-9",
+              },
+            },
+            defaultVariants: { variant: "default", size: "default" },
+          },
+        ),
+        o = r.forwardRef((e, t) => {
+          let { className: a, variant: r, size: i, asChild: o = !1, ...c } = e,
+            x = o ? n.DX : "button";
+          return (0, s.jsx)(x, {
+            className: (0, l.cn)(d({ variant: r, size: i, className: a })),
+            ref: t,
+            ...c,
+          });
+        });
+      o.displayName = "Button";
+    },
+    9880: (e, t, a) => {
+      "use strict";
+      a.d(t, { Footer: () => b });
+      var s = a(95155),
+        r = a(52619),
+        n = a.n(r),
+        i = a(23664),
+        l = a(18085),
+        d = a(56154),
+        o = a(97378),
+        c = a(94684),
+        x = a(67333),
+        m = a(7013),
+        u = a(12115),
+        h = a(65142),
+        p = a(3998),
+        g = a(18720);
+      let f = [
+        {
+          title: "Product",
+          links: [
+            { label: "Features", href: "#features" },
+            { label: "Pricing", href: "#pricing" },
+            { label: "Changelog", href: "#" },
+            { label: "Roadmap", href: "#" },
+          ],
+        },
+        {
+          title: "Company",
+          links: [
+            { label: "About", href: "#" },
+            { label: "Careers", href: "#" },
+            { label: "Press", href: "#" },
+            { label: "Contact", href: "#contact" },
+          ],
+        },
+        {
+          title: "Resources",
+          links: [
+            { label: "Documentation", href: "#" },
+            { label: "API reference", href: "#" },
+            { label: "Help center", href: "#" },
+            { label: "Status", href: "#" },
+          ],
+        },
+        {
+          title: "Legal",
+          links: [
+            { label: "Privacy", href: "#" },
+            { label: "Terms", href: "#" },
+            { label: "Security", href: "#" },
+            { label: "DPA", href: "#" },
+          ],
+        },
+      ];
+      function b() {
+        let [e, t] = (0, u.useState)("");
+        return (0, s.jsxs)("footer", {
+          className: "relative overflow-hidden bg-ink text-ink-foreground",
+          children: [
+            (0, s.jsx)("div", {
+              "aria-hidden": !0,
+              className:
+                "pointer-events-none absolute -top-40 left-1/2 h-[420px] w-[820px] -translate-x-1/2 rounded-full bg-brand/20 blur-[140px]",
+            }),
+            (0, s.jsx)("div", {
+              "aria-hidden": !0,
+              className:
+                "pointer-events-none absolute -bottom-32 right-0 h-[320px] w-[420px] rounded-full bg-primary/15 blur-[120px]",
+            }),
+            (0, s.jsx)("div", {
+              className: "relative mx-auto max-w-7xl px-4 pt-16 sm:px-6 lg:px-8",
+              children: (0, s.jsx)("div", {
+                className: "rounded card-brutal bg-card p-6 text-foreground sm:p-10",
+                children: (0, s.jsxs)("div", {
+                  className: "grid gap-6 lg:grid-cols-5 lg:items-center lg:gap-10",
+                  children: [
+                    (0, s.jsxs)("div", {
+                      className: "lg:col-span-3",
+                      children: [
+                        (0, s.jsxs)("span", {
+                          className:
+                            "inline-flex items-center gap-1.5 rounded-full bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-foreground",
+                          children: [(0, s.jsx)(i.A, { className: "h-3 w-3" }), " Newsletter"],
+                        }),
+                        (0, s.jsx)("h3", {
+                          className:
+                            "mt-3 font-display text-2xl font-bold tracking-tight sm:text-3xl",
+                          children: "Get growth tips for ad agencies",
+                        }),
+                        (0, s.jsx)("p", {
+                          className: "mt-2 text-sm text-muted-foreground sm:text-base",
+                          children:
+                            "Monthly playbooks, product updates, and reporting templates. No spam, ever.",
+                        }),
+                      ],
+                    }),
+                    (0, s.jsxs)("form", {
+                      onSubmit: (a) => {
+                        (a.preventDefault(),
+                          e &&
+                            (g.oR.success("Subscribed!", {
+                              description: "We'll keep ".concat(e, " in the loop."),
+                            }),
+                            t("")));
+                      },
+                      className: "flex flex-col gap-3 sm:flex-row lg:col-span-2",
+                      children: [
+                        (0, s.jsx)(h.p, {
+                          type: "email",
+                          required: !0,
+                          value: e,
+                          onChange: (e) => t(e.target.value),
+                          placeholder: "you@agency.com",
+                          className: "rounded card-brutal h-12 bg-background",
+                        }),
+                        (0, s.jsxs)(p.$, {
+                          type: "submit",
+                          className:
+                            "h-12 rounded bg-brand text-brand-foreground btn-brutal hover:bg-brand sm:shrink-0",
+                          children: [(0, s.jsx)(l.A, { className: "h-4 w-4" }), " Subscribe"],
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              }),
+            }),
+            (0, s.jsxs)("div", {
+              className: "relative mx-auto max-w-7xl px-4 pb-10 pt-16 sm:px-6 lg:px-8",
+              children: [
+                (0, s.jsxs)("div", {
+                  className: "grid grid-cols-2 gap-10 lg:grid-cols-6",
+                  children: [
+                    (0, s.jsxs)("div", {
+                      className: "col-span-2 lg:col-span-2",
+                      children: [
+                        (0, s.jsxs)(n(), {
+                          href: "/",
+                          className: "flex items-center gap-2",
+                          children: [
+                            (0, s.jsx)("span", {
+                              className:
+                                "flex h-10 w-10 items-center justify-center rounded card-brutal bg-brand text-ink",
+                              children: (0, s.jsx)(d.A, { className: "h-5 w-5 fill-ink" }),
+                            }),
+                            (0, s.jsx)("span", {
+                              className: "text-base font-bold tracking-tight",
+                              children: "AdReportly",
+                            }),
+                          ],
+                        }),
+                        (0, s.jsx)("p", {
+                          className: "mt-5 max-w-xs text-sm text-ink-foreground/70",
+                          children:
+                            "The all-in-one platform for tracking Facebook ad campaigns and sharing beautiful reports with clients.",
+                        }),
+                        (0, s.jsx)("div", {
+                          className: "mt-6 flex gap-3",
+                          children: [o.A, c.A, x.A].map((e, t) =>
+                            (0, s.jsx)(
+                              "a",
+                              {
+                                href: "#",
+                                className:
+                                  "group flex h-10 w-10 items-center justify-center rounded border-2 border-ink-foreground/15 bg-ink-foreground/5 text-ink-foreground transition hover:-translate-y-0.5 hover:border-brand hover:bg-brand hover:text-ink",
+                                "aria-label": "Social",
+                                children: (0, s.jsx)(e, { className: "h-4 w-4" }),
+                              },
+                              t,
+                            ),
+                          ),
+                        }),
+                      ],
+                    }),
+                    f.map((e) =>
+                      (0, s.jsxs)(
+                        "div",
+                        {
+                          children: [
+                            (0, s.jsx)("h4", {
+                              className: "text-xs font-bold uppercase tracking-wider text-brand",
+                              children: e.title,
+                            }),
+                            (0, s.jsx)("ul", {
+                              className: "mt-5 space-y-3",
+                              children: e.links.map((e) =>
+                                (0, s.jsx)(
+                                  "li",
+                                  {
+                                    children: (0, s.jsxs)("a", {
+                                      href: e.href,
+                                      className:
+                                        "group inline-flex items-center gap-1 text-sm text-ink-foreground/70 transition hover:text-brand",
+                                      children: [
+                                        e.label,
+                                        (0, s.jsx)(m.A, {
+                                          className:
+                                            "h-3 w-3 opacity-0 transition group-hover:opacity-100",
+                                        }),
+                                      ],
+                                    }),
+                                  },
+                                  e.label,
+                                ),
+                              ),
+                            }),
+                          ],
+                        },
+                        e.title,
+                      ),
+                    ),
+                  ],
+                }),
+                (0, s.jsxs)("div", {
+                  className:
+                    "mt-14 flex flex-col items-center justify-between gap-3 border-t-2 border-ink-foreground/10 pt-6 text-xs text-ink-foreground/60 sm:flex-row",
+                  children: [
+                    (0, s.jsxs)("span", {
+                      children: [
+                        "\xa9 ",
+                        new Date().getFullYear(),
+                        " AdReportly. All rights reserved.",
+                      ],
+                    }),
+                    (0, s.jsxs)("span", {
+                      className: "flex items-center gap-2",
+                      children: [
+                        (0, s.jsx)("span", {
+                          className: "inline-block h-2 w-2 rounded-full bg-success animate-pulse",
+                        }),
+                        "All systems operational",
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        });
+      }
+    },
+    27063: (e, t, a) => {
+      "use strict";
+      a.d(t, { CG: () => c, Fm: () => g, cj: () => o, h: () => p, kN: () => x, qp: () => f });
+      var s = a(95155),
+        r = a(12115),
+        n = a(93409),
+        i = a(83101),
+        l = a(65229),
+        d = a(64269);
+      let o = n.bL,
+        c = n.l9,
+        x = n.bm,
+        m = n.ZL,
+        u = r.forwardRef((e, t) => {
+          let { className: a, ...r } = e;
+          return (0, s.jsx)(n.hJ, {
+            className: (0, d.cn)(
+              "fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+              a,
+            ),
+            ...r,
+            ref: t,
+          });
+        });
+      u.displayName = n.hJ.displayName;
+      let h = (0, i.F)(
+          "fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out",
+          {
+            variants: {
+              side: {
+                top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
+                bottom:
+                  "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+                left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
+                right:
+                  "inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
+              },
+            },
+            defaultVariants: { side: "right" },
+          },
+        ),
+        p = r.forwardRef((e, t) => {
+          let { side: a = "right", className: r, children: i, ...o } = e;
+          return (0, s.jsxs)(m, {
+            children: [
+              (0, s.jsx)(u, {}),
+              (0, s.jsxs)(n.UC, {
+                ref: t,
+                className: (0, d.cn)(h({ side: a }), r),
+                ...o,
+                children: [
+                  (0, s.jsxs)(n.bm, {
+                    className:
+                      "absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary",
+                    children: [
+                      (0, s.jsx)(l.A, { className: "h-4 w-4" }),
+                      (0, s.jsx)("span", { className: "sr-only", children: "Close" }),
+                    ],
+                  }),
+                  i,
+                ],
+              }),
+            ],
+          });
+        });
+      p.displayName = n.UC.displayName;
+      let g = (e) => {
+        let { className: t, ...a } = e;
+        return (0, s.jsx)("div", {
+          className: (0, d.cn)("flex flex-col space-y-2 text-center sm:text-left", t),
+          ...a,
+        });
+      };
+      g.displayName = "SheetHeader";
+      let f = r.forwardRef((e, t) => {
+        let { className: a, ...r } = e;
+        return (0, s.jsx)(n.hE, {
+          ref: t,
+          className: (0, d.cn)("text-lg font-semibold text-foreground", a),
+          ...r,
+        });
+      });
+      ((f.displayName = n.hE.displayName),
+        (r.forwardRef((e, t) => {
+          let { className: a, ...r } = e;
+          return (0, s.jsx)(n.VY, {
+            ref: t,
+            className: (0, d.cn)("text-sm text-muted-foreground", a),
+            ...r,
+          });
+        }).displayName = n.VY.displayName));
+    },
+    27776: (e, t, a) => {
+      "use strict";
+      a.d(t, { Features: () => m });
+      var s = a(95155),
+        r = a(9924),
+        n = a(56154),
+        i = a(99708),
+        l = a(82214),
+        d = a(91169),
+        o = a(39068),
+        c = a(89715);
+      let x = [
+        {
+          icon: n.A,
+          title: "Real-time sync",
+          desc: "Direct Graph API calls — never stale, always live.",
+        },
+        {
+          icon: i.A,
+          title: "AES-256 encryption",
+          desc: "Access tokens encrypted at rest and never exposed.",
+        },
+        { icon: l.A, title: "Beautiful charts", desc: "Spend, results, ROAS visualized clearly." },
+        {
+          icon: d.A,
+          title: "Multi-client",
+          desc: "Manage unlimited clients from a single dashboard.",
+        },
+        { icon: o.A, title: "Secure share links", desc: "UUID tokens that expire automatically." },
+        {
+          icon: c.A,
+          title: "PDF & CSV export",
+          desc: "One-click branded reports your clients will love.",
+        },
+      ];
+      function m() {
+        return (0, s.jsx)("section", {
+          id: "features",
+          className: "relative py-28",
+          children: (0, s.jsxs)("div", {
+            className: "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
+            children: [
+              (0, s.jsxs)("div", {
+                className: "mx-auto max-w-2xl text-center",
+                children: [
+                  (0, s.jsx)("span", {
+                    className:
+                      "inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink",
+                    children: "Features",
+                  }),
+                  (0, s.jsx)("h2", {
+                    className: "mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl",
+                    children: "Built for ads agencies that ship reports daily",
+                  }),
+                ],
+              }),
+              (0, s.jsx)("div", {
+                className: "mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3",
+                children: x.map((e, t) =>
+                  (0, s.jsxs)(
+                    r.P.div,
+                    {
+                      initial: { opacity: 0, y: 24 },
+                      whileInView: { opacity: 1, y: 0 },
+                      viewport: { once: !0, margin: "-80px" },
+                      transition: { duration: 0.5, delay: (t % 3) * 0.1 },
+                      className:
+                        "group relative overflow-hidden rounded card-brutal bg-card p-7 hover-lift",
+                      children: [
+                        (0, s.jsx)("div", {
+                          "aria-hidden": !0,
+                          className:
+                            "pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-brand/40 blur-3xl",
+                        }),
+                        (0, s.jsx)("div", {
+                          className:
+                            "relative flex h-12 w-12 items-center justify-center rounded-xl bg-ink text-brand",
+                          children: (0, s.jsx)(e.icon, { className: "h-5 w-5" }),
+                        }),
+                        (0, s.jsx)("h3", {
+                          className: "relative mt-5 text-base font-bold tracking-tight",
+                          children: e.title,
+                        }),
+                        (0, s.jsx)("p", {
+                          className:
+                            "relative mt-1.5 text-sm leading-relaxed text-muted-foreground",
+                          children: e.desc,
+                        }),
+                      ],
+                    },
+                    e.title,
+                  ),
+                ),
+              }),
+            ],
+          }),
+        });
+      }
+    },
+    32055: (e, t, a) => {
+      (Promise.resolve().then(a.bind(a, 38016)),
+        Promise.resolve().then(a.bind(a, 27776)),
+        Promise.resolve().then(a.bind(a, 9880)),
+        Promise.resolve().then(a.bind(a, 76654)),
+        Promise.resolve().then(a.bind(a, 40024)),
+        Promise.resolve().then(a.bind(a, 76479)),
+        Promise.resolve().then(a.bind(a, 40005)),
+        Promise.resolve().then(a.bind(a, 80030)),
+        Promise.resolve().then(a.bind(a, 37857)));
+    },
+    37857: (e, t, a) => {
+      "use strict";
+      a.d(t, { Testimonials: () => u });
+      var s = a(95155),
+        r = a(12115),
+        n = a(26497),
+        i = a(9924),
+        l = a(5789),
+        d = a(39347),
+        o = a(90368),
+        c = a(27937),
+        x = a(3998);
+      let m = [
+        {
+          name: "Sarah Ahmed",
+          role: "Founder, Hive Marketing",
+          quote:
+            "We replaced three tools with this. Our clients adore the share links — no more screenshots in WhatsApp.",
+          initials: "SA",
+          accent: "bg-brand text-brand-foreground",
+        },
+        {
+          name: "Rakib Hassan",
+          role: "Performance Lead, BoostBD",
+          quote:
+            "The ROAS dashboard alone saved us hours per week. Reports our team used to build manually now take 30 seconds.",
+          initials: "RH",
+          accent: "bg-accent text-ink",
+        },
+        {
+          name: "Mira Chen",
+          role: "Director, Pixel & Penny",
+          quote:
+            "Beautiful UI, real-time data, and rock-solid encryption. This is the FB ads tool agencies have been waiting for.",
+          initials: "MC",
+          accent: "bg-warning text-ink",
+        },
+        {
+          name: "Tom\xe1s Vega",
+          role: "Growth, Lumen Studio",
+          quote:
+            "Onboarded a new client in under 5 minutes. The shareable read-only view is genius — they can't break anything.",
+          initials: "TV",
+          accent: "bg-success text-ink",
+        },
+        {
+          name: "Aisha Rahman",
+          role: "CEO, Fashion House BD",
+          quote:
+            "As a client, I finally get clean weekly reports without back-and-forth emails. Game changer.",
+          initials: "AR",
+          accent: "bg-brand text-brand-foreground",
+        },
+      ];
+      function u() {
+        let [e, t] = (0, r.useState)(0),
+          a = m.length,
+          u = (e) => t((t) => (t + e + a) % a),
+          h = m[e];
+        return (0, s.jsx)("section", {
+          className: "py-24",
+          children: (0, s.jsxs)("div", {
+            className: "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
+            children: [
+              (0, s.jsxs)("div", {
+                className: "mx-auto max-w-2xl text-center",
+                children: [
+                  (0, s.jsx)("span", {
+                    className:
+                      "inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink",
+                    children: "Loved by agencies",
+                  }),
+                  (0, s.jsx)("h2", {
+                    className: "mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl",
+                    children: "What our customers say",
+                  }),
+                ],
+              }),
+              (0, s.jsxs)("div", {
+                className: "mt-12 grid gap-8 lg:grid-cols-5 lg:items-stretch",
+                children: [
+                  (0, s.jsx)("div", {
+                    className: "lg:col-span-3 flex",
+                    children: (0, s.jsxs)("div", {
+                      className:
+                        "relative flex flex-col w-full rounded card-brutal bg-card p-8 sm:p-10",
+                      children: [
+                        (0, s.jsx)(l.A, {
+                          className:
+                            "absolute -top-4 -left-4 h-12 w-12 rounded card-brutal bg-brand p-2 text-brand-foreground",
+                        }),
+                        (0, s.jsx)("div", {
+                          className: "flex gap-1",
+                          children: Array.from({ length: 5 }).map((e, t) =>
+                            (0, s.jsx)(d.A, { className: "h-5 w-5 fill-warning text-warning" }, t),
+                          ),
+                        }),
+                        (0, s.jsx)(n.N, {
+                          mode: "wait",
+                          children: (0, s.jsxs)(
+                            i.P.div,
+                            {
+                              initial: { opacity: 0, y: 12 },
+                              animate: { opacity: 1, y: 0 },
+                              exit: { opacity: 0, y: -12 },
+                              transition: { duration: 0.25 },
+                              children: [
+                                (0, s.jsxs)("p", {
+                                  className:
+                                    "mt-5 text-lg font-medium leading-relaxed text-foreground sm:text-xl",
+                                  children: ['"', h.quote, '"'],
+                                }),
+                                (0, s.jsxs)("div", {
+                                  className: "mt-7 flex items-center gap-4",
+                                  children: [
+                                    (0, s.jsx)("div", {
+                                      className:
+                                        "flex h-12 w-12 items-center justify-center rounded card-brutal text-base font-bold ".concat(
+                                          h.accent,
+                                        ),
+                                      children: h.initials,
+                                    }),
+                                    (0, s.jsxs)("div", {
+                                      children: [
+                                        (0, s.jsx)("div", {
+                                          className: "text-base font-semibold",
+                                          children: h.name,
+                                        }),
+                                        (0, s.jsx)("div", {
+                                          className: "text-sm text-muted-foreground",
+                                          children: h.role,
+                                        }),
+                                      ],
+                                    }),
+                                  ],
+                                }),
+                              ],
+                            },
+                            e,
+                          ),
+                        }),
+                        (0, s.jsxs)("div", {
+                          className:
+                            "mt-auto pt-8 flex items-center justify-between border-t-2 border-ink/10",
+                          children: [
+                            (0, s.jsx)("div", {
+                              className: "flex gap-2",
+                              children: m.map((a, r) =>
+                                (0, s.jsx)(
+                                  "button",
+                                  {
+                                    onClick: () => t(r),
+                                    "aria-label": "Show testimonial ".concat(r + 1),
+                                    className: "h-2.5 rounded-full transition-all ".concat(
+                                      r === e ? "w-8 bg-ink" : "w-2.5 bg-ink/25 hover:bg-ink/50",
+                                    ),
+                                  },
+                                  r,
+                                ),
+                              ),
+                            }),
+                            (0, s.jsxs)("div", {
+                              className: "flex gap-2",
+                              children: [
+                                (0, s.jsx)(x.$, {
+                                  type: "button",
+                                  variant: "outline",
+                                  size: "icon",
+                                  onClick: () => u(-1),
+                                  className: "rounded card-brutal h-10 w-10 bg-card",
+                                  "aria-label": "Previous testimonial",
+                                  children: (0, s.jsx)(o.A, { className: "h-4 w-4" }),
+                                }),
+                                (0, s.jsx)(x.$, {
+                                  type: "button",
+                                  variant: "outline",
+                                  size: "icon",
+                                  onClick: () => u(1),
+                                  className: "rounded card-brutal h-10 w-10 bg-card",
+                                  "aria-label": "Next testimonial",
+                                  children: (0, s.jsx)(c.A, { className: "h-4 w-4" }),
+                                }),
+                              ],
+                            }),
+                          ],
+                        }),
+                      ],
+                    }),
+                  }),
+                  (0, s.jsx)("div", {
+                    className: "lg:col-span-2 space-y-3",
+                    children: m.map((a, r) =>
+                      (0, s.jsx)(
+                        "button",
+                        {
+                          onClick: () => t(r),
+                          className:
+                            "w-full text-left rounded card-brutal p-4 transition-all ".concat(
+                              r === e
+                                ? "bg-brand text-brand-foreground translate-x-0"
+                                : "bg-card hover:-translate-y-0.5",
+                            ),
+                          children: (0, s.jsxs)("div", {
+                            className: "flex items-center gap-3",
+                            children: [
+                              (0, s.jsx)("div", {
+                                className:
+                                  "flex h-10 w-10 shrink-0 items-center justify-center rounded text-sm font-bold border-2 border-ink ".concat(
+                                    r === e ? "bg-card text-ink" : a.accent,
+                                  ),
+                                children: a.initials,
+                              }),
+                              (0, s.jsxs)("div", {
+                                className: "min-w-0",
+                                children: [
+                                  (0, s.jsx)("div", {
+                                    className: "text-sm font-semibold truncate",
+                                    children: a.name,
+                                  }),
+                                  (0, s.jsx)("div", {
+                                    className: "text-xs truncate ".concat(
+                                      r === e
+                                        ? "text-brand-foreground/80"
+                                        : "text-muted-foreground",
+                                    ),
+                                    children: a.role,
+                                  }),
+                                ],
+                              }),
+                            ],
+                          }),
+                        },
+                        a.name,
+                      ),
+                    ),
+                  }),
+                ],
+              }),
+            ],
+          }),
+        });
+      }
+    },
+    38016: (e, t, a) => {
+      "use strict";
+      a.d(t, { FAQ: () => j });
+      var s = a(95155),
+        r = a(12115),
+        n = a(5937),
+        i = a(18085),
+        l = a(23664),
+        d = a(16083),
+        o = a(24033),
+        c = a(64269);
+      let x = d.bL,
+        m = r.forwardRef((e, t) => {
+          let { className: a, ...r } = e;
+          return (0, s.jsx)(d.q7, { ref: t, className: (0, c.cn)("border-b", a), ...r });
+        });
+      m.displayName = "AccordionItem";
+      let u = r.forwardRef((e, t) => {
+        let { className: a, children: r, ...n } = e;
+        return (0, s.jsx)(d.Y9, {
+          className: "flex",
+          children: (0, s.jsxs)(d.l9, {
+            ref: t,
+            className: (0, c.cn)(
+              "flex flex-1 items-center justify-between py-4 text-sm font-medium transition-all hover:underline text-left [&[data-state=open]>svg]:rotate-180",
+              a,
+            ),
+            ...n,
+            children: [
+              r,
+              (0, s.jsx)(o.A, {
+                className:
+                  "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
+              }),
+            ],
+          }),
+        });
+      });
+      u.displayName = d.l9.displayName;
+      let h = r.forwardRef((e, t) => {
+        let { className: a, children: r, ...n } = e;
+        return (0, s.jsx)(d.UC, {
+          ref: t,
+          className:
+            "overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down",
+          ...n,
+          children: (0, s.jsx)("div", { className: (0, c.cn)("pb-4 pt-0", a), children: r }),
+        });
+      });
+      h.displayName = d.UC.displayName;
+      var p = a(3998),
+        g = a(65142);
+      let f = r.forwardRef((e, t) => {
+        let { className: a, ...r } = e;
+        return (0, s.jsx)("textarea", {
+          className: (0, c.cn)(
+            "flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+            a,
+          ),
+          ref: t,
+          ...r,
+        });
+      });
+      f.displayName = "Textarea";
+      var b = a(76444),
+        v = a(18720);
+      let y = [
+        {
+          q: "Is my Facebook access token safe?",
+          a: "Yes. Tokens are encrypted with AES-256-GCM before being stored, and only the server can decrypt them when calling the Graph API. They are never sent to the browser.",
+        },
+        {
+          q: "How do client share links work?",
+          a: "When you click 'Share with Client', we generate a unique random UUID token tied to a single campaign with an expiry date you choose (7 / 30 / 60 / 90 days). The client opens a read-only dashboard — they cannot see any other campaign or your account.",
+        },
+        {
+          q: "Do you cache data or always pull fresh?",
+          a: "By default we call the Graph API directly so you always see real-time data. Pro and Enterprise plans include optional 1-hour caching to reduce API calls.",
+        },
+        {
+          q: "What happens when a share link expires?",
+          a: "The link returns a friendly 'expired' page. You can generate a new one anytime from the campaign or Reports page.",
+        },
+        {
+          q: "Can I export reports as PDF or CSV?",
+          a: "Yes. The Reports page lets you generate branded PDF or CSV reports for any client and date range with one click.",
+        },
+        {
+          q: "Does it work on mobile?",
+          a: "Absolutely. Both the agency dashboard and client share view are fully responsive and look great on any device.",
+        },
+      ];
+      function j() {
+        let [e, t] = (0, r.useState)({ name: "", email: "", message: "" }),
+          [a, d] = (0, r.useState)(!1);
+        return (0, s.jsx)("section", {
+          id: "faq",
+          className: "py-24",
+          children: (0, s.jsx)("div", {
+            className: "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
+            children: (0, s.jsxs)("div", {
+              className: "grid gap-10 lg:grid-cols-2 lg:gap-12 lg:items-stretch",
+              children: [
+                (0, s.jsxs)("div", {
+                  className: "flex flex-col",
+                  children: [
+                    (0, s.jsxs)("div", {
+                      children: [
+                        (0, s.jsx)("span", {
+                          className:
+                            "inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink",
+                          children: "FAQ",
+                        }),
+                        (0, s.jsx)("h2", {
+                          className:
+                            "mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl",
+                          children: "Frequently asked questions",
+                        }),
+                        (0, s.jsx)("p", {
+                          className: "mt-3 text-muted-foreground",
+                          children: "Everything you need to know about the product.",
+                        }),
+                      ],
+                    }),
+                    (0, s.jsx)(x, {
+                      type: "single",
+                      collapsible: !0,
+                      className: "mt-8 flex-1 space-y-3",
+                      children: y.map((e, t) =>
+                        (0, s.jsxs)(
+                          m,
+                          {
+                            value: "item-".concat(t),
+                            className: "rounded card-brutal bg-card px-5",
+                            children: [
+                              (0, s.jsx)(u, {
+                                className: "text-left text-base font-semibold hover:no-underline",
+                                children: e.q,
+                              }),
+                              (0, s.jsx)(h, {
+                                className: "text-sm text-muted-foreground",
+                                children: e.a,
+                              }),
+                            ],
+                          },
+                          t,
+                        ),
+                      ),
+                    }),
+                  ],
+                }),
+                (0, s.jsxs)("div", {
+                  id: "contact",
+                  className: "flex flex-col",
+                  children: [
+                    (0, s.jsxs)("div", {
+                      children: [
+                        (0, s.jsxs)("span", {
+                          className:
+                            "inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink",
+                          children: [(0, s.jsx)(n.A, { className: "h-3 w-3" }), "Contact us"],
+                        }),
+                        (0, s.jsx)("h2", {
+                          className:
+                            "mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl",
+                          children: "Still have questions?",
+                        }),
+                        (0, s.jsx)("p", {
+                          className: "mt-3 text-muted-foreground",
+                          children: "Send us a message and our team will reply within 24 hours.",
+                        }),
+                      ],
+                    }),
+                    (0, s.jsx)("form", {
+                      onSubmit: (e) => {
+                        (e.preventDefault(),
+                          d(!0),
+                          setTimeout(() => {
+                            (v.oR.success("Message sent! We'll get back to you within 24 hours."),
+                              t({ name: "", email: "", message: "" }),
+                              d(!1));
+                          }, 700));
+                      },
+                      className: "mt-8 flex-1 rounded card-brutal bg-card p-6 sm:p-7 flex flex-col",
+                      children: (0, s.jsxs)("div", {
+                        className: "flex flex-1 flex-col space-y-4",
+                        children: [
+                          (0, s.jsxs)("div", {
+                            className: "grid gap-4 sm:grid-cols-2",
+                            children: [
+                              (0, s.jsxs)("div", {
+                                className: "space-y-1.5",
+                                children: [
+                                  (0, s.jsx)(b.J, { htmlFor: "contact-name", children: "Name" }),
+                                  (0, s.jsx)(g.p, {
+                                    id: "contact-name",
+                                    placeholder: "Jane Doe",
+                                    required: !0,
+                                    maxLength: 100,
+                                    className: "rounded",
+                                    value: e.name,
+                                    onChange: (a) => t({ ...e, name: a.target.value }),
+                                  }),
+                                ],
+                              }),
+                              (0, s.jsxs)("div", {
+                                className: "space-y-1.5",
+                                children: [
+                                  (0, s.jsx)(b.J, { htmlFor: "contact-email", children: "Email" }),
+                                  (0, s.jsx)(g.p, {
+                                    id: "contact-email",
+                                    type: "email",
+                                    placeholder: "jane@agency.com",
+                                    required: !0,
+                                    maxLength: 255,
+                                    className: "rounded",
+                                    value: e.email,
+                                    onChange: (a) => t({ ...e, email: a.target.value }),
+                                  }),
+                                ],
+                              }),
+                            ],
+                          }),
+                          (0, s.jsxs)("div", {
+                            className: "flex flex-1 flex-col space-y-1.5",
+                            children: [
+                              (0, s.jsx)(b.J, { htmlFor: "contact-message", children: "Message" }),
+                              (0, s.jsx)(f, {
+                                id: "contact-message",
+                                placeholder: "How can we help?",
+                                required: !0,
+                                maxLength: 1e3,
+                                className: "rounded flex-1 min-h-[140px]",
+                                value: e.message,
+                                onChange: (a) => t({ ...e, message: a.target.value }),
+                              }),
+                            ],
+                          }),
+                          (0, s.jsxs)(p.$, {
+                            type: "submit",
+                            disabled: a,
+                            className:
+                              "w-full rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand font-semibold",
+                            children: [
+                              (0, s.jsx)(i.A, { className: "h-4 w-4" }),
+                              a ? "Sending..." : "Send message",
+                            ],
+                          }),
+                          (0, s.jsxs)("div", {
+                            className:
+                              "flex items-center justify-center gap-2 pt-2 text-xs text-muted-foreground",
+                            children: [
+                              (0, s.jsx)(l.A, { className: "h-3.5 w-3.5" }),
+                              "Or email us at",
+                              " ",
+                              (0, s.jsx)("span", {
+                                className: "font-medium text-foreground",
+                                children: "hello@adgleam.com",
+                              }),
+                            ],
+                          }),
+                        ],
+                      }),
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          }),
+        });
+      }
+    },
+    40005: (e, t, a) => {
+      "use strict";
+      a.d(t, { Pricing: () => m });
+      var s = a(95155),
+        r = a(9924),
+        n = a(95740),
+        i = a(5917),
+        l = a(52619),
+        d = a.n(l),
+        o = a(3998),
+        c = a(64269);
+      let x = [
+        {
+          name: "Free",
+          price: "$0",
+          period: "/forever",
+          desc: "Perfect for solo agencies getting started.",
+          features: [
+            "1 ad account",
+            "Up to 5 campaigns",
+            "7 days data retention",
+            "Basic dashboard",
+          ],
+          cta: "Start Free",
+          highlight: !1,
+        },
+        {
+          name: "Starter",
+          price: "$19",
+          period: "/month",
+          desc: "For freelancers running a few clients.",
+          features: [
+            "2 ad accounts",
+            "Up to 15 campaigns",
+            "30 days data retention",
+            "Share links",
+            "Email support",
+          ],
+          cta: "Start Starter",
+          highlight: !1,
+        },
+        {
+          name: "Pro",
+          price: "$50",
+          period: "/month",
+          desc: "Everything growing agencies need.",
+          features: [
+            "5 ad accounts",
+            "Up to 50 campaigns",
+            "90 days data retention",
+            "Unlimited share links",
+            "PDF & CSV reports",
+            "Priority support",
+          ],
+          cta: "Start Pro Trial",
+          highlight: !0,
+        },
+        {
+          name: "Enterprise",
+          price: "Custom",
+          period: "",
+          desc: "For large agencies & networks.",
+          features: [
+            "Unlimited everything",
+            "API access",
+            "Custom integrations",
+            "White-label options",
+            "Dedicated success manager",
+          ],
+          cta: "Contact Sales",
+          highlight: !1,
+        },
+      ];
+      function m() {
+        return (0, s.jsxs)("section", {
+          id: "pricing",
+          className: "relative py-28",
+          children: [
+            (0, s.jsx)("div", {
+              "aria-hidden": !0,
+              className: "pointer-events-none absolute inset-0 bg-gradient-mesh opacity-50",
+            }),
+            (0, s.jsxs)("div", {
+              className: "relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
+              children: [
+                (0, s.jsxs)("div", {
+                  className: "mx-auto max-w-2xl text-center",
+                  children: [
+                    (0, s.jsxs)("span", {
+                      className:
+                        "inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink",
+                      children: [(0, s.jsx)(n.A, { className: "h-3 w-3" }), "Pricing"],
+                    }),
+                    (0, s.jsx)("h2", {
+                      className: "mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl",
+                      children: "Simple, transparent pricing",
+                    }),
+                    (0, s.jsx)("p", {
+                      className: "mt-4 text-muted-foreground",
+                      children: "Start free. Upgrade when your agency grows.",
+                    }),
+                  ],
+                }),
+                (0, s.jsx)("div", {
+                  className: "mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:items-center",
+                  children: x.map((e, t) =>
+                    (0, s.jsxs)(
+                      r.P.div,
+                      {
+                        initial: { opacity: 0, y: 30 },
+                        whileInView: { opacity: 1, y: 0 },
+                        viewport: { once: !0, margin: "-80px" },
+                        transition: { duration: 0.55, delay: 0.12 * t },
+                        className: (0, c.cn)(
+                          "relative rounded p-8 hover-lift",
+                          e.highlight
+                            ? "border-2 border-brand bg-ink text-ink-foreground shadow-brutal lg:scale-[1.04] lg:-my-2"
+                            : "card-brutal bg-card",
+                        ),
+                        children: [
+                          e.highlight &&
+                            (0, s.jsxs)("span", {
+                              className:
+                                "absolute -top-3.5 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-foreground shadow-glow",
+                              children: [(0, s.jsx)(n.A, { className: "h-3 w-3" }), "Most popular"],
+                            }),
+                          (0, s.jsx)("h3", {
+                            className: (0, c.cn)(
+                              "text-sm font-semibold uppercase tracking-wider",
+                              e.highlight ? "text-brand" : "text-muted-foreground",
+                            ),
+                            children: e.name,
+                          }),
+                          (0, s.jsxs)("div", {
+                            className: "mt-4 flex items-baseline gap-1",
+                            children: [
+                              (0, s.jsx)("span", {
+                                className: (0, c.cn)(
+                                  "font-display text-5xl font-bold",
+                                  e.highlight ? "text-ink-foreground" : "text-foreground",
+                                ),
+                                children: e.price,
+                              }),
+                              (0, s.jsx)("span", {
+                                className: (0, c.cn)(
+                                  "text-sm",
+                                  e.highlight ? "text-ink-foreground/70" : "text-muted-foreground",
+                                ),
+                                children: e.period,
+                              }),
+                            ],
+                          }),
+                          (0, s.jsx)("p", {
+                            className: (0, c.cn)(
+                              "mt-3 text-sm",
+                              e.highlight ? "text-ink-foreground/80" : "text-muted-foreground",
+                            ),
+                            children: e.desc,
+                          }),
+                          (0, s.jsx)("div", {
+                            className: (0, c.cn)(
+                              "my-6 h-px",
+                              e.highlight ? "bg-ink-foreground/15" : "bg-border",
+                            ),
+                          }),
+                          (0, s.jsx)("ul", {
+                            className: "space-y-3",
+                            children: e.features.map((t) =>
+                              (0, s.jsxs)(
+                                "li",
+                                {
+                                  className: (0, c.cn)(
+                                    "flex items-start gap-2.5 text-sm",
+                                    e.highlight ? "text-ink-foreground/90" : "text-foreground",
+                                  ),
+                                  children: [
+                                    (0, s.jsx)("span", {
+                                      className: (0, c.cn)(
+                                        "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full",
+                                        e.highlight
+                                          ? "bg-brand text-brand-foreground"
+                                          : "bg-accent text-ink",
+                                      ),
+                                      children: (0, s.jsx)(i.A, {
+                                        className: "h-3 w-3",
+                                        strokeWidth: 3,
+                                      }),
+                                    }),
+                                    t,
+                                  ],
+                                },
+                                t,
+                              ),
+                            ),
+                          }),
+                          (0, s.jsx)(o.$, {
+                            asChild: !0,
+                            className: (0, c.cn)(
+                              "mt-8 w-full rounded font-semibold btn-brutal h-auto py-3",
+                              (e.highlight, "!bg-brand !text-brand-foreground hover:!bg-brand"),
+                            ),
+                            children: (0, s.jsx)(d(), { href: "/signup", children: e.cta }),
+                          }),
+                        ],
+                      },
+                      e.name,
+                    ),
+                  ),
+                }),
+              ],
+            }),
+          ],
+        });
+      }
+    },
+    40024: (e, t, a) => {
+      "use strict";
+      a.d(t, { HowItWorks: () => o });
+      var s = a(95155),
+        r = a(9924),
+        n = a(73155),
+        i = a(80534),
+        l = a(17181);
+      let d = [
+        {
+          icon: n.A,
+          title: "Connect Facebook",
+          desc: "Securely link your ad accounts in one click. Tokens are encrypted with AES-256 — never stored in plaintext.",
+        },
+        {
+          icon: i.A,
+          title: "Analyze Data",
+          desc: "Real-time insights pulled directly from the Graph API. Spend, ROAS, CTR, CPC — all updated live.",
+        },
+        {
+          icon: l.A,
+          title: "Share Reports",
+          desc: "Generate secure UUID share links that expire automatically. Clients view read-only dashboards — no login required.",
+        },
+      ];
+      function o() {
+        return (0, s.jsx)("section", {
+          id: "how-it-works",
+          className: "relative py-28",
+          children: (0, s.jsxs)("div", {
+            className: "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
+            children: [
+              (0, s.jsxs)("div", {
+                className: "mx-auto max-w-2xl text-center",
+                children: [
+                  (0, s.jsx)("span", {
+                    className:
+                      "inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink",
+                    children: "How it works",
+                  }),
+                  (0, s.jsxs)("h2", {
+                    className: "mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl",
+                    children: [
+                      "Three steps from raw data to",
+                      " ",
+                      (0, s.jsxs)("span", {
+                        className: "relative inline-block",
+                        children: [
+                          (0, s.jsx)("span", {
+                            className: "relative z-10 text-brand-foreground",
+                            children: "client report",
+                          }),
+                          (0, s.jsx)("span", {
+                            "aria-hidden": !0,
+                            className: "absolute inset-0 -z-0 -skew-x-6 bg-brand",
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+              (0, s.jsxs)("div", {
+                className: "relative mt-20 grid gap-8 lg:grid-cols-3",
+                children: [
+                  (0, s.jsx)("div", {
+                    "aria-hidden": !0,
+                    className:
+                      "pointer-events-none absolute left-0 right-0 top-12 hidden h-px bg-gradient-to-r from-transparent via-border to-transparent lg:block",
+                  }),
+                  d.map((e, t) =>
+                    (0, s.jsxs)(
+                      r.P.div,
+                      {
+                        initial: { opacity: 0, y: 30 },
+                        whileInView: { opacity: 1, y: 0 },
+                        viewport: { once: !0, margin: "-80px" },
+                        transition: { duration: 0.55, delay: 0.15 * t },
+                        className: "group relative rounded card-brutal bg-card p-8 hover-lift",
+                        children: [
+                          (0, s.jsx)("div", {
+                            className:
+                              "absolute -top-6 left-7 flex h-12 w-12 items-center justify-center rounded bg-ink text-base font-bold text-ink-foreground shadow-glow-ink ring-4 ring-background",
+                            children: t + 1,
+                          }),
+                          (0, s.jsx)("div", {
+                            className:
+                              "mt-2 inline-flex h-12 w-12 items-center justify-center rounded bg-accent text-ink transition-all duration-500 group-hover:bg-brand group-hover:rotate-6",
+                            children: (0, s.jsx)(e.icon, { className: "h-6 w-6" }),
+                          }),
+                          (0, s.jsx)("h3", {
+                            className: "mt-5 text-xl font-bold tracking-tight",
+                            children: e.title,
+                          }),
+                          (0, s.jsx)("p", {
+                            className: "mt-2 text-sm leading-relaxed text-muted-foreground",
+                            children: e.desc,
+                          }),
+                        ],
+                      },
+                      e.title,
+                    ),
+                  ),
+                ],
+              }),
+            ],
+          }),
+        });
+      }
+    },
+    64269: (e, t, a) => {
+      "use strict";
+      a.d(t, { cn: () => n });
+      var s = a(2821),
+        r = a(75889);
+      function n() {
+        for (var e = arguments.length, t = Array(e), a = 0; a < e; a++) t[a] = arguments[a];
+        return (0, r.QP)((0, s.$)(t));
+      }
+    },
+    65142: (e, t, a) => {
+      "use strict";
+      a.d(t, { p: () => i });
+      var s = a(95155),
+        r = a(12115),
+        n = a(64269);
+      let i = r.forwardRef((e, t) => {
+        let { className: a, type: r, ...i } = e;
+        return (0, s.jsx)("input", {
+          type: r,
+          className: (0, n.cn)(
+            "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+            a,
+          ),
+          ref: t,
+          ...i,
+        });
+      });
+      i.displayName = "Input";
+    },
+    76444: (e, t, a) => {
+      "use strict";
+      a.d(t, { J: () => o });
+      var s = a(95155),
+        r = a(12115),
+        n = a(32894),
+        i = a(83101),
+        l = a(64269);
+      let d = (0, i.F)(
+          "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+        ),
+        o = r.forwardRef((e, t) => {
+          let { className: a, ...r } = e;
+          return (0, s.jsx)(n.b, { ref: t, className: (0, l.cn)(d(), a), ...r });
+        });
+      o.displayName = n.b.displayName;
+    },
+    76479: (e, t, a) => {
+      "use strict";
+      a.d(t, { Navbar: () => b });
+      var s = a(95155),
+        r = a(52619),
+        n = a.n(r),
+        i = a(56154),
+        l = a(59427),
+        d = a(37494),
+        o = a(52987),
+        c = a(9540),
+        x = a(12115),
+        m = a(9924),
+        u = a(3998),
+        h = a(27063),
+        p = a(77845),
+        g = a(64269);
+      let f = [
+        { label: "Home", href: "#top" },
+        { label: "Features", href: "#features" },
+        { label: "How it works", href: "#how-it-works" },
+        { label: "Pricing", href: "#pricing" },
+        { label: "FAQ", href: "#faq" },
+      ];
+      function b() {
+        let { theme: e, toggle: t } = (0, p.D)(),
+          [a, r] = (0, x.useState)(!1),
+          [b, v] = (0, x.useState)(!1);
+        return (
+          (0, x.useEffect)(() => {
+            let e = () => r(window.scrollY > 8);
+            return (
+              e(),
+              window.addEventListener("scroll", e, { passive: !0 }),
+              () => window.removeEventListener("scroll", e)
+            );
+          }, []),
+          (0, s.jsx)(m.P.header, {
+            initial: { y: -40, opacity: 0 },
+            animate: { y: 0, opacity: 1 },
+            transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+            className: "fixed top-0 left-0 right-0 z-50 w-full",
+            children: (0, s.jsx)("div", {
+              className: (0, g.cn)(
+                "px-3 sm:px-4 lg:px-6 transition-all duration-300",
+                a ? "pt-3 pb-3" : "pt-4 pb-4 sm:pt-5 sm:pb-5",
+              ),
+              children: (0, s.jsxs)("nav", {
+                className: (0, g.cn)(
+                  "mx-auto flex max-w-7xl items-center justify-between gap-3 rounded card-brutal bg-background px-3 py-3.5 transition-all duration-300 sm:px-4 sm:py-4",
+                  a ? "shadow-brutal" : "",
+                ),
+                children: [
+                  (0, s.jsxs)(n(), {
+                    href: "/",
+                    className: "group flex items-center gap-2 shrink-0 pl-1",
+                    children: [
+                      (0, s.jsx)("span", {
+                        className:
+                          "relative flex h-9 w-9 items-center justify-center rounded bg-brand text-ink border-2 border-ink transition-transform duration-300 group-hover:rotate-12",
+                        children: (0, s.jsx)(i.A, { className: "h-4 w-4 fill-ink" }),
+                      }),
+                      (0, s.jsxs)("span", {
+                        className:
+                          "text-sm font-bold tracking-tight whitespace-nowrap sm:text-base",
+                        children: [
+                          (0, s.jsx)("span", {
+                            className: "hidden sm:inline",
+                            children: "AdReportly",
+                          }),
+                          (0, s.jsx)("span", { className: "sm:hidden", children: "AdReportly" }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  (0, s.jsx)("div", {
+                    className: "hidden items-center gap-0.5 lg:flex",
+                    children: f.map((e) =>
+                      (0, s.jsx)(
+                        "a",
+                        {
+                          href: e.href,
+                          className:
+                            "whitespace-nowrap rounded px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-ink",
+                          children: e.label,
+                        },
+                        e.label,
+                      ),
+                    ),
+                  }),
+                  (0, s.jsxs)("div", {
+                    className: "flex items-center gap-1.5",
+                    children: [
+                      (0, s.jsx)(u.$, {
+                        variant: "ghost",
+                        size: "icon",
+                        onClick: t,
+                        "aria-label": "Toggle theme",
+                        className: "rounded h-9 w-9 hover:bg-accent",
+                        children:
+                          "dark" === e
+                            ? (0, s.jsx)(l.A, { className: "h-4 w-4" })
+                            : (0, s.jsx)(d.A, { className: "h-4 w-4" }),
+                      }),
+                      (0, s.jsx)(u.$, {
+                        asChild: !0,
+                        variant: "ghost",
+                        size: "sm",
+                        className: "hidden rounded lg:inline-flex",
+                        children: (0, s.jsx)(n(), { href: "/login", children: "Sign in" }),
+                      }),
+                      (0, s.jsx)(u.$, {
+                        asChild: !0,
+                        size: "sm",
+                        className:
+                          "hidden rounded bg-brand text-brand-foreground btn-brutal h-9 px-4 hover:bg-brand lg:inline-flex",
+                        children: (0, s.jsxs)(n(), {
+                          href: "/signup",
+                          children: [
+                            "Get Started ",
+                            (0, s.jsx)(o.A, { className: "ml-1 h-3.5 w-3.5" }),
+                          ],
+                        }),
+                      }),
+                      (0, s.jsxs)(h.cj, {
+                        open: b,
+                        onOpenChange: v,
+                        children: [
+                          (0, s.jsx)(h.CG, {
+                            asChild: !0,
+                            children: (0, s.jsx)(u.$, {
+                              variant: "outline",
+                              size: "icon",
+                              "aria-label": "Open menu",
+                              className: "rounded h-9 w-9 border-2 border-ink bg-card lg:hidden",
+                              children: (0, s.jsx)(c.A, { className: "h-4 w-4" }),
+                            }),
+                          }),
+                          (0, s.jsxs)(h.h, {
+                            side: "left",
+                            className:
+                              "w-[300px] border-r-2 border-ink bg-background p-0 sm:w-[340px]",
+                            children: [
+                              (0, s.jsx)(h.Fm, {
+                                className: "border-b-2 border-ink/10 p-5",
+                                children: (0, s.jsx)(h.qp, {
+                                  asChild: !0,
+                                  children: (0, s.jsxs)(n(), {
+                                    href: "/",
+                                    onClick: () => v(!1),
+                                    className: "flex items-center gap-2.5",
+                                    children: [
+                                      (0, s.jsx)("span", {
+                                        className:
+                                          "flex h-9 w-9 items-center justify-center rounded bg-brand text-ink border-2 border-ink",
+                                        children: (0, s.jsx)(i.A, {
+                                          className: "h-4 w-4 fill-ink",
+                                        }),
+                                      }),
+                                      (0, s.jsx)("span", {
+                                        className: "text-base font-bold tracking-tight",
+                                        children: "AdReportly",
+                                      }),
+                                    ],
+                                  }),
+                                }),
+                              }),
+                              (0, s.jsx)("nav", {
+                                className: "flex flex-col gap-1 p-4",
+                                children: f.map((e, t) =>
+                                  (0, s.jsx)(
+                                    h.kN,
+                                    {
+                                      asChild: !0,
+                                      children: (0, s.jsxs)(m.P.a, {
+                                        initial: { opacity: 0, x: -12 },
+                                        animate: { opacity: 1, x: 0 },
+                                        transition: { delay: 0.05 * t, duration: 0.3 },
+                                        href: e.href,
+                                        className:
+                                          "group flex items-center justify-between rounded px-4 py-3 text-sm font-semibold text-foreground transition-all hover:bg-accent",
+                                        children: [
+                                          (0, s.jsx)("span", { children: e.label }),
+                                          (0, s.jsx)("span", {
+                                            className:
+                                              "text-muted-foreground transition-all group-hover:text-ink group-hover:translate-x-1",
+                                            children: "→",
+                                          }),
+                                        ],
+                                      }),
+                                    },
+                                    e.label,
+                                  ),
+                                ),
+                              }),
+                              (0, s.jsxs)("div", {
+                                className:
+                                  "mt-auto flex flex-col gap-2 border-t-2 border-ink/10 p-4",
+                                children: [
+                                  (0, s.jsx)(h.kN, {
+                                    asChild: !0,
+                                    children: (0, s.jsx)(u.$, {
+                                      asChild: !0,
+                                      variant: "outline",
+                                      className:
+                                        "w-full rounded bg-card btn-brutal h-auto py-3 hover:bg-card",
+                                      children: (0, s.jsx)(n(), {
+                                        href: "/login",
+                                        children: "Sign in",
+                                      }),
+                                    }),
+                                  }),
+                                  (0, s.jsx)(h.kN, {
+                                    asChild: !0,
+                                    children: (0, s.jsx)(u.$, {
+                                      asChild: !0,
+                                      className:
+                                        "w-full rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand",
+                                      children: (0, s.jsx)(n(), {
+                                        href: "/signup",
+                                        children: "Get Started",
+                                      }),
+                                    }),
+                                  }),
+                                ],
+                              }),
+                            ],
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            }),
+          })
+        );
+      }
+    },
+    76654: (e, t, a) => {
+      "use strict";
+      a.d(t, { Hero: () => v });
+      var s = a(95155),
+        r = a(9924),
+        n = a(52619),
+        i = a.n(n),
+        l = a(95740),
+        d = a(52987),
+        o = a(36168),
+        c = a(1524),
+        x = a(3998),
+        m = a(26991),
+        u = a(98128),
+        h = a(47734),
+        p = a(16533),
+        g = a(69386);
+      let f = Array.from({ length: 30 }, (e, t) => {
+        let a = new Date();
+        a.setDate(a.getDate() - (29 - t));
+        let s = 0.5 * Math.sin(1.7 * t) + 0.5;
+        return {
+          date: a.toISOString().slice(0, 10),
+          label: a.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+          spend: Math.round(8e3 + 18e3 * s + 4e3 * Math.random()),
+          results: Math.round(4e3 + 14e3 * s + 3e3 * Math.random()),
+        };
+      });
+      f.reduce((e, t) => e + t.spend, 0);
+      let b = ["Turn", "ad", "spend", "into"];
+      function v() {
+        return (0, s.jsxs)("section", {
+          className: "relative overflow-hidden bg-gradient-hero",
+          children: [
+            (0, s.jsx)("div", {
+              "aria-hidden": !0,
+              className:
+                "pointer-events-none absolute -left-32 top-10 h-[28rem] w-[28rem] rounded-full bg-brand/30 opacity-70 blur-3xl animate-float-slow",
+            }),
+            (0, s.jsx)("div", {
+              "aria-hidden": !0,
+              className:
+                "pointer-events-none absolute -right-24 top-32 h-96 w-96 animate-blob bg-gradient-brand opacity-25 blur-3xl",
+            }),
+            (0, s.jsx)("div", {
+              "aria-hidden": !0,
+              className: "pointer-events-none absolute inset-0 bg-grid opacity-[0.35]",
+            }),
+            (0, s.jsxs)("div", {
+              className:
+                "relative mx-auto grid max-w-7xl items-center gap-12 px-4 pt-32 pb-20 sm:px-6 sm:pt-36 sm:pb-24 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:pt-40 lg:pb-32",
+              children: [
+                (0, s.jsxs)("div", {
+                  className: "text-center lg:text-left",
+                  children: [
+                    (0, s.jsxs)(r.P.span, {
+                      initial: { opacity: 0, y: 12 },
+                      animate: { opacity: 1, y: 0 },
+                      transition: { duration: 0.5 },
+                      className:
+                        "inline-flex items-center gap-2 rounded-full card-brutal bg-card/70 px-3 py-1.5 text-xs font-medium text-foreground backdrop-blur-md",
+                      children: [
+                        (0, s.jsxs)("span", {
+                          className: "relative flex h-2 w-2",
+                          children: [
+                            (0, s.jsx)("span", {
+                              className:
+                                "absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-75",
+                            }),
+                            (0, s.jsx)("span", {
+                              className: "relative inline-flex h-2 w-2 rounded-full bg-brand",
+                            }),
+                          ],
+                        }),
+                        (0, s.jsx)(l.A, { className: "h-3.5 w-3.5 text-ink" }),
+                        "Real-time Facebook Ads insights",
+                      ],
+                    }),
+                    (0, s.jsxs)("h1", {
+                      className:
+                        "mt-6 font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-[4.25rem] lg:leading-[1.02]",
+                      children: [
+                        b.map((e, t) =>
+                          (0, s.jsx)(
+                            r.P.span,
+                            {
+                              initial: { opacity: 0, y: 24, filter: "blur(8px)" },
+                              animate: { opacity: 1, y: 0, filter: "blur(0px)" },
+                              transition: { duration: 0.55, delay: 0.05 * t, ease: "easeOut" },
+                              className: "mr-3 inline-block text-ink",
+                              children: e,
+                            },
+                            t,
+                          ),
+                        ),
+                        (0, s.jsx)("br", {}),
+                        (0, s.jsxs)(r.P.span, {
+                          initial: { opacity: 0, y: 24 },
+                          animate: { opacity: 1, y: 0 },
+                          transition: { duration: 0.6, delay: 0.3, ease: "easeOut" },
+                          className: "relative inline-block",
+                          children: [
+                            (0, s.jsx)("span", {
+                              className: "relative z-10 text-brand-foreground",
+                              children: "measurable ROI",
+                            }),
+                            (0, s.jsx)("span", {
+                              "aria-hidden": !0,
+                              className: "absolute inset-0 -z-0 -skew-x-6 bg-brand",
+                            }),
+                          ],
+                        }),
+                      ],
+                    }),
+                    (0, s.jsx)(r.P.p, {
+                      initial: { opacity: 0, y: 16 },
+                      animate: { opacity: 1, y: 0 },
+                      transition: { duration: 0.5, delay: 0.5 },
+                      className: "mt-6 max-w-xl text-lg text-muted-foreground mx-auto lg:mx-0",
+                      children:
+                        "The all-in-one analytics platform agencies use to track Facebook campaigns, generate stunning client reports, and share secure read-only dashboards in seconds.",
+                    }),
+                    (0, s.jsxs)(r.P.div, {
+                      initial: { opacity: 0, y: 16 },
+                      animate: { opacity: 1, y: 0 },
+                      transition: { duration: 0.5, delay: 0.6 },
+                      className:
+                        "mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start",
+                      children: [
+                        (0, s.jsx)("div", {
+                          className: "glow-ring rounded",
+                          children: (0, s.jsx)(x.$, {
+                            asChild: !0,
+                            size: "lg",
+                            className:
+                              "rounded bg-brand px-7 text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand",
+                            children: (0, s.jsxs)(i(), {
+                              href: "/signup",
+                              children: [
+                                "Get Started Free",
+                                (0, s.jsx)(d.A, {
+                                  className:
+                                    "ml-2 h-4 w-4 transition-transform group-hover:translate-x-1",
+                                }),
+                              ],
+                            }),
+                          }),
+                        }),
+                        (0, s.jsxs)(x.$, {
+                          variant: "outline",
+                          size: "lg",
+                          className: "rounded bg-card btn-brutal h-auto py-3 hover:bg-card",
+                          children: [(0, s.jsx)(o.A, { className: "mr-2 h-5 w-5" }), "Watch Demo"],
+                        }),
+                      ],
+                    }),
+                    (0, s.jsxs)(r.P.div, {
+                      initial: { opacity: 0 },
+                      animate: { opacity: 1 },
+                      transition: { duration: 0.6, delay: 0.8 },
+                      className:
+                        "mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-muted-foreground lg:justify-start",
+                      children: [
+                        (0, s.jsx)("div", {
+                          className: "flex -space-x-2",
+                          children: ["F", "T", "A", "M"].map((e) =>
+                            (0, s.jsx)(
+                              "div",
+                              {
+                                className:
+                                  "flex h-9 w-9 items-center justify-center rounded-full border-2 border-background bg-ink text-xs font-semibold text-ink-foreground shadow-soft",
+                                children: e,
+                              },
+                              e,
+                            ),
+                          ),
+                        }),
+                        (0, s.jsxs)("span", {
+                          children: [
+                            (0, s.jsx)("span", {
+                              className: "font-semibold text-foreground",
+                              children: "500+ agencies",
+                            }),
+                            " tracking ৳120M+ in ad spend",
+                          ],
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+                (0, s.jsxs)(r.P.div, {
+                  initial: { opacity: 0, y: 50, scale: 0.94 },
+                  animate: { opacity: 1, y: 0, scale: 1 },
+                  transition: { duration: 0.85, delay: 0.2, ease: "easeOut" },
+                  className: "relative",
+                  children: [
+                    (0, s.jsx)("div", {
+                      className: "animate-float",
+                      children: (0, s.jsxs)("div", {
+                        className:
+                          "glass-strong relative overflow-hidden rounded p-6 shadow-elevated",
+                        children: [
+                          (0, s.jsx)("div", {
+                            "aria-hidden": !0,
+                            className:
+                              "pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-brand/40 blur-2xl",
+                          }),
+                          (0, s.jsxs)("div", {
+                            className: "relative flex items-center justify-between",
+                            children: [
+                              (0, s.jsxs)("div", {
+                                children: [
+                                  (0, s.jsx)("p", {
+                                    className:
+                                      "text-[11px] font-semibold uppercase tracking-wider text-muted-foreground",
+                                    children: "Live ROI Tracking",
+                                  }),
+                                  (0, s.jsx)("h3", {
+                                    className: "mt-1 font-display text-3xl font-bold text-ink",
+                                    children: "৳477,710.00",
+                                  }),
+                                ],
+                              }),
+                              (0, s.jsxs)("span", {
+                                className:
+                                  "inline-flex items-center gap-1 rounded-full bg-success/15 px-3 py-1 text-xs font-semibold text-success",
+                                children: [
+                                  (0, s.jsx)(c.A, { className: "h-3.5 w-3.5" }),
+                                  "+4,397.8%",
+                                ],
+                              }),
+                            ],
+                          }),
+                          (0, s.jsx)("div", {
+                            className: "relative mt-6 h-44",
+                            children: (0, s.jsx)(m.u, {
+                              width: "100%",
+                              height: "100%",
+                              children: (0, s.jsxs)(u.E, {
+                                data: f.slice(-14),
+                                barCategoryGap: 4,
+                                children: [
+                                  (0, s.jsx)(h.W, { dataKey: "label", hide: !0 }),
+                                  (0, s.jsx)(p.y, {
+                                    dataKey: "spend",
+                                    radius: [6, 6, 0, 0],
+                                    maxBarSize: 14,
+                                    children: f
+                                      .slice(-14)
+                                      .map((e, t) => (0, s.jsx)(g.f, { fill: "var(--ink)" }, t)),
+                                  }),
+                                  (0, s.jsx)(p.y, {
+                                    dataKey: "results",
+                                    radius: [6, 6, 0, 0],
+                                    maxBarSize: 14,
+                                    children: f
+                                      .slice(-14)
+                                      .map((e, t) => (0, s.jsx)(g.f, { fill: "var(--brand)" }, t)),
+                                  }),
+                                ],
+                              }),
+                            }),
+                          }),
+                          (0, s.jsx)("div", {
+                            className: "mt-4 grid grid-cols-3 gap-3 text-center",
+                            children: [
+                              { label: "ROAS", value: "6.55\xd7" },
+                              { label: "CTR", value: "2.4%" },
+                              { label: "CPC", value: "৳12.7" },
+                            ].map((e, t) =>
+                              (0, s.jsxs)(
+                                r.P.div,
+                                {
+                                  initial: { opacity: 0, y: 10 },
+                                  animate: { opacity: 1, y: 0 },
+                                  transition: { delay: 0.6 + 0.1 * t },
+                                  className:
+                                    "rounded-xl border border-border/60 bg-background/60 px-3 py-2 backdrop-blur",
+                                  children: [
+                                    (0, s.jsx)("div", {
+                                      className:
+                                        "text-[10px] font-semibold uppercase tracking-wider text-muted-foreground",
+                                      children: e.label,
+                                    }),
+                                    (0, s.jsx)("div", {
+                                      className: "text-base font-bold text-foreground",
+                                      children: e.value,
+                                    }),
+                                  ],
+                                },
+                                e.label,
+                              ),
+                            ),
+                          }),
+                        ],
+                      }),
+                    }),
+                    (0, s.jsxs)(r.P.div, {
+                      initial: { opacity: 0, scale: 0.8 },
+                      animate: { opacity: 1, scale: 1 },
+                      transition: { delay: 1, duration: 0.5 },
+                      className:
+                        "absolute -left-6 top-12 hidden rounded card-brutal bg-card px-4 py-3 backdrop-blur lg:block",
+                      children: [
+                        (0, s.jsx)("div", {
+                          className:
+                            "text-[10px] font-semibold uppercase tracking-wider text-muted-foreground",
+                          children: "Today's spend",
+                        }),
+                        (0, s.jsx)("div", {
+                          className: "mt-1 text-lg font-bold text-ink",
+                          children: "৳18,420",
+                        }),
+                      ],
+                    }),
+                    (0, s.jsxs)(r.P.div, {
+                      initial: { opacity: 0, scale: 0.8 },
+                      animate: { opacity: 1, scale: 1 },
+                      transition: { delay: 1.2, duration: 0.5 },
+                      className:
+                        "absolute -right-4 -bottom-2 hidden items-center gap-2 rounded-full card-brutal bg-card px-4 py-2 lg:inline-flex",
+                      children: [
+                        (0, s.jsx)("span", { className: "h-2 w-2 rounded-full bg-success" }),
+                        (0, s.jsx)("span", {
+                          className: "text-xs font-semibold text-foreground",
+                          children: "All accounts synced",
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+            (0, s.jsx)("div", {
+              className: "relative border-t border-border/60 bg-background/40 backdrop-blur",
+              children: (0, s.jsx)("div", {
+                className: "mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8",
+                children: (0, s.jsxs)("div", {
+                  className:
+                    "flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground",
+                  children: [
+                    (0, s.jsx)("span", { children: "Trusted by" }),
+                    [
+                      "Hive Marketing",
+                      "BoostBD",
+                      "Pixel & Penny",
+                      "Lumen Studio",
+                      "Fashion House BD",
+                    ].map((e) =>
+                      (0, s.jsx)(
+                        "span",
+                        { className: "opacity-70 transition hover:opacity-100", children: e },
+                        e,
+                      ),
+                    ),
+                  ],
+                }),
+              }),
+            }),
+          ],
+        });
+      }
+    },
+    76924: (e, t, a) => {
+      "use strict";
+      a.d(t, { A: () => o, AuthProvider: () => d });
+      var s = a(95155),
+        r = a(12115),
+        n = a(96199),
+        i = a(20063);
+      let l = (0, r.createContext)(null);
+      function d(e) {
+        let { children: t } = e,
+          a = (0, i.useRouter)(),
+          { data: d, status: o, update: c } = (0, n.wV)(),
+          x = (0, r.useMemo)(() => {
+            var e, t;
+            return (null == d || null == (e = d.user) ? void 0 : e.id)
+              ? { id: d.user.id, email: null != (t = d.user.email) ? t : null }
+              : null;
+          }, [d]),
+          m = async (e, t) => {
+            let a = await (0, n.Jv)("credentials", { email: e.trim(), password: t, redirect: !1 });
+            return (null == a ? void 0 : a.error)
+              ? { error: Error("CredentialsSignin" === a.error ? "Invalid credentials" : a.error) }
+              : (await c(), { error: null });
+          },
+          u = async (e, t, a) => {
+            var s, r;
+            let i = await fetch("/api/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  email: e,
+                  password: t,
+                  full_name: null != (s = null == a ? void 0 : a.full_name) ? s : "",
+                  organization: null != (r = null == a ? void 0 : a.organization) ? r : "",
+                }),
+              }),
+              l = await i.json().catch(() => ({}));
+            if (!i.ok)
+              return {
+                error: Error(
+                  "string" == typeof l.error
+                    ? l.error
+                    : 409 === i.status
+                      ? "An account with this email already exists"
+                      : "Sign up failed",
+                ),
+              };
+            let d = await (0, n.Jv)("credentials", { email: e.trim(), password: t, redirect: !1 });
+            return (null == d ? void 0 : d.error)
+              ? { error: Error("Account created but sign-in failed. Please log in manually.") }
+              : (await c(), { error: null });
+          },
+          h = async () => {
+            (await (0, n.CI)({ redirect: !1 }), a.push("/login"), a.refresh());
+          };
+        return (0, s.jsx)(l.Provider, {
+          value: {
+            user: x,
+            session: d,
+            loading: "loading" === o,
+            signIn: m,
+            signUp: u,
+            signOut: h,
+          },
+          children: t,
+        });
+      }
+      function o() {
+        let e = (0, r.useContext)(l);
+        if (!e) throw Error("useAuth must be used within AuthProvider");
+        return e;
+      }
+    },
+    77845: (e, t, a) => {
+      "use strict";
+      a.d(t, { D: () => l, ThemeProvider: () => i });
+      var s = a(95155),
+        r = a(12115);
+      let n = (0, r.createContext)(null);
+      function i(e) {
+        let { children: t } = e,
+          [a, i] = (0, r.useState)("light");
+        return (
+          (0, r.useEffect)(() => {
+            let e = "dark" === localStorage.getItem("theme") ? "dark" : "light";
+            (i(e), document.documentElement.classList.toggle("dark", "dark" === e));
+          }, []),
+          (0, s.jsx)(n.Provider, {
+            value: {
+              theme: a,
+              toggle: () => {
+                i((e) => {
+                  let t = "light" === e ? "dark" : "light";
+                  return (
+                    document.documentElement.classList.toggle("dark", "dark" === t),
+                    localStorage.setItem("theme", t),
+                    t
+                  );
+                });
+              },
+            },
+            children: t,
+          })
+        );
+      }
+      function l() {
+        let e = (0, r.useContext)(n);
+        return e || { theme: "light", toggle: () => {} };
+      }
+    },
+    80030: (e, t, a) => {
+      "use strict";
+      a.d(t, { Stats: () => v });
+      var s = a(95155),
+        r = a(9924),
+        n = a(12115),
+        i = a(91761),
+        l = a(91169),
+        d = a(80534),
+        o = a(65341),
+        c = a(76907),
+        x = a(26983),
+        m = a(95740),
+        u = a(52987),
+        h = a(20063),
+        p = a(3998),
+        g = a(76924);
+      let f = [
+        {
+          icon: i.A,
+          value: 48,
+          prefix: "৳",
+          suffix: "M+",
+          label: "Ad spend tracked",
+          desc: "Across all connected Meta accounts",
+        },
+        {
+          icon: l.A,
+          value: 2400,
+          suffix: "+",
+          label: "Active agencies",
+          desc: "Trust us with their client reporting",
+        },
+        {
+          icon: d.A,
+          value: 18500,
+          suffix: "+",
+          label: "Reports generated",
+          desc: "Branded PDFs & live dashboards delivered",
+        },
+        {
+          icon: o.A,
+          value: 32,
+          suffix: "+",
+          label: "Countries",
+          desc: "Agencies running campaigns worldwide",
+        },
+        {
+          icon: c.A,
+          value: 99.9,
+          decimals: 1,
+          suffix: "%",
+          label: "Uptime SLA",
+          desc: "Reliable infrastructure, always on",
+        },
+        {
+          icon: x.A,
+          value: 12,
+          suffix: "\xd7",
+          label: "Faster reporting",
+          desc: "Compared to manual spreadsheet workflows",
+        },
+      ];
+      function b(e) {
+        var t;
+        let { stat: a, index: i } = e,
+          { ref: l, formatted: d } = (function (e) {
+            let t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : 0,
+              a = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : 1600,
+              [s, r] = (0, n.useState)(0),
+              i = (0, n.useRef)(null),
+              l = (0, n.useRef)(!1);
+            return (
+              (0, n.useEffect)(() => {
+                let t = i.current;
+                if (!t) return;
+                let s = new IntersectionObserver(
+                  (t) => {
+                    t.forEach((t) => {
+                      if (t.isIntersecting && !l.current) {
+                        l.current = !0;
+                        let t = performance.now(),
+                          s = (n) => {
+                            let i = Math.min((n - t) / a, 1);
+                            (r(e * (1 - Math.pow(1 - i, 3))), i < 1 && requestAnimationFrame(s));
+                          };
+                        requestAnimationFrame(s);
+                      }
+                    });
+                  },
+                  { threshold: 0.3 },
+                );
+                return (s.observe(t), () => s.disconnect());
+              }, [e, a]),
+              {
+                ref: i,
+                formatted:
+                  t > 0
+                    ? s.toFixed(t)
+                    : s >= 1e3
+                      ? Math.floor(s).toLocaleString()
+                      : Math.floor(s).toString(),
+              }
+            );
+          })(a.value, null != (t = a.decimals) ? t : 0),
+          o = a.icon;
+        return (0, s.jsxs)(r.P.div, {
+          initial: { opacity: 0, y: 24 },
+          whileInView: { opacity: 1, y: 0 },
+          viewport: { once: !0, margin: "-80px" },
+          transition: { duration: 0.5, delay: 0.06 * i },
+          className:
+            "group relative overflow-hidden rounded card-brutal bg-card p-6 transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-elegant",
+          children: [
+            (0, s.jsx)("div", {
+              className:
+                "absolute -right-6 -top-6 h-24 w-24 rounded-full bg-primary/5 blur-2xl transition group-hover:bg-primary/15",
+            }),
+            (0, s.jsxs)("div", {
+              className: "relative",
+              children: [
+                (0, s.jsx)("div", {
+                  className:
+                    "inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary",
+                  children: (0, s.jsx)(o, { className: "h-5 w-5" }),
+                }),
+                (0, s.jsxs)("div", {
+                  className: "mt-5 flex items-baseline gap-1",
+                  children: [
+                    a.prefix &&
+                      (0, s.jsx)("span", {
+                        className: "font-display text-2xl font-bold text-foreground sm:text-3xl",
+                        children: a.prefix,
+                      }),
+                    (0, s.jsx)("span", {
+                      ref: l,
+                      className:
+                        "font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl",
+                      children: d,
+                    }),
+                    a.suffix &&
+                      (0, s.jsx)("span", {
+                        className: "font-display text-2xl font-bold text-primary sm:text-3xl",
+                        children: a.suffix,
+                      }),
+                  ],
+                }),
+                (0, s.jsx)("h3", {
+                  className: "mt-2 text-sm font-semibold text-foreground",
+                  children: a.label,
+                }),
+                (0, s.jsx)("p", {
+                  className: "mt-1 text-sm text-muted-foreground",
+                  children: a.desc,
+                }),
+              ],
+            }),
+          ],
+        });
+      }
+      function v() {
+        return (0, s.jsxs)("section", {
+          id: "stats",
+          className: "relative py-24",
+          children: [
+            (0, s.jsx)("div", {
+              "aria-hidden": !0,
+              className:
+                "pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand/15 via-brand/5 to-transparent",
+            }),
+            (0, s.jsx)("div", {
+              "aria-hidden": !0,
+              className:
+                "pointer-events-none absolute left-1/2 top-1/3 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-primary/15 blur-[120px]",
+            }),
+            (0, s.jsxs)("div", {
+              className: "relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
+              children: [
+                (0, s.jsxs)("div", {
+                  className: "mx-auto max-w-2xl text-center",
+                  children: [
+                    (0, s.jsx)("span", {
+                      className:
+                        "inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink",
+                      children: "By the numbers",
+                    }),
+                    (0, s.jsx)("h2", {
+                      className: "mt-4 font-display text-3xl font-bold tracking-tight sm:text-5xl",
+                      children: "Trusted by agencies, proven at scale",
+                    }),
+                    (0, s.jsx)("p", {
+                      className: "mt-4 text-base text-muted-foreground sm:text-lg",
+                      children:
+                        "Real numbers from real teams using our platform every day to manage Meta ad campaigns and deliver client reports.",
+                    }),
+                  ],
+                }),
+                (0, s.jsx)("div", {
+                  className: "mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3",
+                  children: f.map((e, t) => (0, s.jsx)(b, { stat: e, index: t }, e.label)),
+                }),
+                (0, s.jsx)(y, {}),
+              ],
+            }),
+          ],
+        });
+      }
+      function y() {
+        let e = (0, h.useRouter)(),
+          { user: t } = (0, g.A)();
+        return (0, s.jsxs)(r.P.div, {
+          initial: { opacity: 0, y: 24 },
+          whileInView: { opacity: 1, y: 0 },
+          viewport: { once: !0, margin: "-80px" },
+          transition: { duration: 0.5 },
+          className:
+            "relative mt-16 overflow-hidden rounded card-brutal bg-card p-8 text-center sm:p-10",
+          children: [
+            (0, s.jsx)("div", {
+              className:
+                "pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5",
+            }),
+            (0, s.jsxs)("div", {
+              className: "relative",
+              children: [
+                (0, s.jsx)("div", {
+                  className:
+                    "mx-auto inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary",
+                  children: (0, s.jsx)(m.A, { className: "h-5 w-5" }),
+                }),
+                (0, s.jsx)("h3", {
+                  className: "mt-4 font-display text-2xl font-bold tracking-tight sm:text-3xl",
+                  children: "Ready to join thousands of agencies?",
+                }),
+                (0, s.jsx)("p", {
+                  className: "mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:text-base",
+                  children:
+                    "Start your 14-day free trial — no credit card required. Connect Meta in minutes and ship branded reports today.",
+                }),
+                (0, s.jsxs)(p.$, {
+                  size: "lg",
+                  className:
+                    "mt-6 gap-2 rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand",
+                  onClick: () => {
+                    t ? e.push("/dashboard") : e.push("/login");
+                  },
+                  children: ["Get Started ", (0, s.jsx)(u.A, { className: "h-4 w-4" })],
+                }),
+              ],
+            }),
+          ],
+        });
+      }
+    },
+  },
+  (e) => {
+    (e.O(0, [8909, 2619, 9924, 8720, 6856, 3503, 1583, 884, 4366, 7246, 8441, 1255, 7358], () =>
+      e((e.s = 32055)),
+    ),
+      (_N_E = e.O()));
+  },
+]);

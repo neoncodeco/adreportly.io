@@ -57,6 +57,7 @@ const fadeUp = {
 };
 
 export function AdminTicketsPage() {
+  const pageSize = 20;
   const [view, setView] = useState<"list" | "detail">("list");
   const [tickets, setTickets] = useState<TicketRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -66,6 +67,7 @@ export function AdminTicketsPage() {
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
   const [category, setCategory] = useState("");
+  const [page, setPage] = useState(1);
   const [activeTicket, setActiveTicket] = useState<TicketDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -73,7 +75,10 @@ export function AdminTicketsPage() {
     setLoading(true);
     setErr(null);
     try {
-      const params = new URLSearchParams({ limit: "60", skip: "0" });
+      const params = new URLSearchParams({
+        limit: String(pageSize),
+        skip: String((page - 1) * pageSize),
+      });
       if (q.trim()) params.set("q", q.trim());
       if (status) params.set("status", status);
       if (priority) params.set("priority", priority);
@@ -100,12 +105,20 @@ export function AdminTicketsPage() {
     } finally {
       setLoading(false);
     }
+  }, [q, status, priority, category, page]);
+
+  useEffect(() => {
+    setPage(1);
   }, [q, status, priority, category]);
 
   useEffect(() => {
     const t = setTimeout(() => void load(), 260);
     return () => clearTimeout(t);
   }, [load]);
+
+  const lastPage = Math.max(1, Math.ceil(total / pageSize));
+  const canPrev = page > 1;
+  const canNext = page < lastPage;
 
   const openDetail = async (id: string) => {
     setLoadingDetail(true);
@@ -270,6 +283,33 @@ export function AdminTicketsPage() {
                 </table>
               </div>
             </div>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                Showing {(total === 0 ? 0 : (page - 1) * pageSize + 1).toLocaleString()}-
+                {Math.min(page * pageSize, total).toLocaleString()} of {total.toLocaleString()}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!canPrev || loading}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  Previous
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  Page {page} / {lastPage}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!canNext || loading}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           </motion.div>
         ) : (
           <motion.div key="detail" {...fadeUp}>
@@ -333,6 +373,7 @@ function AdminTicketDetail({
   const [sending, setSending] = useState(false);
   const [statusChanging, setStatusChanging] = useState(false);
   const [priorityChanging, setPriorityChanging] = useState(false);
+  const [ticketInfoOpen, setTicketInfoOpen] = useState(false);
   const [replyErr, setReplyErr] = useState<string | null>(null);
 
   const sendReply = async () => {
@@ -421,7 +462,7 @@ function AdminTicketDetail({
   const isClosed = ticket.status === "closed" || ticket.status === "resolved";
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5">
+    <div className="w-full space-y-5">
       <div className="flex flex-wrap items-start gap-3">
         <button
           type="button"
@@ -442,9 +483,9 @@ function AdminTicketDetail({
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
         {/* Main thread */}
-        <div className="space-y-4 min-w-0">
+        <div className="min-w-0 space-y-4 xl:order-1">
           {/* Original message */}
           <div className="rounded-3xl border border-border bg-card p-5 shadow-soft sm:p-6">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -505,7 +546,7 @@ function AdminTicketDetail({
 
           {/* Admin reply box */}
           {!isClosed ? (
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+            <div className="rounded-2xl border border-border bg-card p-3 shadow-soft">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Reply as Support
               </p>
@@ -519,7 +560,7 @@ function AdminTicketDetail({
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
                 placeholder="Write your response to the user..."
-                rows={4}
+                rows={3}
                 className="resize-none rounded-xl"
               />
               <div className="mt-3 flex justify-end">
@@ -545,8 +586,8 @@ function AdminTicketDetail({
         </div>
 
         {/* Sidebar controls */}
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+        <div className="order-first space-y-4 xl:order-2">
+          <div className="rounded-2xl border border-border bg-card p-3 shadow-soft">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Status
             </p>
@@ -570,7 +611,7 @@ function AdminTicketDetail({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+          <div className="rounded-2xl border border-border bg-card p-3 shadow-soft">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Priority
             </p>
@@ -594,7 +635,59 @@ function AdminTicketDetail({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+          <div className="rounded-2xl border border-border bg-card p-3 shadow-soft xl:hidden">
+            <button
+              type="button"
+              onClick={() => setTicketInfoOpen((prev) => !prev)}
+              className="flex w-full items-center justify-between text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            >
+              <span>Ticket Info</span>
+              <span>{ticketInfoOpen ? "Hide" : "Show"}</span>
+            </button>
+            <AnimatePresence initial={false}>
+              {ticketInfoOpen ? (
+                <motion.div
+                  key="ticket-info-mobile"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.22, ease: "easeOut" }}
+                  className="overflow-hidden"
+                >
+                  <dl className="mt-3 space-y-2 text-xs">
+                    <div>
+                      <dt className="text-muted-foreground">Ticket #</dt>
+                      <dd className="font-mono font-medium">{ticket.ticketNumber}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">User</dt>
+                      <dd className="truncate font-medium">{ticket.userEmail}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Category</dt>
+                      <dd className="font-medium">{CATEGORY_LABELS[ticket.category]}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Replies</dt>
+                      <dd className="font-medium">{ticket.replies.length}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Created</dt>
+                      <dd className="font-medium">
+                        {new Date(ticket.createdAt).toLocaleDateString(undefined, {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </dd>
+                    </div>
+                  </dl>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </div>
+
+          <div className="hidden rounded-2xl border border-border bg-card p-3 shadow-soft xl:block">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Ticket Info
             </p>

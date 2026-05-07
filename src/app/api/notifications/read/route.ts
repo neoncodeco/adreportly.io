@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { requireMongo } from "@/lib/db";
+import { invalidateCacheByPrefix } from "@/lib/server-cache";
 import { UserModel } from "@/models/user";
 import { NotificationModel } from "@/models/notification";
 
@@ -54,6 +55,7 @@ export async function PATCH(request: Request) {
 
   if (parsed.data.all) {
     await NotificationModel.updateMany(scopeFilter, { $addToSet: { readBy: uid } }).exec();
+    invalidateCacheByPrefix(`user:notifications:${uid}`);
     return NextResponse.json({ success: true });
   }
 
@@ -65,6 +67,7 @@ export async function PATCH(request: Request) {
     { _id: parsed.data.id, ...scopeFilter },
     { $addToSet: { readBy: uid } },
   ).exec();
+  invalidateCacheByPrefix(`user:notifications:${uid}`);
 
   return NextResponse.json({ success: true });
 }

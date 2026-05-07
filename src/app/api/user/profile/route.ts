@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { requireMongo } from "@/lib/db";
+import { getOrSetCache, invalidateCacheByPrefix, USER_CACHE_HEADERS } from "@/lib/server-cache";
 import { UserModel } from "@/models/user";
 
 export async function GET() {
@@ -17,20 +18,25 @@ export async function GET() {
     return NextResponse.json({ error: msg }, { status: 503 });
   }
 
-  const user = (await UserModel.findById(session.user.id).lean().exec()) as {
-    email?: string;
-    fullName?: string;
-    organization?: string;
-  } | null;
-  if (!user) {
+  const payload = await getOrSetCache(`user:profile:${session.user.id}`, 30_000, async () => {
+    const user = (await UserModel.findById(session.user.id).lean().exec()) as {
+      email?: string;
+      fullName?: string;
+      organization?: string;
+    } | null;
+    if (!user) {
+      return null;
+    }
+    return {
+      email: user.email ?? "",
+      full_name: user.fullName ?? "",
+      organization: user.organization ?? "",
+    };
+  });
+  if (!payload) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
-
-  return NextResponse.json({
-    email: user.email ?? "",
-    full_name: user.fullName ?? "",
-    organization: user.organization ?? "",
-  });
+  return NextResponse.json(payload, { headers: USER_CACHE_HEADERS });
 }
 
 const patchSchema = z.object({
@@ -68,6 +74,7 @@ export async function PATCH(request: Request) {
   if (parsed.data.organization !== undefined) update.organization = parsed.data.organization;
 
   await UserModel.updateOne({ _id: session.user.id }, { $set: update });
+  invalidateCacheByPrefix(`user:profile:${session.user.id}`);
 
   return NextResponse.json({ ok: true });
 }

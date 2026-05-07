@@ -23,6 +23,7 @@ import {
   CreditCard,
   LifeBuoy,
   BookOpen,
+  Megaphone,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
@@ -69,6 +70,7 @@ const adminNav: Array<{
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/agencies", label: "Agencies", icon: Building2 },
   { to: "/admin/billing", label: "Billing", icon: CreditCard },
+  { to: "/admin/notice", label: "Notice", icon: Megaphone },
   { to: "/admin/tickets", label: "Support Tickets", icon: LifeBuoy },
 ];
 

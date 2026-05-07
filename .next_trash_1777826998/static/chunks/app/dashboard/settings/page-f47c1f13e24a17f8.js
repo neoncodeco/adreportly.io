@@ -1,1 +1,653 @@
-(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[4631],{3998:(e,t,r)=>{"use strict";r.d(t,{$:()=>d});var n=r(95155),a=r(12115),l=r(32467),s=r(83101),i=r(64269);let o=(0,s.F)("inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",{variants:{variant:{default:"bg-primary text-primary-foreground shadow hover:bg-primary/90",destructive:"bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",outline:"border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",secondary:"bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",ghost:"hover:bg-accent hover:text-accent-foreground",link:"text-primary underline-offset-4 hover:underline"},size:{default:"h-9 px-4 py-2",sm:"h-8 rounded-md px-3 text-xs",lg:"h-10 rounded-md px-8",icon:"h-9 w-9"}},defaultVariants:{variant:"default",size:"default"}}),d=a.forwardRef((e,t)=>{let{className:r,variant:a,size:s,asChild:d=!1,...u}=e,c=d?l.DX:"button";return(0,n.jsx)(c,{className:(0,i.cn)(o({variant:a,size:s,className:r})),ref:t,...u})});d.displayName="Button"},23664:(e,t,r)=>{"use strict";r.d(t,{A:()=>n});let n=(0,r(5121).A)("mail",[["path",{d:"m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7",key:"132q7q"}],["rect",{x:"2",y:"4",width:"20",height:"16",rx:"2",key:"izxlao"}]])},25212:(e,t,r)=>{Promise.resolve().then(r.bind(r,84388))},32467:(e,t,r)=>{"use strict";r.d(t,{DX:()=>c,TL:()=>u});var n,a=r(12115),l=r(94446),s=r(95155),i=Symbol.for("react.lazy"),o=(n||(n=r.t(a,2)))[" use ".trim().toString()];function d(e){var t;return null!=e&&"object"==typeof e&&"$$typeof"in e&&e.$$typeof===i&&"_payload"in e&&"object"==typeof(t=e._payload)&&null!==t&&"then"in t}function u(e){let t=function(e){let t=a.forwardRef((e,t)=>{let{children:r,...n}=e;if(d(r)&&"function"==typeof o&&(r=o(r._payload)),a.isValidElement(r)){var s;let e,i,o=(s=r,(i=(e=Object.getOwnPropertyDescriptor(s.props,"ref")?.get)&&"isReactWarning"in e&&e.isReactWarning)?s.ref:(i=(e=Object.getOwnPropertyDescriptor(s,"ref")?.get)&&"isReactWarning"in e&&e.isReactWarning)?s.props.ref:s.props.ref||s.ref),d=function(e,t){let r={...t};for(let n in t){let a=e[n],l=t[n];/^on[A-Z]/.test(n)?a&&l?r[n]=(...e)=>{let t=l(...e);return a(...e),t}:a&&(r[n]=a):"style"===n?r[n]={...a,...l}:"className"===n&&(r[n]=[a,l].filter(Boolean).join(" "))}return{...e,...r}}(n,r.props);return r.type!==a.Fragment&&(d.ref=t?(0,l.t)(t,o):o),a.cloneElement(r,d)}return a.Children.count(r)>1?a.Children.only(null):null});return t.displayName=`${e}.SlotClone`,t}(e),r=a.forwardRef((e,r)=>{let{children:n,...l}=e;d(n)&&"function"==typeof o&&(n=o(n._payload));let i=a.Children.toArray(n),u=i.find(m);if(u){let e=u.props.children,n=i.map(t=>t!==u?t:a.Children.count(e)>1?a.Children.only(null):a.isValidElement(e)?e.props.children:null);return(0,s.jsx)(t,{...l,ref:r,children:a.isValidElement(e)?a.cloneElement(e,void 0,n):null})}return(0,s.jsx)(t,{...l,ref:r,children:n})});return r.displayName=`${e}.Slot`,r}var c=u("Slot"),f=Symbol("radix.slottable");function m(e){return a.isValidElement(e)&&"function"==typeof e.type&&"__radixId"in e.type&&e.type.__radixId===f}},32894:(e,t,r)=>{"use strict";r.d(t,{b:()=>o});var n=r(12115);r(47650);var a=r(32467),l=r(95155),s=["a","button","div","form","h2","h3","img","input","label","li","nav","ol","p","select","span","svg","ul"].reduce((e,t)=>{let r=(0,a.TL)(`Primitive.${t}`),s=n.forwardRef((e,n)=>{let{asChild:a,...s}=e;return"undefined"!=typeof window&&(window[Symbol.for("radix-ui")]=!0),(0,l.jsx)(a?r:t,{...s,ref:n})});return s.displayName=`Primitive.${t}`,{...e,[t]:s}},{}),i=n.forwardRef((e,t)=>(0,l.jsx)(s.label,{...e,ref:t,onMouseDown:t=>{var r;t.target.closest("button, input, select, textarea")||(null==(r=e.onMouseDown)||r.call(e,t),!t.defaultPrevented&&t.detail>1&&t.preventDefault())}}));i.displayName="Label";var o=i},64269:(e,t,r)=>{"use strict";r.d(t,{cn:()=>l});var n=r(2821),a=r(75889);function l(){for(var e=arguments.length,t=Array(e),r=0;r<e;r++)t[r]=arguments[r];return(0,a.QP)((0,n.$)(t))}},65142:(e,t,r)=>{"use strict";r.d(t,{p:()=>s});var n=r(95155),a=r(12115),l=r(64269);let s=a.forwardRef((e,t)=>{let{className:r,type:a,...s}=e;return(0,n.jsx)("input",{type:a,className:(0,l.cn)("flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",r),ref:t,...s})});s.displayName="Input"},76444:(e,t,r)=>{"use strict";r.d(t,{J:()=>d});var n=r(95155),a=r(12115),l=r(32894),s=r(83101),i=r(64269);let o=(0,s.F)("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"),d=a.forwardRef((e,t)=>{let{className:r,...a}=e;return(0,n.jsx)(l.b,{ref:t,className:(0,i.cn)(o(),r),...a})});d.displayName=l.b.displayName},76924:(e,t,r)=>{"use strict";r.d(t,{A:()=>d,AuthProvider:()=>o});var n=r(95155),a=r(12115),l=r(96199),s=r(20063);let i=(0,a.createContext)(null);function o(e){let{children:t}=e,r=(0,s.useRouter)(),{data:o,status:d,update:u}=(0,l.wV)(),c=(0,a.useMemo)(()=>{var e,t;return(null==o||null==(e=o.user)?void 0:e.id)?{id:o.user.id,email:null!=(t=o.user.email)?t:null}:null},[o]),f=async(e,t)=>{let r=await (0,l.Jv)("credentials",{email:e.trim(),password:t,redirect:!1});return(null==r?void 0:r.error)?{error:Error("CredentialsSignin"===r.error?"Invalid credentials":r.error)}:(await u(),{error:null})},m=async(e,t,r)=>{var n,a;let s=await fetch("/api/auth/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:e,password:t,full_name:null!=(n=null==r?void 0:r.full_name)?n:"",organization:null!=(a=null==r?void 0:r.organization)?a:""})}),i=await s.json().catch(()=>({}));if(!s.ok)return{error:Error("string"==typeof i.error?i.error:409===s.status?"An account with this email already exists":"Sign up failed")};let o=await (0,l.Jv)("credentials",{email:e.trim(),password:t,redirect:!1});return(null==o?void 0:o.error)?{error:Error("Account created but sign-in failed. Please log in manually.")}:(await u(),{error:null})},p=async()=>{await (0,l.CI)({redirect:!1}),r.push("/login"),r.refresh()};return(0,n.jsx)(i.Provider,{value:{user:c,session:o,loading:"loading"===d,signIn:f,signUp:m,signOut:p},children:t})}function d(){let e=(0,a.useContext)(i);if(!e)throw Error("useAuth must be used within AuthProvider");return e}},83101:(e,t,r)=>{"use strict";r.d(t,{F:()=>s});var n=r(2821);let a=e=>"boolean"==typeof e?`${e}`:0===e?"0":e,l=n.$,s=(e,t)=>r=>{var n;if((null==t?void 0:t.variants)==null)return l(e,null==r?void 0:r.class,null==r?void 0:r.className);let{variants:s,defaultVariants:i}=t,o=Object.keys(s).map(e=>{let t=null==r?void 0:r[e],n=null==i?void 0:i[e];if(null===t)return null;let l=a(t)||a(n);return s[e][l]}),d=r&&Object.entries(r).reduce((e,t)=>{let[r,n]=t;return void 0===n||(e[r]=n),e},{});return l(e,o,null==t||null==(n=t.compoundVariants)?void 0:n.reduce((e,t)=>{let{class:r,className:n,...a}=t;return Object.entries(a).every(e=>{let[t,r]=e;return Array.isArray(r)?r.includes({...i,...d}[t]):({...i,...d})[t]===r})?[...e,r,n]:e},[]),null==r?void 0:r.class,null==r?void 0:r.className)}},84388:(e,t,r)=>{"use strict";r.d(t,{SettingsPage:()=>v});var n=r(95155),a=r(9924),l=r(12115),s=r(23664),i=r(5121);let o=(0,i.A)("user",[["path",{d:"M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2",key:"975kel"}],["circle",{cx:"12",cy:"7",r:"4",key:"17ys0d"}]]),d=(0,i.A)("building-2",[["path",{d:"M10 12h4",key:"a56b0p"}],["path",{d:"M10 8h4",key:"1sr2af"}],["path",{d:"M14 21v-3a2 2 0 0 0-4 0v3",key:"1rgiei"}],["path",{d:"M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2",key:"secmi2"}],["path",{d:"M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16",key:"16ra0t"}]]),u=(0,i.A)("save",[["path",{d:"M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",key:"1c8476"}],["path",{d:"M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7",key:"1ydtos"}],["path",{d:"M7 3v4a1 1 0 0 0 1 1h7",key:"t51u73"}]]);var c=r(3998),f=r(65142),m=r(76444),p=r(76924),h=r(18720);function v(){let{user:e}=(0,p.A)(),[t,r]=(0,l.useState)(""),[i,v]=(0,l.useState)(""),[x,y]=(0,l.useState)(!1);(0,l.useEffect)(()=>{e&&fetch("/api/user/profile").then(e=>e.ok?e.json():null).then(e=>{if(e){var t,n;r(null!=(t=e.full_name)?t:""),v(null!=(n=e.organization)?n:"")}})},[e]);let g=async()=>{if(!e)return;y(!0);let r=await fetch("/api/user/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({full_name:t,organization:i})}),n=await r.json().catch(()=>({}));y(!1),r.ok?h.oR.success("Profile updated"):h.oR.error("string"==typeof n.error?n.error:"Could not save profile")},b=(t||(null==e?void 0:e.email)||"AU").split(" ").map(e=>e[0]).slice(0,2).join("").toUpperCase();return(0,n.jsxs)(a.P.div,{initial:{opacity:0,y:12},animate:{opacity:1,y:0},transition:{duration:.35},className:"mx-auto max-w-2xl space-y-5",children:[(0,n.jsxs)("div",{children:[(0,n.jsx)("h1",{className:"text-xl font-bold sm:text-2xl",children:"Settings"}),(0,n.jsx)("p",{className:"text-xs text-muted-foreground sm:text-sm",children:"Manage your agency profile"})]}),(0,n.jsxs)("div",{className:"relative overflow-hidden rounded-3xl border border-border bg-card p-5 shadow-soft sm:p-6",children:[(0,n.jsx)("div",{className:"pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/15 blur-3xl"}),(0,n.jsxs)("div",{className:"relative flex items-center gap-4",children:[(0,n.jsx)("div",{className:"flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-primary text-lg font-bold text-primary-foreground shadow-glow sm:h-20 sm:w-20",children:b}),(0,n.jsxs)("div",{className:"min-w-0",children:[(0,n.jsx)("p",{className:"truncate text-base font-bold sm:text-lg",children:t||"Your name"}),(0,n.jsx)("p",{className:"truncate text-xs text-muted-foreground sm:text-sm",children:null==e?void 0:e.email}),(0,n.jsx)("span",{className:"mt-1.5 inline-flex items-center rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-success",children:"Active"})]})]})]}),(0,n.jsxs)("div",{className:"rounded-3xl border border-border bg-card p-5 shadow-soft sm:p-6",children:[(0,n.jsx)("h3",{className:"text-base font-bold sm:text-lg",children:"Profile"}),(0,n.jsx)("p",{className:"text-xs text-muted-foreground",children:"Update your account information"}),(0,n.jsxs)("div",{className:"mt-5 space-y-4",children:[(0,n.jsxs)("div",{className:"space-y-1.5",children:[(0,n.jsx)(m.J,{htmlFor:"email",className:"text-xs font-semibold",children:"Email"}),(0,n.jsxs)("div",{className:"relative",children:[(0,n.jsx)(s.A,{className:"pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"}),(0,n.jsx)(f.p,{id:"email",value:(null==e?void 0:e.email)||"",disabled:!0,className:"h-11 rounded-xl pl-9"})]})]}),(0,n.jsxs)("div",{className:"space-y-1.5",children:[(0,n.jsx)(m.J,{htmlFor:"name",className:"text-xs font-semibold",children:"Full name"}),(0,n.jsxs)("div",{className:"relative",children:[(0,n.jsx)(o,{className:"pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"}),(0,n.jsx)(f.p,{id:"name",value:t,onChange:e=>r(e.target.value),className:"h-11 rounded-xl pl-9"})]})]}),(0,n.jsxs)("div",{className:"space-y-1.5",children:[(0,n.jsx)(m.J,{htmlFor:"org",className:"text-xs font-semibold",children:"Agency"}),(0,n.jsxs)("div",{className:"relative",children:[(0,n.jsx)(d,{className:"pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"}),(0,n.jsx)(f.p,{id:"org",value:i,onChange:e=>v(e.target.value),className:"h-11 rounded-xl pl-9"})]})]}),(0,n.jsxs)(c.$,{disabled:x,onClick:()=>void g(),className:"h-11 w-full rounded-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-95 sm:w-auto",children:[(0,n.jsx)(u,{className:"mr-2 h-4 w-4"}),x?"Saving...":"Save changes"]})]})]})]})}},94446:(e,t,r)=>{"use strict";r.d(t,{s:()=>s,t:()=>l});var n=r(12115);function a(e,t){if("function"==typeof e)return e(t);null!=e&&(e.current=t)}function l(...e){return t=>{let r=!1,n=e.map(e=>{let n=a(e,t);return r||"function"!=typeof n||(r=!0),n});if(r)return()=>{for(let t=0;t<n.length;t++){let r=n[t];"function"==typeof r?r():a(e[t],null)}}}}function s(...e){return n.useCallback(l(...e),e)}}},e=>{e.O(0,[8909,9924,8720,6856,8441,1255,7358],()=>e(e.s=25212)),_N_E=e.O()}]);
+(self.webpackChunk_N_E = self.webpackChunk_N_E || []).push([
+  [4631],
+  {
+    3998: (e, t, r) => {
+      "use strict";
+      r.d(t, { $: () => d });
+      var n = r(95155),
+        a = r(12115),
+        l = r(32467),
+        s = r(83101),
+        i = r(64269);
+      let o = (0, s.F)(
+          "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+          {
+            variants: {
+              variant: {
+                default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
+                destructive:
+                  "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+                outline:
+                  "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+                secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
+                ghost: "hover:bg-accent hover:text-accent-foreground",
+                link: "text-primary underline-offset-4 hover:underline",
+              },
+              size: {
+                default: "h-9 px-4 py-2",
+                sm: "h-8 rounded-md px-3 text-xs",
+                lg: "h-10 rounded-md px-8",
+                icon: "h-9 w-9",
+              },
+            },
+            defaultVariants: { variant: "default", size: "default" },
+          },
+        ),
+        d = a.forwardRef((e, t) => {
+          let { className: r, variant: a, size: s, asChild: d = !1, ...u } = e,
+            c = d ? l.DX : "button";
+          return (0, n.jsx)(c, {
+            className: (0, i.cn)(o({ variant: a, size: s, className: r })),
+            ref: t,
+            ...u,
+          });
+        });
+      d.displayName = "Button";
+    },
+    23664: (e, t, r) => {
+      "use strict";
+      r.d(t, { A: () => n });
+      let n = (0, r(5121).A)("mail", [
+        ["path", { d: "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7", key: "132q7q" }],
+        ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }],
+      ]);
+    },
+    25212: (e, t, r) => {
+      Promise.resolve().then(r.bind(r, 84388));
+    },
+    32467: (e, t, r) => {
+      "use strict";
+      r.d(t, { DX: () => c, TL: () => u });
+      var n,
+        a = r(12115),
+        l = r(94446),
+        s = r(95155),
+        i = Symbol.for("react.lazy"),
+        o = (n || (n = r.t(a, 2)))[" use ".trim().toString()];
+      function d(e) {
+        var t;
+        return (
+          null != e &&
+          "object" == typeof e &&
+          "$$typeof" in e &&
+          e.$$typeof === i &&
+          "_payload" in e &&
+          "object" == typeof (t = e._payload) &&
+          null !== t &&
+          "then" in t
+        );
+      }
+      function u(e) {
+        let t = (function (e) {
+            let t = a.forwardRef((e, t) => {
+              let { children: r, ...n } = e;
+              if ((d(r) && "function" == typeof o && (r = o(r._payload)), a.isValidElement(r))) {
+                var s;
+                let e,
+                  i,
+                  o =
+                    ((s = r),
+                    (i =
+                      (e = Object.getOwnPropertyDescriptor(s.props, "ref")?.get) &&
+                      "isReactWarning" in e &&
+                      e.isReactWarning)
+                      ? s.ref
+                      : (i =
+                            (e = Object.getOwnPropertyDescriptor(s, "ref")?.get) &&
+                            "isReactWarning" in e &&
+                            e.isReactWarning)
+                        ? s.props.ref
+                        : s.props.ref || s.ref),
+                  d = (function (e, t) {
+                    let r = { ...t };
+                    for (let n in t) {
+                      let a = e[n],
+                        l = t[n];
+                      /^on[A-Z]/.test(n)
+                        ? a && l
+                          ? (r[n] = (...e) => {
+                              let t = l(...e);
+                              return (a(...e), t);
+                            })
+                          : a && (r[n] = a)
+                        : "style" === n
+                          ? (r[n] = { ...a, ...l })
+                          : "className" === n && (r[n] = [a, l].filter(Boolean).join(" "));
+                    }
+                    return { ...e, ...r };
+                  })(n, r.props);
+                return (
+                  r.type !== a.Fragment && (d.ref = t ? (0, l.t)(t, o) : o),
+                  a.cloneElement(r, d)
+                );
+              }
+              return a.Children.count(r) > 1 ? a.Children.only(null) : null;
+            });
+            return ((t.displayName = `${e}.SlotClone`), t);
+          })(e),
+          r = a.forwardRef((e, r) => {
+            let { children: n, ...l } = e;
+            d(n) && "function" == typeof o && (n = o(n._payload));
+            let i = a.Children.toArray(n),
+              u = i.find(m);
+            if (u) {
+              let e = u.props.children,
+                n = i.map((t) =>
+                  t !== u
+                    ? t
+                    : a.Children.count(e) > 1
+                      ? a.Children.only(null)
+                      : a.isValidElement(e)
+                        ? e.props.children
+                        : null,
+                );
+              return (0, s.jsx)(t, {
+                ...l,
+                ref: r,
+                children: a.isValidElement(e) ? a.cloneElement(e, void 0, n) : null,
+              });
+            }
+            return (0, s.jsx)(t, { ...l, ref: r, children: n });
+          });
+        return ((r.displayName = `${e}.Slot`), r);
+      }
+      var c = u("Slot"),
+        f = Symbol("radix.slottable");
+      function m(e) {
+        return (
+          a.isValidElement(e) &&
+          "function" == typeof e.type &&
+          "__radixId" in e.type &&
+          e.type.__radixId === f
+        );
+      }
+    },
+    32894: (e, t, r) => {
+      "use strict";
+      r.d(t, { b: () => o });
+      var n = r(12115);
+      r(47650);
+      var a = r(32467),
+        l = r(95155),
+        s = [
+          "a",
+          "button",
+          "div",
+          "form",
+          "h2",
+          "h3",
+          "img",
+          "input",
+          "label",
+          "li",
+          "nav",
+          "ol",
+          "p",
+          "select",
+          "span",
+          "svg",
+          "ul",
+        ].reduce((e, t) => {
+          let r = (0, a.TL)(`Primitive.${t}`),
+            s = n.forwardRef((e, n) => {
+              let { asChild: a, ...s } = e;
+              return (
+                "undefined" != typeof window && (window[Symbol.for("radix-ui")] = !0),
+                (0, l.jsx)(a ? r : t, { ...s, ref: n })
+              );
+            });
+          return ((s.displayName = `Primitive.${t}`), { ...e, [t]: s });
+        }, {}),
+        i = n.forwardRef((e, t) =>
+          (0, l.jsx)(s.label, {
+            ...e,
+            ref: t,
+            onMouseDown: (t) => {
+              var r;
+              t.target.closest("button, input, select, textarea") ||
+                (null == (r = e.onMouseDown) || r.call(e, t),
+                !t.defaultPrevented && t.detail > 1 && t.preventDefault());
+            },
+          }),
+        );
+      i.displayName = "Label";
+      var o = i;
+    },
+    64269: (e, t, r) => {
+      "use strict";
+      r.d(t, { cn: () => l });
+      var n = r(2821),
+        a = r(75889);
+      function l() {
+        for (var e = arguments.length, t = Array(e), r = 0; r < e; r++) t[r] = arguments[r];
+        return (0, a.QP)((0, n.$)(t));
+      }
+    },
+    65142: (e, t, r) => {
+      "use strict";
+      r.d(t, { p: () => s });
+      var n = r(95155),
+        a = r(12115),
+        l = r(64269);
+      let s = a.forwardRef((e, t) => {
+        let { className: r, type: a, ...s } = e;
+        return (0, n.jsx)("input", {
+          type: a,
+          className: (0, l.cn)(
+            "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+            r,
+          ),
+          ref: t,
+          ...s,
+        });
+      });
+      s.displayName = "Input";
+    },
+    76444: (e, t, r) => {
+      "use strict";
+      r.d(t, { J: () => d });
+      var n = r(95155),
+        a = r(12115),
+        l = r(32894),
+        s = r(83101),
+        i = r(64269);
+      let o = (0, s.F)(
+          "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+        ),
+        d = a.forwardRef((e, t) => {
+          let { className: r, ...a } = e;
+          return (0, n.jsx)(l.b, { ref: t, className: (0, i.cn)(o(), r), ...a });
+        });
+      d.displayName = l.b.displayName;
+    },
+    76924: (e, t, r) => {
+      "use strict";
+      r.d(t, { A: () => d, AuthProvider: () => o });
+      var n = r(95155),
+        a = r(12115),
+        l = r(96199),
+        s = r(20063);
+      let i = (0, a.createContext)(null);
+      function o(e) {
+        let { children: t } = e,
+          r = (0, s.useRouter)(),
+          { data: o, status: d, update: u } = (0, l.wV)(),
+          c = (0, a.useMemo)(() => {
+            var e, t;
+            return (null == o || null == (e = o.user) ? void 0 : e.id)
+              ? { id: o.user.id, email: null != (t = o.user.email) ? t : null }
+              : null;
+          }, [o]),
+          f = async (e, t) => {
+            let r = await (0, l.Jv)("credentials", { email: e.trim(), password: t, redirect: !1 });
+            return (null == r ? void 0 : r.error)
+              ? { error: Error("CredentialsSignin" === r.error ? "Invalid credentials" : r.error) }
+              : (await u(), { error: null });
+          },
+          m = async (e, t, r) => {
+            var n, a;
+            let s = await fetch("/api/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  email: e,
+                  password: t,
+                  full_name: null != (n = null == r ? void 0 : r.full_name) ? n : "",
+                  organization: null != (a = null == r ? void 0 : r.organization) ? a : "",
+                }),
+              }),
+              i = await s.json().catch(() => ({}));
+            if (!s.ok)
+              return {
+                error: Error(
+                  "string" == typeof i.error
+                    ? i.error
+                    : 409 === s.status
+                      ? "An account with this email already exists"
+                      : "Sign up failed",
+                ),
+              };
+            let o = await (0, l.Jv)("credentials", { email: e.trim(), password: t, redirect: !1 });
+            return (null == o ? void 0 : o.error)
+              ? { error: Error("Account created but sign-in failed. Please log in manually.") }
+              : (await u(), { error: null });
+          },
+          p = async () => {
+            (await (0, l.CI)({ redirect: !1 }), r.push("/login"), r.refresh());
+          };
+        return (0, n.jsx)(i.Provider, {
+          value: {
+            user: c,
+            session: o,
+            loading: "loading" === d,
+            signIn: f,
+            signUp: m,
+            signOut: p,
+          },
+          children: t,
+        });
+      }
+      function d() {
+        let e = (0, a.useContext)(i);
+        if (!e) throw Error("useAuth must be used within AuthProvider");
+        return e;
+      }
+    },
+    83101: (e, t, r) => {
+      "use strict";
+      r.d(t, { F: () => s });
+      var n = r(2821);
+      let a = (e) => ("boolean" == typeof e ? `${e}` : 0 === e ? "0" : e),
+        l = n.$,
+        s = (e, t) => (r) => {
+          var n;
+          if ((null == t ? void 0 : t.variants) == null)
+            return l(e, null == r ? void 0 : r.class, null == r ? void 0 : r.className);
+          let { variants: s, defaultVariants: i } = t,
+            o = Object.keys(s).map((e) => {
+              let t = null == r ? void 0 : r[e],
+                n = null == i ? void 0 : i[e];
+              if (null === t) return null;
+              let l = a(t) || a(n);
+              return s[e][l];
+            }),
+            d =
+              r &&
+              Object.entries(r).reduce((e, t) => {
+                let [r, n] = t;
+                return (void 0 === n || (e[r] = n), e);
+              }, {});
+          return l(
+            e,
+            o,
+            null == t || null == (n = t.compoundVariants)
+              ? void 0
+              : n.reduce((e, t) => {
+                  let { class: r, className: n, ...a } = t;
+                  return Object.entries(a).every((e) => {
+                    let [t, r] = e;
+                    return Array.isArray(r)
+                      ? r.includes({ ...i, ...d }[t])
+                      : { ...i, ...d }[t] === r;
+                  })
+                    ? [...e, r, n]
+                    : e;
+                }, []),
+            null == r ? void 0 : r.class,
+            null == r ? void 0 : r.className,
+          );
+        };
+    },
+    84388: (e, t, r) => {
+      "use strict";
+      r.d(t, { SettingsPage: () => v });
+      var n = r(95155),
+        a = r(9924),
+        l = r(12115),
+        s = r(23664),
+        i = r(5121);
+      let o = (0, i.A)("user", [
+          ["path", { d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2", key: "975kel" }],
+          ["circle", { cx: "12", cy: "7", r: "4", key: "17ys0d" }],
+        ]),
+        d = (0, i.A)("building-2", [
+          ["path", { d: "M10 12h4", key: "a56b0p" }],
+          ["path", { d: "M10 8h4", key: "1sr2af" }],
+          ["path", { d: "M14 21v-3a2 2 0 0 0-4 0v3", key: "1rgiei" }],
+          [
+            "path",
+            {
+              d: "M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2",
+              key: "secmi2",
+            },
+          ],
+          ["path", { d: "M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16", key: "16ra0t" }],
+        ]),
+        u = (0, i.A)("save", [
+          [
+            "path",
+            {
+              d: "M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
+              key: "1c8476",
+            },
+          ],
+          ["path", { d: "M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7", key: "1ydtos" }],
+          ["path", { d: "M7 3v4a1 1 0 0 0 1 1h7", key: "t51u73" }],
+        ]);
+      var c = r(3998),
+        f = r(65142),
+        m = r(76444),
+        p = r(76924),
+        h = r(18720);
+      function v() {
+        let { user: e } = (0, p.A)(),
+          [t, r] = (0, l.useState)(""),
+          [i, v] = (0, l.useState)(""),
+          [x, y] = (0, l.useState)(!1);
+        (0, l.useEffect)(() => {
+          e &&
+            fetch("/api/user/profile")
+              .then((e) => (e.ok ? e.json() : null))
+              .then((e) => {
+                if (e) {
+                  var t, n;
+                  (r(null != (t = e.full_name) ? t : ""), v(null != (n = e.organization) ? n : ""));
+                }
+              });
+        }, [e]);
+        let g = async () => {
+            if (!e) return;
+            y(!0);
+            let r = await fetch("/api/user/profile", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ full_name: t, organization: i }),
+              }),
+              n = await r.json().catch(() => ({}));
+            (y(!1),
+              r.ok
+                ? h.oR.success("Profile updated")
+                : h.oR.error("string" == typeof n.error ? n.error : "Could not save profile"));
+          },
+          b = (t || (null == e ? void 0 : e.email) || "AU")
+            .split(" ")
+            .map((e) => e[0])
+            .slice(0, 2)
+            .join("")
+            .toUpperCase();
+        return (0, n.jsxs)(a.P.div, {
+          initial: { opacity: 0, y: 12 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.35 },
+          className: "mx-auto max-w-2xl space-y-5",
+          children: [
+            (0, n.jsxs)("div", {
+              children: [
+                (0, n.jsx)("h1", {
+                  className: "text-xl font-bold sm:text-2xl",
+                  children: "Settings",
+                }),
+                (0, n.jsx)("p", {
+                  className: "text-xs text-muted-foreground sm:text-sm",
+                  children: "Manage your agency profile",
+                }),
+              ],
+            }),
+            (0, n.jsxs)("div", {
+              className:
+                "relative overflow-hidden rounded-3xl border border-border bg-card p-5 shadow-soft sm:p-6",
+              children: [
+                (0, n.jsx)("div", {
+                  className:
+                    "pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/15 blur-3xl",
+                }),
+                (0, n.jsxs)("div", {
+                  className: "relative flex items-center gap-4",
+                  children: [
+                    (0, n.jsx)("div", {
+                      className:
+                        "flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-primary text-lg font-bold text-primary-foreground shadow-glow sm:h-20 sm:w-20",
+                      children: b,
+                    }),
+                    (0, n.jsxs)("div", {
+                      className: "min-w-0",
+                      children: [
+                        (0, n.jsx)("p", {
+                          className: "truncate text-base font-bold sm:text-lg",
+                          children: t || "Your name",
+                        }),
+                        (0, n.jsx)("p", {
+                          className: "truncate text-xs text-muted-foreground sm:text-sm",
+                          children: null == e ? void 0 : e.email,
+                        }),
+                        (0, n.jsx)("span", {
+                          className:
+                            "mt-1.5 inline-flex items-center rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-success",
+                          children: "Active",
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+            (0, n.jsxs)("div", {
+              className: "rounded-3xl border border-border bg-card p-5 shadow-soft sm:p-6",
+              children: [
+                (0, n.jsx)("h3", {
+                  className: "text-base font-bold sm:text-lg",
+                  children: "Profile",
+                }),
+                (0, n.jsx)("p", {
+                  className: "text-xs text-muted-foreground",
+                  children: "Update your account information",
+                }),
+                (0, n.jsxs)("div", {
+                  className: "mt-5 space-y-4",
+                  children: [
+                    (0, n.jsxs)("div", {
+                      className: "space-y-1.5",
+                      children: [
+                        (0, n.jsx)(m.J, {
+                          htmlFor: "email",
+                          className: "text-xs font-semibold",
+                          children: "Email",
+                        }),
+                        (0, n.jsxs)("div", {
+                          className: "relative",
+                          children: [
+                            (0, n.jsx)(s.A, {
+                              className:
+                                "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground",
+                            }),
+                            (0, n.jsx)(f.p, {
+                              id: "email",
+                              value: (null == e ? void 0 : e.email) || "",
+                              disabled: !0,
+                              className: "h-11 rounded-xl pl-9",
+                            }),
+                          ],
+                        }),
+                      ],
+                    }),
+                    (0, n.jsxs)("div", {
+                      className: "space-y-1.5",
+                      children: [
+                        (0, n.jsx)(m.J, {
+                          htmlFor: "name",
+                          className: "text-xs font-semibold",
+                          children: "Full name",
+                        }),
+                        (0, n.jsxs)("div", {
+                          className: "relative",
+                          children: [
+                            (0, n.jsx)(o, {
+                              className:
+                                "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground",
+                            }),
+                            (0, n.jsx)(f.p, {
+                              id: "name",
+                              value: t,
+                              onChange: (e) => r(e.target.value),
+                              className: "h-11 rounded-xl pl-9",
+                            }),
+                          ],
+                        }),
+                      ],
+                    }),
+                    (0, n.jsxs)("div", {
+                      className: "space-y-1.5",
+                      children: [
+                        (0, n.jsx)(m.J, {
+                          htmlFor: "org",
+                          className: "text-xs font-semibold",
+                          children: "Agency",
+                        }),
+                        (0, n.jsxs)("div", {
+                          className: "relative",
+                          children: [
+                            (0, n.jsx)(d, {
+                              className:
+                                "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground",
+                            }),
+                            (0, n.jsx)(f.p, {
+                              id: "org",
+                              value: i,
+                              onChange: (e) => v(e.target.value),
+                              className: "h-11 rounded-xl pl-9",
+                            }),
+                          ],
+                        }),
+                      ],
+                    }),
+                    (0, n.jsxs)(c.$, {
+                      disabled: x,
+                      onClick: () => void g(),
+                      className:
+                        "h-11 w-full rounded-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-95 sm:w-auto",
+                      children: [
+                        (0, n.jsx)(u, { className: "mr-2 h-4 w-4" }),
+                        x ? "Saving..." : "Save changes",
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        });
+      }
+    },
+    94446: (e, t, r) => {
+      "use strict";
+      r.d(t, { s: () => s, t: () => l });
+      var n = r(12115);
+      function a(e, t) {
+        if ("function" == typeof e) return e(t);
+        null != e && (e.current = t);
+      }
+      function l(...e) {
+        return (t) => {
+          let r = !1,
+            n = e.map((e) => {
+              let n = a(e, t);
+              return (r || "function" != typeof n || (r = !0), n);
+            });
+          if (r)
+            return () => {
+              for (let t = 0; t < n.length; t++) {
+                let r = n[t];
+                "function" == typeof r ? r() : a(e[t], null);
+              }
+            };
+        };
+      }
+      function s(...e) {
+        return n.useCallback(l(...e), e);
+      }
+    },
+  },
+  (e) => {
+    (e.O(0, [8909, 9924, 8720, 6856, 8441, 1255, 7358], () => e((e.s = 25212))), (_N_E = e.O()));
+  },
+]);

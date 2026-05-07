@@ -1,14 +1,33 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Users, Shield, Building2, Link2, Share2, Loader2, BellRing, Send } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+} from "recharts";
+import {
+  Users,
+  Shield,
+  Building2,
+  Link2,
+  Share2,
+  Loader2,
+  DollarSign,
+  ShoppingCart,
+  Wallet,
+  CheckCircle2,
+  XCircle,
+  Ban,
+  RotateCcw,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 
 type Totals = {
   totalUsers: number;
@@ -16,9 +35,79 @@ type Totals = {
   usersWithAgency: number;
   totalAgencies: number;
   totalShareLinks: number;
+  totalIncome: number;
+  totalPackageSales: number;
+  totalPaidTransactions: number;
+  totalFailedTransactions: number;
+  totalCanceledTransactions: number;
+  totalRefundedTransactions: number;
+  avgOrderValue: number;
+};
+
+type PackageStat = {
+  planId: string;
+  planName: string;
+  income: number;
+  sales: number;
+};
+
+type MonthlyTrend = {
+  key: string;
+  label: string;
+  income: number;
+  sales: number;
 };
 
 const cards = [
+  {
+    key: "totalIncome" as const,
+    label: "Total income (paid)",
+    icon: DollarSign,
+    accent: "from-emerald-500/20 to-green-500/10",
+    iconBg: "bg-emerald-500/15 text-emerald-600",
+  },
+  {
+    key: "totalPackageSales" as const,
+    label: "Total package sales",
+    icon: ShoppingCart,
+    accent: "from-sky-500/20 to-indigo-500/10",
+    iconBg: "bg-sky-500/15 text-sky-600",
+  },
+  {
+    key: "avgOrderValue" as const,
+    label: "Avg order value",
+    icon: Wallet,
+    accent: "from-indigo-500/20 to-violet-500/10",
+    iconBg: "bg-indigo-500/15 text-indigo-600",
+  },
+  {
+    key: "totalPaidTransactions" as const,
+    label: "Paid transactions",
+    icon: CheckCircle2,
+    accent: "from-emerald-500/20 to-lime-500/10",
+    iconBg: "bg-emerald-500/15 text-emerald-600",
+  },
+  {
+    key: "totalFailedTransactions" as const,
+    label: "Failed transactions",
+    icon: XCircle,
+    accent: "from-rose-500/20 to-red-500/10",
+    iconBg: "bg-rose-500/15 text-rose-600",
+  },
+  {
+    key: "totalCanceledTransactions" as const,
+    label: "Canceled transactions",
+    icon: Ban,
+    accent: "from-orange-500/20 to-amber-500/10",
+    iconBg: "bg-orange-500/15 text-orange-600",
+  },
+  {
+    key: "totalRefundedTransactions" as const,
+    label: "Refunded transactions",
+    icon: RotateCcw,
+    accent: "from-cyan-500/20 to-sky-500/10",
+    iconBg: "bg-cyan-500/15 text-cyan-600",
+  },
   {
     key: "totalUsers" as const,
     label: "Registered users",
@@ -58,20 +147,32 @@ const cards = [
 
 export function AdminOverview() {
   const [totals, setTotals] = useState<Totals | null>(null);
+  const [packageStats, setPackageStats] = useState<PackageStat[]>([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<MonthlyTrend[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [message, setMessage] = useState("");
-  const [targetRole, setTargetRole] = useState<"all" | "user" | "admin">("all");
-  const [link, setLink] = useState("");
-  const [sending, setSending] = useState(false);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
-  const load = useCallback(async () => {
+  const loadWithRange = useCallback(async (from: string, to: string) => {
     setLoading(true);
     setErr(null);
     try {
-      const res = await fetch("/api/admin/overview", { credentials: "include" });
-      const json = (await res.json()) as { success?: boolean; error?: string; totals?: Totals };
+      const params = new URLSearchParams();
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      const query = params.toString();
+      const res = await fetch(`/api/admin/overview${query ? `?${query}` : ""}`, {
+        credentials: "include",
+      });
+      const json = (await res.json()) as {
+        success?: boolean;
+        error?: string;
+        totals?: Totals;
+        packageStats?: PackageStat[];
+        monthlyTrend?: MonthlyTrend[];
+        filters?: { from: string | null; to: string | null };
+      };
       if (!res.ok || json.success === false) {
         if (res.status === 403) {
           setErr("You do not have admin access.");
@@ -82,6 +183,10 @@ export function AdminOverview() {
         return;
       }
       setTotals(json.totals ?? null);
+      setPackageStats(json.packageStats ?? []);
+      setMonthlyTrend(json.monthlyTrend ?? []);
+      if (json.filters?.from !== undefined) setFromDate(json.filters.from ?? "");
+      if (json.filters?.to !== undefined) setToDate(json.filters.to ?? "");
     } catch {
       setErr("Network error");
       setTotals(null);
@@ -90,40 +195,13 @@ export function AdminOverview() {
     }
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const load = useCallback(async () => {
+    await loadWithRange(fromDate, toDate);
+  }, [fromDate, toDate, loadWithRange]);
 
-  const sendNotification = async () => {
-    if (!title.trim() || !message.trim()) return;
-    setSending(true);
-    try {
-      const res = await fetch("/api/admin/notifications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          title: title.trim(),
-          message: message.trim(),
-          targetRole,
-          link: link.trim() || "",
-        }),
-      });
-      const json = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string };
-      if (!res.ok || json.success === false) {
-        toast.error(typeof json.error === "string" ? json.error : "Could not send notification.");
-        return;
-      }
-      toast.success("Notification sent.");
-      setTitle("");
-      setMessage("");
-      setLink("");
-    } catch {
-      toast.error("Network error.");
-    } finally {
-      setSending(false);
-    }
-  };
+  useEffect(() => {
+    void loadWithRange("", "");
+  }, [loadWithRange]);
 
   const values = useMemo(() => {
     const t = totals;
@@ -132,6 +210,19 @@ export function AdminOverview() {
       number
     >;
   }, [totals]);
+  const currency = "USD";
+  const fmtMoney = (n: number) =>
+    `${currency} ${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  const totalAttempts =
+    values.totalPaidTransactions +
+    values.totalFailedTransactions +
+    values.totalCanceledTransactions +
+    values.totalRefundedTransactions;
+  const paidRate = totalAttempts > 0 ? (values.totalPaidTransactions / totalAttempts) * 100 : 0;
+  const failureRate =
+    totalAttempts > 0
+      ? ((values.totalFailedTransactions + values.totalCanceledTransactions) / totalAttempts) * 100
+      : 0;
 
   if (loading && !totals) {
     return (
@@ -163,97 +254,64 @@ export function AdminOverview() {
       transition={{ duration: 0.35 }}
       className="space-y-5 sm:space-y-6"
     >
-      <div className="rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-        Platform snapshot. Promote users in MongoDB by setting{" "}
-        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
-          role
-        </code>{" "}
-        to{" "}
-        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
-          &quot;admin&quot;
-        </code>
-        . Manage agencies in{" "}
-        <Link href="/admin/agencies" className="font-semibold text-primary hover:underline">
-          Agencies
-        </Link>{" "}
-        and accounts in{" "}
-        <Link href="/admin/users" className="font-semibold text-primary hover:underline">
-          Users
-        </Link>
-        .
-      </div>
-
-      <div className="rounded-3xl border border-border bg-card p-5 shadow-soft">
-        <div className="mb-4 flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <BellRing className="h-4 w-4" />
-          </span>
-          <div>
-            <h3 className="text-base font-bold">Send Notification</h3>
-            <p className="text-xs text-muted-foreground">Broadcast to user dashboards instantly.</p>
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-soft">
+        <div>
+          <h1 className="text-base font-bold sm:text-lg">Overview Analytics</h1>
+          <p className="text-xs text-muted-foreground">
+            Track income, package sales, and quality signals
+          </p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label className="text-xs font-semibold">Title</Label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="System maintenance notice"
-              className="h-10 rounded-xl"
+        <div className="flex flex-wrap items-end justify-end gap-3">
+          <div className="space-y-1">
+            <label htmlFor="overview-from" className="text-xs font-semibold text-muted-foreground">
+              From
+            </label>
+            <input
+              id="overview-from"
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
             />
           </div>
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label className="text-xs font-semibold">Message</Label>
-            <Input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="We will update servers tonight at 2 AM UTC."
-              className="h-10 rounded-xl"
+          <div className="space-y-1">
+            <label htmlFor="overview-to" className="text-xs font-semibold text-muted-foreground">
+              To
+            </label>
+            <input
+              id="overview-to"
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">Audience</Label>
-            <select
-              value={targetRole}
-              onChange={(e) => setTargetRole(e.target.value as "all" | "user" | "admin")}
-              className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm"
-            >
-              <option value="all">All users + admins</option>
-              <option value="user">Users only</option>
-              <option value="admin">Admins only</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">Optional Link</Label>
-            <Input
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-              placeholder="/dashboard/docs"
-              className="h-10 rounded-xl"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <Button
-              type="button"
-              disabled={sending || !title.trim() || !message.trim()}
-              onClick={() => void sendNotification()}
-              className="h-10 rounded-full bg-gradient-primary text-primary-foreground"
-            >
-              <Send className="mr-2 h-4 w-4" /> {sending ? "Sending..." : "Send notification"}
-            </Button>
-          </div>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="h-10 rounded-full bg-gradient-primary px-4 text-sm font-semibold text-primary-foreground"
+          >
+            Apply
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setFromDate("");
+              setToDate("");
+              void loadWithRange("", "");
+            }}
+            className="h-10 rounded-full border border-border px-4 text-sm font-semibold text-muted-foreground hover:text-foreground"
+          >
+            Clear
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
         {cards.map((c) => (
           <div
             key={c.key}
-            className={cn(
-              "group relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-elegant sm:p-5",
-              c.key === "totalShareLinks" && "col-span-2 lg:col-span-1",
-            )}
+            className="group relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-elegant sm:p-5"
           >
             <div
               className={cn(
@@ -268,7 +326,9 @@ export function AdminOverview() {
             </div>
             <div className="relative mt-3 sm:mt-4">
               <div className="text-xl font-bold leading-tight sm:text-2xl">
-                {values[c.key].toLocaleString()}
+                {c.key === "totalIncome" || c.key === "avgOrderValue"
+                  ? fmtMoney(values[c.key])
+                  : values[c.key].toLocaleString()}
               </div>
               <div className="mt-1 text-xs font-medium text-muted-foreground sm:text-sm">
                 {c.label}
@@ -276,6 +336,170 @@ export function AdminOverview() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <div className="rounded-3xl border border-border bg-card p-4 shadow-soft sm:p-5">
+          <div className="mb-3">
+            <h3 className="text-base font-bold">Monthly Income Trend</h3>
+            <p className="text-xs text-muted-foreground">
+              Paid package income and sales by month (selected range)
+            </p>
+          </div>
+          <div className="h-64">
+            {monthlyTrend.length === 0 ? (
+              <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-border text-sm text-muted-foreground">
+                No paid transaction trend yet.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={monthlyTrend} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
+                  <CartesianGrid stroke="var(--border)" vertical={false} strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="label"
+                    tickLine={false}
+                    axisLine={false}
+                    stroke="var(--muted-foreground)"
+                    fontSize={11}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 12,
+                      fontSize: 12,
+                    }}
+                    formatter={(value: number, key: string) =>
+                      key === "income"
+                        ? [`${currency} ${value.toLocaleString()}`, "Income"]
+                        : [value.toLocaleString(), "Sales"]
+                    }
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="income"
+                    stroke="var(--chart-1)"
+                    strokeWidth={2.4}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="sales"
+                    stroke="var(--chart-2)"
+                    strokeWidth={2.2}
+                    dot={{ r: 2.5 }}
+                    activeDot={{ r: 4.5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-border bg-card p-4 shadow-soft sm:p-5">
+          <div className="mb-3">
+            <h3 className="text-base font-bold">Package Sales & Income</h3>
+            <p className="text-xs text-muted-foreground">Package-wise performance (paid only)</p>
+          </div>
+          <div className="h-64">
+            {packageStats.length === 0 ? (
+              <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-border text-sm text-muted-foreground">
+                No package sales yet.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={packageStats} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                  <CartesianGrid stroke="var(--border)" vertical={false} strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="planName"
+                    tickLine={false}
+                    axisLine={false}
+                    stroke="var(--muted-foreground)"
+                    fontSize={11}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 12,
+                      fontSize: 12,
+                    }}
+                    formatter={(value: number, key: string) =>
+                      key === "income"
+                        ? [`${currency} ${value.toLocaleString()}`, "Income"]
+                        : [value.toLocaleString(), "Sales"]
+                    }
+                  />
+                  <Bar dataKey="sales" fill="var(--chart-2)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="income" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        <div className="rounded-3xl border border-border bg-card p-4 shadow-soft sm:p-5 xl:col-span-3">
+          <h3 className="text-base font-bold">Quick Health</h3>
+          <p className="mt-1 text-xs text-muted-foreground">Payment quality indicators</p>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-border/70 bg-background/40 p-3">
+              <p className="text-xs text-muted-foreground">Success rate</p>
+              <p className="mt-1 text-xl font-bold">{paidRate.toFixed(1)}%</p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-background/40 p-3">
+              <p className="text-xs text-muted-foreground">Failure + cancel rate</p>
+              <p className="mt-1 text-xl font-bold">{failureRate.toFixed(1)}%</p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-background/40 p-3">
+              <p className="text-xs text-muted-foreground">Total payment attempts</p>
+              <p className="mt-1 text-xl font-bold">{totalAttempts.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-border bg-card p-4 shadow-soft sm:p-5 xl:col-span-3">
+          <h3 className="text-base font-bold">Package Performance Breakdown</h3>
+          <p className="mt-1 text-xs text-muted-foreground">Income share and sales by package</p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[520px] text-sm">
+              <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="pb-2">Package</th>
+                  <th className="pb-2 text-right">Sales</th>
+                  <th className="pb-2 text-right">Income</th>
+                  <th className="pb-2 text-right">Share</th>
+                </tr>
+              </thead>
+              <tbody>
+                {packageStats.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-6 text-center text-muted-foreground">
+                      No package performance data.
+                    </td>
+                  </tr>
+                ) : (
+                  packageStats.map((row) => {
+                    const share =
+                      values.totalIncome > 0 ? (row.income / values.totalIncome) * 100 : 0;
+                    return (
+                      <tr key={row.planId} className="border-t border-border/60">
+                        <td className="py-3 font-medium">{row.planName}</td>
+                        <td className="py-3 text-right tabular-nums">
+                          {row.sales.toLocaleString()}
+                        </td>
+                        <td className="py-3 text-right tabular-nums">{fmtMoney(row.income)}</td>
+                        <td className="py-3 text-right tabular-nums">{share.toFixed(1)}%</td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </motion.div>
   );

@@ -20,6 +20,7 @@ export async function middleware(request: NextRequest) {
   const hasAgencySession = !!request.cookies.get("ar_agency")?.value;
   const path = request.nextUrl.pathname;
   const isAdmin = token?.role === "admin";
+  const isBanned = token?.isBanned === true;
   const isMetaConnectRoute = path === "/dashboard/meta-connect";
   const loginUrl = new URL("/login", request.nextUrl);
   loginUrl.searchParams.set("next", `${path}${request.nextUrl.search}`);
@@ -32,6 +33,9 @@ export async function middleware(request: NextRequest) {
 
   if (path.startsWith("/dashboard") && !loggedIn && !hasAgencySession) {
     return NextResponse.redirect(loginUrl);
+  }
+  if ((path.startsWith("/dashboard") || path.startsWith("/admin")) && isBanned) {
+    return NextResponse.redirect(new URL("/login?error=account_banned", request.nextUrl));
   }
   if (path.startsWith("/admin") && !loggedIn) {
     return NextResponse.redirect(loginUrl);

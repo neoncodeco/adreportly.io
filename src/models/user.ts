@@ -7,6 +7,8 @@ export interface IUser extends Document {
   organization: string;
   agencyId: string | null;
   role: "user" | "admin";
+  isBanned: boolean;
+  bannedAt: Date | null;
   billingPlanId: "free" | "starter" | "pro" | "enterprise";
   billingStatus: "inactive" | "pending" | "active" | "past_due" | "canceled" | "expired";
   billingCurrentPeriodEnd: Date | null;
@@ -35,6 +37,8 @@ const UserSchema = new Schema<IUser>(
       default: "user",
       index: true,
     },
+    isBanned: { type: Boolean, default: false, index: true },
+    bannedAt: { type: Date, default: null },
     billingPlanId: {
       type: String,
       enum: ["free", "starter", "pro", "enterprise"],

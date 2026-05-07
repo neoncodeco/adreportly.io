@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { requireMongo } from "@/lib/db";
 import { encryptSecret } from "@/lib/encryption";
+import { getOrSetCache, invalidateCacheByPrefix, USER_CACHE_HEADERS } from "@/lib/server-cache";
 import { UserModel } from "@/models/user";
 
 export async function GET() {
@@ -19,15 +20,18 @@ export async function GET() {
     );
   }
 
-  const user = await UserModel.findById(session.user.id)
-    .select("fbAppId encryptedFbAppSecret")
-    .lean()
-    .exec();
-
-  return NextResponse.json({
-    fbAppId: user?.fbAppId ?? null,
-    hasSecret: Boolean(user?.encryptedFbAppSecret),
+  const payload = await getOrSetCache(`user:fb-app:${session.user.id}`, 30_000, async () => {
+    const user = await UserModel.findById(session.user.id)
+      .select("fbAppId encryptedFbAppSecret")
+      .lean()
+      .exec();
+    return {
+      fbAppId: user?.fbAppId ?? null,
+      hasSecret: Boolean(user?.encryptedFbAppSecret),
+    };
   });
+
+  return NextResponse.json(payload, { headers: USER_CACHE_HEADERS });
 }
 
 const patchSchema = z.object({
@@ -70,6 +74,9 @@ export async function PATCH(request: NextRequest) {
       encryptedFbAppSecret,
     },
   }).exec();
+  invalidateCacheByPrefix(`user:fb-app:${session.user.id}`);
+  invalidateCacheByPrefix("user:dashboard-overview:");
+  invalidateCacheByPrefix("user:ad-accounts:");
 
   return NextResponse.json({ ok: true });
 }
@@ -90,5 +97,8 @@ export async function DELETE() {
   await UserModel.findByIdAndUpdate(session.user.id, {
     $set: { fbAppId: null, encryptedFbAppSecret: null },
   }).exec();
+  invalidateCacheByPrefix(`user:fb-app:${session.user.id}`);
+  invalidateCacheByPrefix("user:dashboard-overview:");
+  invalidateCacheByPrefix("user:ad-accounts:");
   return NextResponse.json({ ok: true });
 }

@@ -21,6 +21,7 @@ type LeanAuthUser = {
   fullName?: string | null;
   organization?: string | null;
   role?: string | null;
+  isBanned?: boolean | null;
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -45,6 +46,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: email.trim().toLowerCase(),
         }).lean()) as LeanAuthUser | null;
         if (!user?.passwordHash) return null;
+        if (user.isBanned) return null;
 
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
@@ -73,11 +75,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       if (token.sub) {
         await requireMongo();
-        const doc = (await UserModel.findById(token.sub).select("role").lean().exec()) as {
+        const doc = (await UserModel.findById(token.sub).select("role isBanned").lean().exec()) as {
           role?: string | null;
+          isBanned?: boolean | null;
         } | null;
         if (doc) {
           token.role = doc.role === "admin" ? "admin" : "user";
+          token.isBanned = Boolean(doc.isBanned);
         }
       }
       return token;

@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { createUddoktaPayCheckoutSession, resolveCheckoutUrl } from "@/lib/billing/uddoktapay";
 import { getBillingPlanById } from "@/lib/billing/plans";
 import { requireMongo } from "@/lib/db";
+import { PaymentTransactionModel } from "@/models/payment-transaction";
 import { SubscriptionModel } from "@/models/subscription";
 import { UserModel } from "@/models/user";
 
@@ -123,6 +124,31 @@ export async function POST(request: Request) {
       billingInfo: billingInfo ?? null,
     },
   });
+
+  const providerPaymentId =
+    (typeof checkout.reference === "string" && checkout.reference) ||
+    `checkout_${sub._id.toString()}`;
+
+  await PaymentTransactionModel.updateOne(
+    { providerPaymentId },
+    {
+      $setOnInsert: {
+        userId: session.user.id,
+        subscriptionId: sub._id.toString(),
+        planId: plan.id,
+        providerPaymentId,
+        providerReference: typeof checkout.reference === "string" ? checkout.reference : null,
+        amount: plan.amount,
+        currency: plan.currency,
+        status: "pending",
+        raw: {
+          source: "checkout_create",
+          checkout,
+        },
+      },
+    },
+    { upsert: true },
+  );
 
   return NextResponse.json({
     checkout_url: checkoutUrl,

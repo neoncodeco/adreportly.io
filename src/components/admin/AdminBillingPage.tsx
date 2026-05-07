@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 type Row = {
   id: string;
@@ -19,10 +20,12 @@ type Row = {
 };
 
 export function AdminBillingPage() {
+  const pageSize = 20;
   const [rows, setRows] = useState<Row[]>([]);
   const [total, setTotal] = useState(0);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
@@ -30,7 +33,10 @@ export function AdminBillingPage() {
     setLoading(true);
     setErr(null);
     try {
-      const params = new URLSearchParams({ limit: "50", skip: "0" });
+      const params = new URLSearchParams({
+        limit: String(pageSize),
+        skip: String((page - 1) * pageSize),
+      });
       if (q.trim()) params.set("q", q.trim());
       if (status.trim()) params.set("status", status.trim());
       const res = await fetch(`/api/admin/billing?${params.toString()}`, {
@@ -57,12 +63,20 @@ export function AdminBillingPage() {
     } finally {
       setLoading(false);
     }
+  }, [q, status, page]);
+
+  useEffect(() => {
+    setPage(1);
   }, [q, status]);
 
   useEffect(() => {
     const t = setTimeout(() => void load(), 250);
     return () => clearTimeout(t);
   }, [load]);
+
+  const lastPage = Math.max(1, Math.ceil(total / pageSize));
+  const canPrev = page > 1;
+  const canNext = page < lastPage;
 
   return (
     <motion.div
@@ -160,6 +174,33 @@ export function AdminBillingPage() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
+          Showing {(total === 0 ? 0 : (page - 1) * pageSize + 1).toLocaleString()}-
+          {Math.min(page * pageSize, total).toLocaleString()} of {total.toLocaleString()}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!canPrev || loading}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            Previous
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            Page {page} / {lastPage}
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!canNext || loading}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </Button>
         </div>
       </div>
     </motion.div>

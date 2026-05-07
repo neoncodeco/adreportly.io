@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { metaAccessContext } from "@/lib/agency-from-request";
+import { invalidateCacheByPrefix } from "@/lib/server-cache";
 import { buildShareUrl, newShareToken, persistShareLink } from "@/lib/share-service";
 
 export async function POST(request: NextRequest) {
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
     expiresAt,
     createdAt: now,
   });
+  invalidateCacheByPrefix(`user:clients:${agencyId}`);
 
   return NextResponse.json({
     success: true,

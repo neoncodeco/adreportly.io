@@ -1,8 +1,18 @@
+"use client";
+
+import { useEffect } from "react";
 import Link from "next/link";
 import { CircleX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function CheckoutCancelPage() {
+  useEffect(() => {
+    void fetch("/api/billing/cancel", {
+      method: "POST",
+      credentials: "include",
+    });
+  }, []);
+
   return (
     <div className="mx-auto max-w-2xl py-14">
       <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-soft">

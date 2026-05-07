@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/require-admin";
+import { ADMIN_CACHE_HEADERS, getOrSetCache } from "@/lib/server-cache";
 import { TicketModel } from "@/models/ticket";
 
 export async function GET(request: NextRequest) {
@@ -28,34 +29,38 @@ export async function GET(request: NextRequest) {
     ];
   }
 
-  const [rows, total] = await Promise.all([
-    TicketModel.find(filter)
-      .sort({ updatedAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .select("-replies")
-      .lean()
-      .exec(),
-    TicketModel.countDocuments(filter),
-  ]);
+  const payload = await getOrSetCache(`admin:tickets:${request.url}`, 8_000, async () => {
+    const [rows, total] = await Promise.all([
+      TicketModel.find(filter)
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select("-replies")
+        .lean()
+        .exec(),
+      TicketModel.countDocuments(filter),
+    ]);
 
-  return NextResponse.json({
-    success: true,
-    total,
-    tickets: rows.map((t) => ({
-      id: t._id.toString(),
-      ticketNumber: t.ticketNumber,
-      userId: t.userId,
-      userEmail: t.userEmail,
-      userName: t.userName,
-      subject: t.subject,
-      category: t.category,
-      priority: t.priority,
-      status: t.status,
-      repliesCount: (t.replies ?? []).length,
-      lastRepliedByAdmin: t.lastRepliedByAdmin,
-      createdAt: t.createdAt,
-      updatedAt: t.updatedAt,
-    })),
+    return {
+      success: true,
+      total,
+      tickets: rows.map((t) => ({
+        id: t._id.toString(),
+        ticketNumber: t.ticketNumber,
+        userId: t.userId,
+        userEmail: t.userEmail,
+        userName: t.userName,
+        subject: t.subject,
+        category: t.category,
+        priority: t.priority,
+        status: t.status,
+        repliesCount: (t.replies ?? []).length,
+        lastRepliedByAdmin: t.lastRepliedByAdmin,
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt,
+      })),
+    };
   });
+
+  return NextResponse.json(payload, { headers: ADMIN_CACHE_HEADERS });
 }
