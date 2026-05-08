@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { createUddoktaPayCheckoutSession, resolveCheckoutUrl } from "@/lib/billing/uddoktapay";
-import { getBillingPlanById } from "@/lib/billing/plans";
+import { getBillingCyclePrice, getBillingPlanById } from "@/lib/billing/plans";
 import { requireMongo } from "@/lib/db";
 import { PaymentTransactionModel } from "@/models/payment-transaction";
 import { SubscriptionModel } from "@/models/subscription";
@@ -22,6 +22,7 @@ const billingSchema = z
 
 const bodySchema = z.object({
   planId: z.enum(["starter", "pro", "enterprise"]),
+  billingCycle: z.enum(["monthly", "yearly"]).default("monthly"),
   billing: billingSchema,
 });
 
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
   if (!plan || !plan.isPaid) {
     return NextResponse.json({ error: "Invalid plan for checkout." }, { status: 400 });
   }
+  const selectedPrice = getBillingCyclePrice(plan, parsed.data.billingCycle);
 
   try {
     await requireMongo();
@@ -74,6 +76,8 @@ export async function POST(request: Request) {
   try {
     checkout = await createUddoktaPayCheckoutSession({
       plan,
+      billingCycle: parsed.data.billingCycle,
+      amount: selectedPrice.amount,
       userId: session.user.id,
       userEmail: resolvedEmail,
       userName: resolvedName,
@@ -114,13 +118,14 @@ export async function POST(request: Request) {
     agencyId: userRow?.agencyId ?? null,
     planId: plan.id,
     status: "pending",
-    amount: plan.amount,
+    amount: selectedPrice.amount,
     currency: plan.currency,
     providerReference: typeof checkout.reference === "string" ? checkout.reference : null,
     providerCustomerId: typeof checkout.customer_id === "string" ? checkout.customer_id : null,
     ...(providerSubscriptionId ? { providerSubscriptionId } : {}),
     metadata: {
       ...checkout,
+      billingCycle: parsed.data.billingCycle,
       billingInfo: billingInfo ?? null,
     },
   });
@@ -138,7 +143,7 @@ export async function POST(request: Request) {
         planId: plan.id,
         providerPaymentId,
         providerReference: typeof checkout.reference === "string" ? checkout.reference : null,
-        amount: plan.amount,
+        amount: selectedPrice.amount,
         currency: plan.currency,
         status: "pending",
         raw: {

@@ -4,7 +4,7 @@ import {
   assertBillingEnvForWebhook,
   getBillingEnv,
 } from "@/lib/billing/env";
-import type { BillingPlan } from "@/lib/billing/plans";
+import type { BillingCycle, BillingPlan } from "@/lib/billing/plans";
 
 type BillingDetails = {
   company?: string | null;
@@ -16,6 +16,8 @@ type BillingDetails = {
 
 type CreateSessionInput = {
   plan: BillingPlan;
+  billingCycle: BillingCycle;
+  amount: number;
   userId: string;
   userEmail: string;
   userName?: string | null;
@@ -71,10 +73,11 @@ export async function createUddoktaPayCheckoutSession(
     // Keep request shape aligned with UddoktaPay docs/examples.
     full_name: input.userName || input.userEmail,
     email: input.userEmail,
-    amount: String(input.plan.amount),
+    amount: String(input.amount),
     metadata: {
       userId: input.userId,
       planId: input.plan.id,
+      billingCycle: input.billingCycle,
       agencyId: input.agencyId ?? null,
       existingSubscriptionId: input.existingSubscriptionId ?? null,
       ...(input.billingDetails?.phone ? { phone: input.billingDetails.phone } : {}),

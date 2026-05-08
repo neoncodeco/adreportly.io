@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { metaAccessContext } from "@/lib/agency-from-request";
+import { resolvePlanForUsage } from "@/lib/billing/usage";
 import { invalidateCacheByPrefix } from "@/lib/server-cache";
-import { buildShareUrl, newShareToken, persistShareLink } from "@/lib/share-service";
+import {
+  buildShareUrl,
+  listClientEmailsForAgency,
+  newShareToken,
+  persistShareLink,
+} from "@/lib/share-service";
 
 export async function POST(request: NextRequest) {
   const { agencyId, isAuthenticated } = await metaAccessContext(request);
@@ -38,6 +45,24 @@ export async function POST(request: NextRequest) {
   const shareToken = newShareToken();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + expiryDays * 86400000);
+
+  const session = await auth();
+  const plan = await resolvePlanForUsage({ userId: session?.user?.id ?? null, agencyId });
+  const maxClients = plan.limits.clients;
+  if (maxClients !== null) {
+    const rows = await listClientEmailsForAgency(agencyId);
+    const email = clientEmail.trim().toLowerCase();
+    const hasEmail = rows.some((r) => r.email.trim().toLowerCase() === email);
+    if (!hasEmail && rows.length >= maxClients) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Client limit reached for ${plan.name} plan (max ${maxClients}). Upgrade to continue.`,
+        },
+        { status: 403 },
+      );
+    }
+  }
 
   await persistShareLink({
     shareToken,

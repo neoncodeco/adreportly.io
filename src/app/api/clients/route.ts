@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { metaAccessContext } from "@/lib/agency-from-request";
+import { resolvePlanForUsage } from "@/lib/billing/usage";
 import { getOrSetCache, USER_CACHE_HEADERS } from "@/lib/server-cache";
 import { listClientEmailsForAgency } from "@/lib/share-service";
 
@@ -13,9 +15,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const session = await auth();
+    const plan = await resolvePlanForUsage({ userId: session?.user?.id ?? null, agencyId });
     const payload = await getOrSetCache(`user:clients:${agencyId}`, 15_000, async () => {
       const rows = await listClientEmailsForAgency(agencyId);
-      const clients = rows.map((r) => {
+      const maxClients = plan.limits.clients;
+      const limitedRows = maxClients === null ? rows : rows.slice(0, maxClients);
+      const clients = limitedRows.map((r) => {
         const local = r.email.split("@")[0] ?? r.email;
         const parts = local.replace(/[._]/g, " ").split(" ").filter(Boolean);
         const initials =

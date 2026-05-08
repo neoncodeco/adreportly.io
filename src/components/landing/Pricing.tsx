@@ -1,15 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
-import { BILLING_PLANS } from "@/lib/billing/plans";
+import { BILLING_PLANS, getBillingCyclePrice, type BillingCycle } from "@/lib/billing/plans";
 import { cn } from "@/lib/utils";
 
 export function Pricing() {
   const { user } = useAuth();
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   return (
     <section id="pricing" className="relative py-28">
       <div
@@ -26,108 +28,151 @@ export function Pricing() {
             Simple, transparent pricing
           </h2>
           <p className="mt-4 text-muted-foreground">Start free. Upgrade when your agency grows.</p>
+          <div className="mt-6 inline-flex rounded-full border border-border bg-card p-1 shadow-soft">
+            {(["monthly", "yearly"] as BillingCycle[]).map((cycle) => (
+              <button
+                key={cycle}
+                type="button"
+                onClick={() => setBillingCycle(cycle)}
+                className={cn(
+                  "rounded-full px-4 py-1.5 text-xs font-semibold capitalize transition",
+                  billingCycle === cycle
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {cycle}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:items-center">
-          {BILLING_PLANS.map((p, i) => (
-            <motion.div
-              key={p.name}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.55, delay: i * 0.12 }}
-              className={cn(
-                "relative rounded p-8 hover-lift",
-                p.highlight
-                  ? "border-2 border-brand bg-ink text-ink-foreground shadow-brutal lg:scale-[1.04] lg:-my-2"
-                  : "card-brutal bg-card",
-              )}
-            >
-              {p.highlight && (
-                <span className="absolute -top-3.5 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-foreground shadow-glow">
-                  <Sparkles className="h-3 w-3" />
-                  Most popular
-                </span>
-              )}
-
-              <h3
+          {BILLING_PLANS.map((plan, i) => {
+            const selectedPrice = getBillingCyclePrice(plan, billingCycle);
+            return (
+              <motion.div
+                key={plan.name}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.55, delay: i * 0.12 }}
                 className={cn(
-                  "text-sm font-semibold uppercase tracking-wider",
-                  p.highlight ? "text-brand" : "text-muted-foreground",
+                  "relative rounded p-8 hover-lift",
+                  plan.highlight
+                    ? "border-2 border-brand bg-ink text-ink-foreground shadow-brutal lg:scale-[1.04] lg:-my-2"
+                    : "card-brutal bg-card",
                 )}
               >
-                {p.name}
-              </h3>
-
-              <div className="mt-4 flex items-baseline gap-1">
-                <span
-                  className={cn(
-                    "font-display text-5xl font-bold",
-                    p.highlight ? "text-ink-foreground" : "text-foreground",
-                  )}
-                >
-                  {p.priceLabel}
-                </span>
-                <span
-                  className={cn(
-                    "text-sm",
-                    p.highlight ? "text-ink-foreground/70" : "text-muted-foreground",
-                  )}
-                >
-                  {p.interval ? `/${p.interval}` : ""}
-                </span>
-              </div>
-
-              <p
-                className={cn(
-                  "mt-3 text-sm",
-                  p.highlight ? "text-ink-foreground/80" : "text-muted-foreground",
+                {plan.highlight && (
+                  <span className="absolute -top-3.5 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-foreground shadow-glow">
+                    <Sparkles className="h-3 w-3" />
+                    Most popular
+                  </span>
                 )}
-              >
-                {p.description}
-              </p>
 
-              <div
-                className={cn("my-6 h-px", p.highlight ? "bg-ink-foreground/15" : "bg-border")}
-              />
+                <h3
+                  className={cn(
+                    "text-sm font-semibold uppercase tracking-wider",
+                    plan.highlight ? "text-brand" : "text-muted-foreground",
+                  )}
+                >
+                  {plan.name}
+                </h3>
 
-              <ul className="space-y-3">
-                {p.features.map((f) => (
-                  <li
-                    key={f}
+                <div className="mt-4 space-y-1">
+                  <span
                     className={cn(
-                      "flex items-start gap-2.5 text-sm",
-                      p.highlight ? "text-ink-foreground/90" : "text-foreground",
+                      "block font-display font-bold",
+                      plan.id === "enterprise" ? "text-4xl sm:text-[2.6rem]" : "text-5xl",
+                      plan.highlight ? "text-ink-foreground" : "text-foreground",
                     )}
                   >
+                    {selectedPrice.priceLabel}
+                  </span>
+                  {plan.isPaid && selectedPrice.compareAtLabel ? (
                     <span
                       className={cn(
-                        "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full",
-                        p.highlight ? "bg-brand text-brand-foreground" : "bg-accent text-ink",
+                        "text-sm line-through",
+                        plan.highlight ? "text-ink-foreground/60" : "text-muted-foreground",
                       )}
                     >
-                      <Check className="h-3 w-3" strokeWidth={3} />
+                      {selectedPrice.compareAtLabel}
                     </span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
+                  ) : null}
+                  {plan.isPaid && plan.pricingInfo ? (
+                    <div
+                      className={cn(
+                        "pt-1 text-[11px]",
+                        plan.highlight ? "text-ink-foreground/75" : "text-muted-foreground",
+                      )}
+                    >
+                      {billingCycle === "monthly"
+                        ? `Regular: ${plan.pricingInfo.regular ?? "—"}  |  Discount: ${plan.pricingInfo.discount ?? selectedPrice.priceLabel}`
+                        : `Regular: ${plan.pricingInfo.regular ?? "—"}  |  Yearly: ${plan.pricingInfo.yearly ?? selectedPrice.priceLabel}`}
+                    </div>
+                  ) : null}
+                </div>
 
-              <Button
-                asChild
-                className={cn(
-                  "mt-8 w-full rounded font-semibold btn-brutal h-auto py-3",
-                  p.highlight
-                    ? "!bg-brand !text-brand-foreground hover:!bg-brand"
-                    : "!bg-brand !text-brand-foreground hover:!bg-brand",
-                )}
-              >
-                <Link href={p.isPaid ? `/checkout?plan=${p.id}` : user ? "/dashboard" : "/signup"}>
-                  {p.isPaid && user ? `Choose ${p.name}` : p.cta}
-                </Link>
-              </Button>
-            </motion.div>
-          ))}
+                <p
+                  className={cn(
+                    "mt-3 text-sm",
+                    plan.highlight ? "text-ink-foreground/80" : "text-muted-foreground",
+                  )}
+                >
+                  {plan.description}
+                </p>
+
+                <div
+                  className={cn("my-6 h-px", plan.highlight ? "bg-ink-foreground/15" : "bg-border")}
+                />
+
+                <ul className="space-y-3">
+                  {plan.features.map((f) => (
+                    <li
+                      key={f}
+                      className={cn(
+                        "flex items-start gap-2.5 text-sm",
+                        plan.highlight ? "text-ink-foreground/90" : "text-foreground",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full",
+                          plan.highlight ? "bg-brand text-brand-foreground" : "bg-accent text-ink",
+                        )}
+                      >
+                        <Check className="h-3 w-3" strokeWidth={3} />
+                      </span>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  asChild
+                  className={cn(
+                    "mt-8 w-full rounded font-semibold btn-brutal h-auto py-3",
+                    plan.highlight
+                      ? "!bg-brand !text-brand-foreground hover:!bg-brand"
+                      : "!bg-brand !text-brand-foreground hover:!bg-brand",
+                  )}
+                >
+                  <Link
+                    href={
+                      plan.isPaid
+                        ? `/checkout?plan=${plan.id}&cycle=${billingCycle}`
+                        : user
+                          ? "/dashboard"
+                          : "/signup"
+                    }
+                  >
+                    {plan.isPaid && user ? `Choose ${plan.name}` : plan.cta}
+                  </Link>
+                </Button>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>

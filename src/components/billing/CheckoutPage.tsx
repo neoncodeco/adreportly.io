@@ -23,7 +23,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BILLING_PLANS, getBillingPlanById } from "@/lib/billing/plans";
+import {
+  BILLING_PLANS,
+  getBillingCyclePrice,
+  getBillingPlanById,
+  type BillingCycle,
+} from "@/lib/billing/plans";
 import { cn } from "@/lib/utils";
 
 type BillingDetails = {
@@ -105,7 +110,11 @@ export function CheckoutPage() {
   const params = useSearchParams();
   const router = useRouter();
   const planId = params.get("plan");
+  const cycleParam = params.get("cycle");
   const plan = useMemo(() => getBillingPlanById(planId) ?? BILLING_PLANS[1], [planId]);
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>(
+    cycleParam === "yearly" ? "yearly" : "monthly",
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [billing, setBilling] = useState<BillingDetails>({
@@ -134,6 +143,10 @@ export function CheckoutPage() {
       setBilling((prev) => ({ ...prev, [k]: e.target.value }));
 
   const canSubmit = billing.fullName.trim().length > 1 && billing.email.trim().includes("@");
+  const selectedPrice = useMemo(
+    () => getBillingCyclePrice(plan, billingCycle),
+    [plan, billingCycle],
+  );
 
   const startCheckout = async () => {
     if (!plan.isPaid) {
@@ -149,6 +162,7 @@ export function CheckoutPage() {
         credentials: "include",
         body: JSON.stringify({
           planId: plan.id,
+          billingCycle,
           billing: {
             fullName: billing.fullName.trim(),
             email: billing.email.trim(),
@@ -344,9 +358,7 @@ export function CheckoutPage() {
               ) : (
                 <Lock className="mr-2 h-4 w-4" />
               )}
-              {loading
-                ? "Redirecting to payment…"
-                : `Pay ${plan.priceLabel}${plan.interval ? `/${plan.interval}` : ""} securely`}
+              {loading ? "Redirecting to payment…" : `Pay ${selectedPrice.priceLabel} securely`}
               {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
 
@@ -380,13 +392,34 @@ export function CheckoutPage() {
                   <h3 className="mt-1 text-2xl font-bold">{plan.name}</h3>
                 </div>
                 <div className="text-right">
-                  <p className="text-3xl font-bold">{plan.priceLabel}</p>
-                  {plan.interval && (
-                    <p className="text-xs text-foreground/75">per {plan.interval}</p>
-                  )}
+                  <p className="text-3xl font-bold">{selectedPrice.priceLabel}</p>
+                  {selectedPrice.compareAtLabel ? (
+                    <p className="text-xs text-muted-foreground line-through">
+                      {selectedPrice.compareAtLabel}
+                    </p>
+                  ) : null}
                 </div>
               </div>
               <p className="mt-2 text-sm text-foreground/80">{plan.description}</p>
+              {plan.billingCycles ? (
+                <div className="mt-3 inline-flex rounded-full border border-border bg-background p-1">
+                  {(["monthly", "yearly"] as BillingCycle[]).map((cycle) => (
+                    <button
+                      key={cycle}
+                      type="button"
+                      onClick={() => setBillingCycle(cycle)}
+                      className={cn(
+                        "rounded-full px-3 py-1.5 text-xs font-semibold capitalize transition",
+                        billingCycle === cycle
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {cycle}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
               <div className="mt-4 space-y-2">
                 {plan.features.map((f) => (
@@ -439,25 +472,18 @@ export function CheckoutPage() {
               </div>
 
               <div className="mt-4 space-y-2">
-                <InvoiceRow
-                  label={`${plan.name} plan`}
-                  value={`${plan.priceLabel}${plan.interval ? `/${plan.interval}` : ""}`}
-                  muted
-                />
+                <InvoiceRow label={`${plan.name} plan`} value={selectedPrice.priceLabel} muted />
                 <InvoiceRow label="Discount" value="—" muted />
                 <InvoiceRow label="Tax" value="Incl." muted />
               </div>
 
               <div className="mt-4 rounded-2xl bg-muted/50 px-4 py-3">
-                <InvoiceRow
-                  label="Total due today"
-                  value={`${plan.priceLabel}${plan.interval ? `/${plan.interval}` : ""}`}
-                  bold
-                />
+                <InvoiceRow label="Total due today" value={selectedPrice.priceLabel} bold />
               </div>
 
               <p className="mt-3 text-xs text-foreground/75">
-                Subscription renews automatically every {plan.interval ?? "month"}. You may cancel
+                Subscription renews automatically every{" "}
+                {billingCycle === "yearly" ? "year" : (plan.interval ?? "month")}. You may cancel
                 anytime from your billing settings.
               </p>
             </div>

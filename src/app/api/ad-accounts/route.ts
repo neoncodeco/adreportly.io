@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { metaAccessContext } from "@/lib/agency-from-request";
+import { resolvePlanForUsage } from "@/lib/billing/usage";
 import { getDecryptedTokenForAgency } from "@/lib/agency-service";
 import { getOrSetCache, USER_CACHE_HEADERS } from "@/lib/server-cache";
 import { fetchAdAccounts } from "@/services/facebook";
@@ -14,13 +16,20 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const session = await auth();
+    const plan = await resolvePlanForUsage({ userId: session?.user?.id ?? null, agencyId });
     const payload = await getOrSetCache(`user:ad-accounts:${agencyId}`, 20_000, async () => {
       const token = await getDecryptedTokenForAgency(agencyId);
       if (!token) {
         return { success: true, adAccounts: [] as unknown[] };
       }
       const data = await fetchAdAccounts(token);
-      return { success: true, adAccounts: data.data ?? [] };
+      const accounts = data.data ?? [];
+      const maxAccounts = plan.limits.adAccounts;
+      return {
+        success: true,
+        adAccounts: maxAccounts === null ? accounts : accounts.slice(0, maxAccounts),
+      };
     });
     return NextResponse.json(payload, { headers: USER_CACHE_HEADERS });
   } catch (e) {

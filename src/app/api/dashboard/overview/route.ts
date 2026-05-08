@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { metaAccessContext } from "@/lib/agency-from-request";
+import { resolvePlanForUsage } from "@/lib/billing/usage";
 import { getDecryptedTokenForAgency } from "@/lib/agency-service";
 import { getOrSetCache, USER_CACHE_HEADERS } from "@/lib/server-cache";
 import {
@@ -97,6 +99,7 @@ const TOP_COLORS = ["primary", "dark", "muted"] as const;
 
 export async function GET(req: NextRequest) {
   const { agencyId, isAuthenticated } = await metaAccessContext(req);
+  const session = await auth();
 
   const emptyPayload = (connected: boolean, currency = "BDT", currencySymbol = "৳") =>
     NextResponse.json({
@@ -157,6 +160,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const plan = await resolvePlanForUsage({ userId: session?.user?.id ?? null, agencyId });
     const payload = await getOrSetCache(`user:dashboard-overview:${agencyId}`, 20_000, async () => {
       const token = await getDecryptedTokenForAgency(agencyId);
       if (!token) {
@@ -218,6 +222,9 @@ export async function GET(req: NextRequest) {
       }> = [];
       const acc = await fetchAdAccounts(token);
       adAccounts = acc.data ?? [];
+      if (plan.limits.adAccounts !== null) {
+        adAccounts = adAccounts.slice(0, plan.limits.adAccounts);
+      }
 
       const primaryCurrency = adAccounts[0]?.currency ?? "BDT";
       const currencySymbol = currencySymbolFor(primaryCurrency);
@@ -349,8 +356,12 @@ export async function GET(req: NextRequest) {
         };
       };
 
-      const recentCampaigns = sortedCampaigns.slice(0, 8).map(toCampaignRow);
-      const campaigns = sortedCampaigns.map(toCampaignRow);
+      const cappedCampaigns =
+        plan.limits.campaigns === null
+          ? sortedCampaigns
+          : sortedCampaigns.slice(0, plan.limits.campaigns);
+      const recentCampaigns = cappedCampaigns.slice(0, 8).map(toCampaignRow);
+      const campaigns = cappedCampaigns.map(toCampaignRow);
 
       const avgRoas =
         totalSpend > 0 && totalPurchaseValue > 0

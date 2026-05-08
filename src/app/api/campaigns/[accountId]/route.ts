@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { metaAccessContext } from "@/lib/agency-from-request";
+import { resolvePlanForUsage } from "@/lib/billing/usage";
 import { getDecryptedTokenForAgency } from "@/lib/agency-service";
 import { fetchCampaignsForAdAccount } from "@/services/facebook";
 
@@ -23,10 +25,14 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ account
   }
 
   try {
+    const session = await auth();
+    const plan = await resolvePlanForUsage({ userId: session?.user?.id ?? null, agencyId });
     const rows = await fetchCampaignsForAdAccount(token, decodeURIComponent(accountId));
+    const maxCampaigns = plan.limits.campaigns;
+    const visibleRows = maxCampaigns === null ? rows : rows.slice(0, maxCampaigns);
     return NextResponse.json({
       success: true,
-      campaigns: rows.map((c) => ({
+      campaigns: visibleRows.map((c) => ({
         id: c.id,
         name: c.name ?? "",
         objective: c.objective ?? "",

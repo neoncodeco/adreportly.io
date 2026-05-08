@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { BILLING_PLANS } from "@/lib/billing/plans";
+import { BILLING_PLANS, getBillingCyclePrice, type BillingCycle } from "@/lib/billing/plans";
 import { cn } from "@/lib/utils";
 
 type BillingSummary = {
@@ -48,6 +48,7 @@ export function UserBillingPage() {
   const [data, setData] = useState<BillingSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -166,11 +167,29 @@ export function UserBillingPage() {
                 </p>
               </div>
             </div>
+            <div className="mb-4 inline-flex rounded-full border border-border bg-card p-1">
+              {(["monthly", "yearly"] as BillingCycle[]).map((cycle) => (
+                <button
+                  key={cycle}
+                  type="button"
+                  onClick={() => setBillingCycle(cycle)}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-xs font-semibold capitalize transition",
+                    billingCycle === cycle
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {cycle}
+                </button>
+              ))}
+            </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {BILLING_PLANS.map((plan, i) => {
                 const isCurrent = plan.id === currentPlanId;
                 const isHighlight = plan.highlight;
+                const selectedPrice = getBillingCyclePrice(plan, billingCycle);
 
                 return (
                   <motion.div
@@ -198,7 +217,7 @@ export function UserBillingPage() {
                       {!isCurrent && plan.id === "enterprise" && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-700">
                           <Crown className="h-3 w-3" />
-                          Enterprise
+                          Custom
                         </span>
                       )}
                     </div>
@@ -219,15 +238,22 @@ export function UserBillingPage() {
                       </p>
 
                       {/* Price */}
-                      <div className="mt-2 flex items-baseline gap-0.5">
+                      <div className="mt-2 space-y-1">
                         <span className="text-3xl font-extrabold tracking-tight text-foreground">
-                          {plan.priceLabel}
+                          {selectedPrice.priceLabel}
                         </span>
-                        {plan.interval && (
-                          <span className="ml-1 text-sm text-muted-foreground">
-                            /{plan.interval}
+                        {plan.isPaid && selectedPrice.compareAtLabel ? (
+                          <span className="text-sm text-muted-foreground line-through">
+                            {selectedPrice.compareAtLabel}
                           </span>
-                        )}
+                        ) : null}
+                        {plan.isPaid && plan.pricingInfo ? (
+                          <div className="text-[11px] text-muted-foreground">
+                            {billingCycle === "monthly"
+                              ? `Regular: ${plan.pricingInfo.regular ?? "—"}  |  Discount: ${plan.pricingInfo.discount ?? selectedPrice.priceLabel}`
+                              : `Regular: ${plan.pricingInfo.regular ?? "—"}  |  Yearly: ${plan.pricingInfo.yearly ?? selectedPrice.priceLabel}`}
+                          </div>
+                        ) : null}
                       </div>
 
                       <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
@@ -285,7 +311,7 @@ export function UserBillingPage() {
                                 : "bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90",
                             )}
                           >
-                            <Link href={`/checkout?plan=${plan.id}`}>
+                            <Link href={`/checkout?plan=${plan.id}&cycle=${billingCycle}`}>
                               Upgrade to {plan.name}
                               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                             </Link>

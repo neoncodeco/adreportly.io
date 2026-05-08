@@ -24,6 +24,7 @@ type WebhookPayload = {
   metadata?: {
     userId?: string;
     planId?: "free" | "starter" | "pro" | "enterprise";
+    billingCycle?: "monthly" | "yearly";
     agencyId?: string | null;
     existingSubscriptionId?: string | null;
   };
