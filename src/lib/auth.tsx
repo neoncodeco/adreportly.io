@@ -19,7 +19,7 @@ interface AuthContextValue {
     email: string,
     password: string,
     meta?: { full_name?: string; organization?: string },
-  ) => Promise<{ error: Error | null }>;
+  ) => Promise<{ error: Error | null; verificationRequired?: boolean }>;
   signOut: () => Promise<void>;
 }
 
@@ -79,18 +79,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           : res.status === 409
             ? "An account with this email already exists"
             : "Sign up failed";
-      return { error: new Error(msg) };
+      return { error: new Error(msg), verificationRequired: false };
     }
-    const signInRes = await nextAuthSignIn("credentials", {
-      email: email.trim(),
-      password,
-      redirect: false,
-    });
-    if (signInRes?.error) {
-      return { error: new Error("Account created but sign-in failed. Please log in manually.") };
-    }
-    await update();
-    return { error: null };
+    return { error: null, verificationRequired: true };
   };
 
   const signOut = async () => {

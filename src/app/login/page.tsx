@@ -18,6 +18,9 @@ export default function LoginPage() {
   const { signIn, user } = useAuth();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [verifyState, setVerifyState] = useState<string | null>(null);
+  const [verifyEmail, setVerifyEmail] = useState<string>("");
 
   const getSafeNext = () => {
     if (typeof window === "undefined") return null;
@@ -35,6 +38,19 @@ export default function LoginPage() {
       router.replace(safeNext ?? (user.role === "admin" ? "/admin" : "/dashboard"));
     }
   }, [user, router]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const verify = params.get("verify");
+    const email = params.get("email") ?? "";
+    setVerifyState(verify);
+    setVerifyEmail(email);
+    if (verify === "success") toast.success("Email verified. You can sign in now.");
+    if (verify === "pending") toast.info("Check your inbox to verify your email.");
+    if (verify === "expired") toast.error("Verification link expired. Request a new one.");
+    if (verify === "invalid") toast.error("Invalid verification link.");
+    if (verify === "error") toast.error("Could not verify email right now.");
+  }, []);
 
   const {
     register,
@@ -64,6 +80,29 @@ export default function LoginPage() {
     }
   };
 
+  const resendVerification = async () => {
+    if (!verifyEmail) {
+      toast.error("Enter your email to resend verification.");
+      return;
+    }
+    setResending(true);
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: verifyEmail }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        toast.error(json.error || "Could not resend verification email.");
+        return;
+      }
+      toast.success("Verification email sent.");
+    } finally {
+      setResending(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-hero px-4 py-12">
       <div className="w-full max-w-md">
@@ -77,6 +116,19 @@ export default function LoginPage() {
         <div className="rounded card-brutal bg-card p-8">
           <h1 className="text-2xl font-bold">Welcome back</h1>
           <p className="mt-1 text-sm text-muted-foreground">Sign in to your agency dashboard</p>
+          {(verifyState === "pending" || verifyState === "expired") && verifyEmail && (
+            <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800">
+              Verification required for <strong>{verifyEmail}</strong>.
+              <button
+                type="button"
+                className="ml-2 font-semibold underline underline-offset-2"
+                onClick={() => void resendVerification()}
+                disabled={resending}
+              >
+                {resending ? "Sending..." : "Resend link"}
+              </button>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
             <div className="space-y-1.5">

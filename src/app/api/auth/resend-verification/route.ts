@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireMongo } from "@/lib/db";
-import { sendPasswordResetEmail } from "@/lib/email/mailer";
+import { sendVerificationEmail } from "@/lib/email/mailer";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { createRandomToken, hashToken } from "@/lib/security/token";
 import { UserModel } from "@/models/user";
@@ -13,8 +13,8 @@ const schema = z.object({
 export async function POST(request: Request) {
   const ip = getClientIp(request);
   const rate = checkRateLimit({
-    key: `auth:forgot-password:ip:${ip}`,
-    limit: 10,
+    key: `auth:resend-verification:ip:${ip}`,
+    limit: 8,
     windowMs: 15 * 60 * 1000,
   });
   if (!rate.allowed) {
@@ -43,17 +43,21 @@ export async function POST(request: Request) {
   }
 
   const email = parsed.data.email.toLowerCase();
-  const token = createRandomToken(32);
-  const tokenHash = hashToken(token);
-  const expires = new Date(Date.now() + 60 * 60 * 1000);
-
-  const result = await UserModel.updateOne(
-    { email },
-    { $set: { resetPasswordToken: tokenHash, resetPasswordExpires: expires } },
-  );
-  if (result.matchedCount > 0) {
-    await sendPasswordResetEmail(email, token);
+  const user = await UserModel.findOne({ email }).select("isEmailVerified").lean().exec();
+  if (!user || user.isEmailVerified) {
+    return NextResponse.json({ ok: true });
   }
 
+  const token = createRandomToken(32);
+  await UserModel.updateOne(
+    { email },
+    {
+      $set: {
+        emailVerificationToken: hashToken(token),
+        emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      },
+    },
+  );
+  await sendVerificationEmail(email, token);
   return NextResponse.json({ ok: true });
 }

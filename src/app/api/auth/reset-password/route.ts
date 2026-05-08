@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { requireMongo } from "@/lib/db";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import { hashToken } from "@/lib/security/token";
 import { UserModel } from "@/models/user";
 
 const schema = z.object({
@@ -10,6 +12,19 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+  const rate = checkRateLimit({
+    key: `auth:reset-password:ip:${ip}`,
+    limit: 20,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again later." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } },
+    );
+  }
+
   let json: unknown;
   try {
     json = await request.json();
@@ -23,6 +38,7 @@ export async function POST(request: Request) {
   }
 
   const { token, password } = parsed.data;
+  const tokenHash = hashToken(token);
 
   try {
     await requireMongo();
@@ -32,7 +48,7 @@ export async function POST(request: Request) {
   }
 
   const user = await UserModel.findOne({
-    resetPasswordToken: token,
+    resetPasswordToken: tokenHash,
     resetPasswordExpires: { $gt: new Date() },
   });
 

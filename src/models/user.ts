@@ -12,6 +12,9 @@ export interface IUser extends Document {
   billingPlanId: "free" | "starter" | "pro" | "enterprise";
   billingStatus: "inactive" | "pending" | "active" | "past_due" | "canceled" | "expired";
   billingCurrentPeriodEnd: Date | null;
+  isEmailVerified: boolean;
+  emailVerificationToken: string | null;
+  emailVerificationExpires: Date | null;
   resetPasswordToken: string | null;
   resetPasswordExpires: Date | null;
   /** User's own Facebook App ID (plain text — not secret). */
@@ -52,6 +55,9 @@ const UserSchema = new Schema<IUser>(
       index: true,
     },
     billingCurrentPeriodEnd: { type: Date, default: null },
+    isEmailVerified: { type: Boolean, default: false, index: true },
+    emailVerificationToken: { type: String, default: null, index: true },
+    emailVerificationExpires: { type: Date, default: null },
     resetPasswordToken: { type: String, default: null },
     resetPasswordExpires: { type: Date, default: null },
     fbAppId: { type: String, default: null },

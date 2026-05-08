@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { getAuthSecret } from "@/lib/auth-secret";
 import { requireMongo } from "@/lib/db";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 import { UserModel } from "@/models/user";
 
 const authSecret = getAuthSecret();
@@ -22,6 +23,7 @@ type LeanAuthUser = {
   organization?: string | null;
   role?: string | null;
   isBanned?: boolean | null;
+  isEmailVerified?: boolean | null;
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -36,17 +38,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const email = credentials?.email as string | undefined;
         const password = credentials?.password as string | undefined;
         if (!email?.trim() || !password) return null;
+        const normalizedEmail = email.trim().toLowerCase();
+        const ipHeader =
+          request?.headers?.get("x-forwarded-for") || request?.headers?.get("x-real-ip");
+        const ip = ipHeader?.split(",")[0]?.trim() || "unknown";
+        const limiter = checkRateLimit({
+          key: `auth:login:${ip}:${normalizedEmail}`,
+          limit: 8,
+          windowMs: 15 * 60 * 1000,
+        });
+        if (!limiter.allowed) return null;
 
         await requireMongo();
         const user = (await UserModel.findOne({
-          email: email.trim().toLowerCase(),
+          email: normalizedEmail,
         }).lean()) as LeanAuthUser | null;
         if (!user?.passwordHash) return null;
         if (user.isBanned) return null;
+        if (!user.isEmailVerified) return null;
 
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
