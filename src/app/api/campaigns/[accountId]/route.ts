@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { metaAccessContext } from "@/lib/agency-from-request";
 import { resolvePlanForUsage } from "@/lib/billing/usage";
-import { getDecryptedTokenForAgency } from "@/lib/agency-service";
-import { fetchCampaignsForAdAccount } from "@/services/facebook";
+import {
+  getAccountCampaignsSnapshot,
+  isAccountCampaignsSnapshotFresh,
+  syncAccountCampaignsSnapshot,
+} from "@/lib/facebook/account-campaigns-snapshot";
 
 export async function GET(request: NextRequest, ctx: { params: Promise<{ accountId: string }> }) {
   const { agencyId, isAuthenticated } = await metaAccessContext(request);
@@ -19,25 +22,30 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ account
     return NextResponse.json({ success: false, error: "accountId required" }, { status: 400 });
   }
 
-  const token = await getDecryptedTokenForAgency(agencyId);
-  if (!token) {
-    return NextResponse.json({ success: true, campaigns: [] as unknown[] });
-  }
-
   try {
     const session = await auth();
     const plan = await resolvePlanForUsage({ userId: session?.user?.id ?? null, agencyId });
-    const rows = await fetchCampaignsForAdAccount(token, decodeURIComponent(accountId));
-    const maxCampaigns = plan.limits.campaigns;
-    const visibleRows = maxCampaigns === null ? rows : rows.slice(0, maxCampaigns);
+    const normalizedAccountId = decodeURIComponent(accountId);
+    const snapshot = await getAccountCampaignsSnapshot(agencyId, normalizedAccountId);
+    if (snapshot?.payload && isAccountCampaignsSnapshotFresh(snapshot.fetchedAt)) {
+      return NextResponse.json({ success: true, campaigns: snapshot.payload as unknown[] });
+    }
+    if (snapshot?.payload) {
+      void syncAccountCampaignsSnapshot({
+        agencyId,
+        accountId: normalizedAccountId,
+        maxCampaigns: plan.limits.campaigns,
+      }).catch(() => undefined);
+      return NextResponse.json({ success: true, campaigns: snapshot.payload as unknown[] });
+    }
+    const campaigns = await syncAccountCampaignsSnapshot({
+      agencyId,
+      accountId: normalizedAccountId,
+      maxCampaigns: plan.limits.campaigns,
+    });
     return NextResponse.json({
       success: true,
-      campaigns: visibleRows.map((c) => ({
-        id: c.id,
-        name: c.name ?? "",
-        objective: c.objective ?? "",
-        status: c.effective_status ?? c.status ?? "",
-      })),
+      campaigns,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Facebook API error";

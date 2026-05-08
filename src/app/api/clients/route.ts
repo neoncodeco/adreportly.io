@@ -1,21 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { metaAccessContext } from "@/lib/agency-from-request";
+import { getAgencyIdForAppUser } from "@/lib/agency-service";
 import { resolvePlanForUsage } from "@/lib/billing/usage";
 import { getOrSetCache, USER_CACHE_HEADERS } from "@/lib/server-cache";
 import { listClientEmailsForAgency } from "@/lib/share-service";
 
 export async function GET(request: NextRequest) {
-  const { agencyId, isAuthenticated } = await metaAccessContext(request);
-  if (!isAuthenticated) {
-    return NextResponse.json({ success: false, error: "Sign in required." }, { status: 401 });
-  }
-  if (!agencyId) {
+  const ctx = await metaAccessContext(request);
+  const session = await auth();
+  const fallbackAgencyId =
+    !ctx.agencyId && session?.user?.id ? await getAgencyIdForAppUser(session.user.id) : null;
+  const agencyId = ctx.agencyId ?? fallbackAgencyId;
+  const isAuthenticated = ctx.isAuthenticated || Boolean(session?.user?.id);
+
+  if (!isAuthenticated || !agencyId) {
     return NextResponse.json({ success: true, clients: [] });
   }
 
   try {
-    const session = await auth();
     const plan = await resolvePlanForUsage({ userId: session?.user?.id ?? null, agencyId });
     const payload = await getOrSetCache(`user:clients:${agencyId}`, 15_000, async () => {
       const rows = await listClientEmailsForAgency(agencyId);

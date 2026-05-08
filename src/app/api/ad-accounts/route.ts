@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { metaAccessContext } from "@/lib/agency-from-request";
 import { resolvePlanForUsage } from "@/lib/billing/usage";
-import { getDecryptedTokenForAgency } from "@/lib/agency-service";
+import {
+  getAdAccountsSnapshot,
+  isAdAccountsSnapshotFresh,
+  syncAdAccountsSnapshot,
+} from "@/lib/facebook/ad-accounts-snapshot";
 import { getOrSetCache, USER_CACHE_HEADERS } from "@/lib/server-cache";
-import { fetchAdAccounts } from "@/services/facebook";
 
 export async function GET(request: NextRequest) {
   const { agencyId, isAuthenticated } = await metaAccessContext(request);
@@ -19,17 +22,16 @@ export async function GET(request: NextRequest) {
     const session = await auth();
     const plan = await resolvePlanForUsage({ userId: session?.user?.id ?? null, agencyId });
     const payload = await getOrSetCache(`user:ad-accounts:${agencyId}`, 20_000, async () => {
-      const token = await getDecryptedTokenForAgency(agencyId);
-      if (!token) {
-        return { success: true, adAccounts: [] as unknown[] };
+      const snapshot = await getAdAccountsSnapshot(agencyId);
+      if (snapshot?.payload && isAdAccountsSnapshotFresh(snapshot.fetchedAt)) {
+        return { success: true, adAccounts: snapshot.payload as unknown[] };
       }
-      const data = await fetchAdAccounts(token);
-      const accounts = data.data ?? [];
-      const maxAccounts = plan.limits.adAccounts;
-      return {
-        success: true,
-        adAccounts: maxAccounts === null ? accounts : accounts.slice(0, maxAccounts),
-      };
+      if (snapshot?.payload) {
+        void syncAdAccountsSnapshot(agencyId, plan.limits.adAccounts).catch(() => undefined);
+        return { success: true, adAccounts: snapshot.payload as unknown[] };
+      }
+      const adAccounts = await syncAdAccountsSnapshot(agencyId, plan.limits.adAccounts);
+      return { success: true, adAccounts };
     });
     return NextResponse.json(payload, { headers: USER_CACHE_HEADERS });
   } catch (e) {

@@ -101,7 +101,7 @@ export const BILLING_PLANS: BillingPlan[] = [
   {
     id: "enterprise",
     name: "Custom",
-    priceLabel: "Custom/mo",
+    priceLabel: "Custom",
     amount: 0,
     currency: "BDT",
     interval: null,
