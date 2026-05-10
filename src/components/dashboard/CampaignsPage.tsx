@@ -1,34 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Share2, MoreHorizontal, Search, SlidersHorizontal, Loader2 } from "lucide-react";
+import {
+  Share2,
+  MoreHorizontal,
+  Search,
+  SlidersHorizontal,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
-type CampaignRow = {
-  id: string;
-  code: string;
-  name: string;
-  accounts: number;
-  spend: number;
-  results: number;
-  roas: number;
-  status: "active" | "paused" | "completed" | "other";
-  ctr: number;
-  cpc: number;
-};
-
-type OverviewJson = {
-  success?: boolean;
-  error?: string;
-  connected?: boolean;
-  currencySymbol?: string;
-  campaigns?: CampaignRow[];
-  recentCampaigns?: CampaignRow[];
-};
+import {
+  DASHBOARD_CAMPAIGNS_PAGE_SIZE,
+  DASHBOARD_OVERVIEW_STALE_MS,
+  dashboardQk,
+  fetchDashboardCampaignsPage,
+  type DashboardCampaignRow,
+} from "@/lib/dashboard-queries";
 
 const statusStyle: Record<string, string> = {
   active: "bg-success/15 text-success",
@@ -38,46 +32,33 @@ const statusStyle: Record<string, string> = {
 };
 
 export function CampaignsPage() {
-  const [rows, setRows] = useState<CampaignRow[]>([]);
-  const [sym, setSym] = useState("৳");
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/dashboard/overview", { credentials: "include" });
-      const data = (await res.json()) as OverviewJson;
-      if (!res.ok || data.success === false) {
-        setErr(typeof data.error === "string" ? data.error : "Could not load campaigns");
-        setRows([]);
-        return;
-      }
-      setSym(data.currencySymbol ?? "৳");
-      setRows(data.campaigns?.length ? data.campaigns : (data.recentCampaigns ?? []));
-    } catch {
-      setErr("Network error");
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const deferredQ = useDeferredValue(q);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    setPage(1);
+  }, [deferredQ]);
 
-  const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s) return rows;
-    return rows.filter((c) => c.name.toLowerCase().includes(s) || c.id.includes(s));
-  }, [rows, q]);
+  const { data, isPending, isError, error, isFetching, isPlaceholderData } = useQuery({
+    queryKey: dashboardQk.campaignsPage(page, DASHBOARD_CAMPAIGNS_PAGE_SIZE, deferredQ),
+    queryFn: () =>
+      fetchDashboardCampaignsPage({
+        page,
+        limit: DASHBOARD_CAMPAIGNS_PAGE_SIZE,
+        q: deferredQ,
+      }),
+    staleTime: DASHBOARD_OVERVIEW_STALE_MS,
+    placeholderData: keepPreviousData,
+  });
 
-  const activeCount = filtered.filter((c) => c.status === "active").length;
+  const rows: DashboardCampaignRow[] = data?.campaigns ?? [];
+  const sym = data?.currencySymbol ?? "৳";
+  const pagination = data?.pagination;
+  const activeCount = data?.summary.activeCount ?? 0;
+  const total = pagination?.total ?? 0;
 
-  if (loading) {
+  if (isPending && !isPlaceholderData) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-label="Loading" />
@@ -85,21 +66,41 @@ export function CampaignsPage() {
     );
   }
 
-  if (err) {
+  if (isError) {
     return (
       <div className="rounded-3xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
-        {err}
+        {error instanceof Error ? error.message : "Could not load campaigns"}
       </div>
     );
   }
+
+  if (!pagination) {
+    return null;
+  }
+
+  const from = total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1;
+  const to = Math.min(pagination.page * pagination.limit, total);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="space-y-5"
+      className={cn("space-y-5", isFetching && isPlaceholderData && "opacity-80")}
     >
+      {data?.connected === false && (
+        <div className="rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          Connect Facebook under{" "}
+          <Link
+            href="/dashboard/meta-connect"
+            className="font-semibold text-primary hover:underline"
+          >
+            Meta Connect
+          </Link>{" "}
+          to load live campaign data.
+        </div>
+      )}
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-xl font-bold sm:text-2xl">Campaigns</h1>
@@ -112,7 +113,7 @@ export function CampaignsPage() {
             <span className="h-1.5 w-1.5 rounded-full bg-success" /> {activeCount} Active
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold">
-            Total: {filtered.length}
+            Total: {total}
           </span>
         </div>
       </div>
@@ -137,7 +138,7 @@ export function CampaignsPage() {
         </Button>
       </div>
 
-      {filtered.length === 0 ? (
+      {total === 0 ? (
         <p className="text-sm text-muted-foreground">
           No campaigns in the last 30 days.{" "}
           <Link
@@ -151,7 +152,7 @@ export function CampaignsPage() {
       ) : null}
 
       <div className="space-y-3 lg:hidden">
-        {filtered.map((c) => (
+        {rows.map((c) => (
           <div key={c.id} className="rounded-2xl border border-border bg-card p-4 shadow-soft">
             <div className="flex items-start gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-primary text-sm font-bold text-primary-foreground shadow-glow">
@@ -243,7 +244,7 @@ export function CampaignsPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((c) => (
+              {rows.map((c) => (
                 <tr key={c.id} className="border-t border-border/60">
                   <td className="py-4 pr-4">
                     <div className="flex items-center gap-3">
@@ -294,6 +295,51 @@ export function CampaignsPage() {
           </table>
         </div>
       </div>
+
+      {total > 0 ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-border bg-card px-4 py-3 sm:px-5">
+          <p className="text-xs text-muted-foreground">
+            Showing{" "}
+            <span className="font-medium text-foreground">
+              {from}–{to}
+            </span>{" "}
+            of <span className="font-medium text-foreground">{total}</span>
+            {isFetching ? (
+              <Loader2
+                className="ml-2 inline h-3.5 w-3.5 animate-spin align-middle text-muted-foreground"
+                aria-hidden
+              />
+            ) : null}
+          </p>
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={pagination.page <= 1 || isFetching}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="min-w-[7rem] text-center text-xs font-semibold tabular-nums text-foreground">
+              Page {pagination.page} / {pagination.totalPages}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={pagination.page >= pagination.totalPages || isFetching}
+              onClick={() => setPage((p) => p + 1)}
+              aria-label="Next page"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </motion.div>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   PieChart,
@@ -46,6 +47,17 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import {
+  DASHBOARD_OVERVIEW_STALE_MS,
+  SHELL_NOTIFICATIONS_STALE_MS,
+  SHELL_PROFILE_STALE_MS,
+  dashboardQk,
+  fetchDashboardOverview,
+  fetchNotificationsPayload,
+  fetchUserProfileSnippet,
+  shellQk,
+  type NotificationsPayload,
+} from "@/lib/dashboard-queries";
 
 const userNav: Array<{ to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }> =
   [
@@ -84,24 +96,87 @@ export function DashboardShell({
   const { user } = useAuth();
   const { theme, toggle } = useTheme();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const nav = variant === "admin" ? adminNav : userNav;
   const [greeting, setGreeting] = useState("Good Morning");
-  const [profile, setProfile] = useState<{
-    full_name: string | null;
-    organization: string | null;
-  } | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [notifications, setNotifications] = useState<
-    Array<{
-      id: string;
-      title: string;
-      message: string;
-      link: string | null;
-      createdAt: string;
-      read: boolean;
-    }>
-  >([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+
+  const { data: profile } = useQuery({
+    queryKey: shellQk.profile(),
+    queryFn: fetchUserProfileSnippet,
+    enabled: Boolean(user),
+    staleTime: SHELL_PROFILE_STALE_MS,
+    select: (d) => ({
+      full_name: d.full_name ? d.full_name : null,
+      organization: d.organization ? d.organization : null,
+    }),
+  });
+
+  const { data: notifData } = useQuery({
+    queryKey: shellQk.notifications(),
+    queryFn: fetchNotificationsPayload,
+    enabled: Boolean(user),
+    staleTime: SHELL_NOTIFICATIONS_STALE_MS,
+    refetchInterval: 20_000,
+  });
+
+  const notifications = notifData?.notifications ?? [];
+  const unreadCount = notifData?.unreadCount ?? 0;
+
+  const markAllReadMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/notifications/read", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ all: true }),
+      });
+      if (!res.ok) throw new Error("Failed to mark notifications read");
+    },
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: shellQk.notifications() });
+      const prev = queryClient.getQueryData<NotificationsPayload>(shellQk.notifications());
+      queryClient.setQueryData<NotificationsPayload | undefined>(shellQk.notifications(), (old) =>
+        old
+          ? {
+              ...old,
+              unreadCount: 0,
+              notifications: old.notifications.map((n) => ({ ...n, read: true })),
+            }
+          : old,
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(shellQk.notifications(), ctx.prev);
+    },
+  });
+
+  const markOneReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch("/api/notifications/read", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error("Failed to mark notification read");
+    },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: shellQk.notifications() });
+      const prev = queryClient.getQueryData<NotificationsPayload>(shellQk.notifications());
+      queryClient.setQueryData<NotificationsPayload | undefined>(shellQk.notifications(), (old) => {
+        if (!old) return old;
+        const next = old.notifications.map((n) => (n.id === id ? { ...n, read: true } : n));
+        const unread = next.reduce((acc, n) => acc + (n.read ? 0 : 1), 0);
+        return { ...old, notifications: next, unreadCount: unread };
+      });
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(shellQk.notifications(), ctx.prev);
+    },
+  });
 
   useEffect(() => {
     setMobileOpen(false);
@@ -113,88 +188,13 @@ export function DashboardShell({
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-    void fetch("/api/user/profile")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: { full_name?: string; organization?: string } | null) => {
-        if (data) {
-          setProfile({
-            full_name: data.full_name ?? null,
-            organization: data.organization ?? null,
-          });
-        }
-      });
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-
-    const loadNotifications = async () => {
-      try {
-        const res = await fetch("/api/notifications/me", { credentials: "include" });
-        if (!res.ok) return;
-        const json = (await res.json()) as {
-          success?: boolean;
-          notifications?: Array<{
-            id: string;
-            title: string;
-            message: string;
-            link: string | null;
-            createdAt: string;
-            read: boolean;
-          }>;
-          unreadCount?: number;
-        };
-        if (cancelled || json.success === false) return;
-        setNotifications(json.notifications ?? []);
-        setUnreadCount(json.unreadCount ?? 0);
-      } catch {
-        // noop
-      }
-    };
-
-    void loadNotifications();
-    const timer = setInterval(() => {
-      void loadNotifications();
-    }, 20000);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [user]);
-  const markAllNotificationsRead = async () => {
-    if (unreadCount === 0) return;
-    setUnreadCount(0);
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    try {
-      await fetch("/api/notifications/read", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ all: true }),
-      });
-    } catch {
-      // noop
-    }
-  };
-
-  const markOneNotificationRead = async (id: string) => {
-    const target = notifications.find((n) => n.id === id);
-    if (!target || target.read) return;
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    setUnreadCount((c) => Math.max(0, c - 1));
-    try {
-      await fetch("/api/notifications/read", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ id }),
-      });
-    } catch {
-      // noop
-    }
-  };
+    if (!user || variant !== "user") return;
+    void queryClient.prefetchQuery({
+      queryKey: dashboardQk.overview(),
+      queryFn: fetchDashboardOverview,
+      staleTime: DASHBOARD_OVERVIEW_STALE_MS,
+    });
+  }, [user, variant, queryClient]);
 
   const initials = (profile?.full_name || user?.email || "AU")
     .split(" ")
@@ -383,7 +383,9 @@ export function DashboardShell({
               {theme === "light" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
             <DropdownMenu
-              onOpenChange={(open) => (open ? void markAllNotificationsRead() : undefined)}
+              onOpenChange={(open) => {
+                if (open && unreadCount > 0) markAllReadMutation.mutate();
+              }}
             >
               <DropdownMenuTrigger asChild>
                 <button
@@ -420,7 +422,7 @@ export function DashboardShell({
                         className="cursor-pointer items-start gap-3 px-4 py-3"
                         asChild={Boolean(n.link)}
                         onSelect={() => {
-                          void markOneNotificationRead(n.id);
+                          if (!n.read) markOneReadMutation.mutate(n.id);
                         }}
                       >
                         {n.link ? (

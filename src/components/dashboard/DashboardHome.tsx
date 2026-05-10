@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   Area,
@@ -25,39 +26,11 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-type OverviewPayload = {
-  success: boolean;
-  error?: string;
-  connected?: boolean;
-  currencySymbol?: string;
-  spendTrend: Array<{ date: string; label: string; spend: number; results: number }>;
-  topCampaigns: Array<{
-    id: string;
-    code: string;
-    name: string;
-    spend: number;
-    color: "primary" | "dark" | "muted";
-  }>;
-  recentCampaigns: Array<{
-    id: string;
-    code: string;
-    name: string;
-    accounts: number;
-    spend: number;
-    results: number;
-    roas: number;
-    status: "active" | "paused" | "completed" | "other";
-    ctr?: number;
-    cpc?: number;
-  }>;
-  kpis: {
-    totalSpend: number;
-    conversions: number;
-    avgRoas: string;
-    avgCpc: string;
-  };
-};
+import {
+  DASHBOARD_OVERVIEW_STALE_MS,
+  dashboardQk,
+  fetchDashboardOverview,
+} from "@/lib/dashboard-queries";
 
 const statMeta = [
   { key: "overview" as const, label: "Live overview · 30d", icon: Sparkles, highlight: true },
@@ -91,33 +64,11 @@ const accentByKey = {
 } as const;
 
 export function DashboardHome() {
-  const [data, setData] = useState<OverviewPayload | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/dashboard/overview", { credentials: "include" });
-      const json = (await res.json()) as OverviewPayload & { success?: boolean; error?: string };
-      if (!res.ok || json.success === false) {
-        setErr(typeof json.error === "string" ? json.error : "Could not load dashboard");
-        setData(null);
-        return;
-      }
-      setData(json);
-    } catch {
-      setErr("Network error");
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { data, isPending, isError, error, refetch, isRefetching } = useQuery({
+    queryKey: dashboardQk.overview(),
+    queryFn: fetchDashboardOverview,
+    staleTime: DASHBOARD_OVERVIEW_STALE_MS,
+  });
 
   const sym = data?.currencySymbol ?? "৳";
   const spendTrend = data?.spendTrend ?? [];
@@ -146,7 +97,7 @@ export function DashboardHome() {
     });
   }, [kpis, sym]);
 
-  if (loading && !data) {
+  if (isPending) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center rounded-3xl border border-border bg-card">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-label="Loading" />
@@ -154,14 +105,16 @@ export function DashboardHome() {
     );
   }
 
-  if (err) {
+  if (isError || !data) {
+    const message = error instanceof Error ? error.message : "Could not load dashboard";
     return (
       <div className="rounded-3xl border border-destructive/30 bg-destructive/5 p-8 text-center">
-        <p className="text-sm font-medium text-destructive">{err}</p>
+        <p className="text-sm font-medium text-destructive">{message}</p>
         <button
           type="button"
           className="mt-4 text-sm font-semibold text-primary underline"
-          onClick={() => void load()}
+          onClick={() => void refetch()}
+          disabled={isRefetching}
         >
           Try again
         </button>

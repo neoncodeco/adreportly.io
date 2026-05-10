@@ -28,6 +28,10 @@ export function invalidateCacheByPrefix(prefix: string) {
   }
 }
 
+export function invalidateCacheKey(key: string) {
+  store.delete(key);
+}
+
 export const ADMIN_CACHE_HEADERS = {
   "Cache-Control": "private, max-age=10, stale-while-revalidate=30",
 } as const;

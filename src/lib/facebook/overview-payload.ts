@@ -4,6 +4,7 @@ import {
   fetchAdAccounts,
   fetchCampaignLevelInsights,
   fetchCampaignStatuses,
+  normalizeActId,
 } from "@/services/facebook";
 
 const PURCHASE_ACTION_TYPES = new Set([
@@ -140,12 +141,20 @@ export function emptyOverviewPayload(connected: boolean, currency = "BDT", curre
   };
 }
 
-export async function buildOverviewPayloadFromFacebook(token: string, limits: PlanLimits) {
+export async function buildOverviewPayloadFromFacebook(
+  token: string,
+  limits: PlanLimits,
+  options?: { disabledAdAccountIds?: Set<string> },
+) {
   let adAccounts: Array<{ id: string; name: string; currency: string; account_status: number }> =
     [];
   const acc = await fetchAdAccounts(token);
   adAccounts = acc.data ?? [];
   if (limits.adAccounts !== null) adAccounts = adAccounts.slice(0, limits.adAccounts);
+  const disabled = options?.disabledAdAccountIds ?? new Set<string>();
+  if (disabled.size > 0) {
+    adAccounts = adAccounts.filter((a) => !disabled.has(normalizeActId(a.id)));
+  }
 
   const primaryCurrency = adAccounts[0]?.currency ?? "BDT";
   const currencySymbol = currencySymbolFor(primaryCurrency);

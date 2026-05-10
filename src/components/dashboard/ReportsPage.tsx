@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Download, Link2, FileText, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,72 +16,52 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { createShareLinkAction } from "@/app/actions/share";
+import {
+  CAMPAIGN_INSIGHTS_STALE_MS,
+  DASHBOARD_OVERVIEW_STALE_MS,
+  dashboardQk,
+  fetchCampaignInsights,
+  fetchDashboardOverview,
+} from "@/lib/dashboard-queries";
 
 type CampOpt = { id: string; name: string };
 
 export function ReportsPage() {
-  const [campaigns, setCampaigns] = useState<CampOpt[]>([]);
+  const queryClient = useQueryClient();
   const [campaignId, setCampaignId] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [expiryDays, setExpiryDays] = useState(30);
   const [shareBusy, setShareBusy] = useState(false);
   const [exportBusy, setExportBusy] = useState<null | "csv" | "pdf">(null);
 
-  const loadCampaigns = useCallback(async () => {
-    try {
-      const res = await fetch("/api/dashboard/overview", { credentials: "include" });
-      const data = (await res.json()) as {
-        campaigns?: Array<{ id: string; name: string }>;
-        recentCampaigns?: Array<{ id: string; name: string }>;
-      };
-      const list = data.campaigns?.length ? data.campaigns : (data.recentCampaigns ?? []);
-      const opts = list.map((c) => ({ id: c.id, name: c.name }));
-      setCampaigns(opts);
-      setCampaignId((prev) => (prev ? prev : (opts[0]?.id ?? "")));
-    } catch {
-      setCampaigns([]);
-    }
-  }, []);
+  const { data: overview } = useQuery({
+    queryKey: dashboardQk.overview(),
+    queryFn: fetchDashboardOverview,
+    staleTime: DASHBOARD_OVERVIEW_STALE_MS,
+  });
+
+  const campaigns: CampOpt[] = useMemo(() => {
+    if (!overview) return [];
+    const list = overview.campaigns?.length ? overview.campaigns : (overview.recentCampaigns ?? []);
+    return list.map((c) => ({ id: c.id, name: c.name }));
+  }, [overview]);
 
   useEffect(() => {
-    void loadCampaigns();
-  }, [loadCampaigns]);
+    if (campaignId || campaigns.length === 0) return;
+    setCampaignId(campaigns[0].id);
+  }, [campaignId, campaigns]);
 
   const selectedCampaign = campaigns.find((c) => c.id === campaignId);
 
-  const loadCampaignInsights = useCallback(async () => {
-    if (!campaignId) throw new Error("Select a campaign first.");
-    const res = await fetch(
-      `/api/campaign-insights/${encodeURIComponent(campaignId)}?time_increment=1`,
-      {
-        credentials: "include",
-      },
-    );
-    const data = (await res.json()) as {
-      success?: boolean;
-      error?: string;
-      insights?: Array<{
-        date_start?: string;
-        date_stop?: string;
-        spend?: string;
-        impressions?: string;
-        clicks?: string;
-        cpc?: string;
-        cpm?: string;
-        ctr?: string;
-        reach?: string;
-      }>;
-    };
-    if (!res.ok || data.success === false) {
-      throw new Error(data.error || "Failed to fetch campaign insights.");
-    }
-    return data.insights ?? [];
-  }, [campaignId]);
-
-  const exportCsv = useCallback(async () => {
+  const exportCsv = async () => {
     setExportBusy("csv");
     try {
-      const insights = await loadCampaignInsights();
+      if (!campaignId) throw new Error("Select a campaign first.");
+      const insights = await queryClient.fetchQuery({
+        queryKey: dashboardQk.campaignInsights(campaignId),
+        queryFn: () => fetchCampaignInsights(campaignId),
+        staleTime: CAMPAIGN_INSIGHTS_STALE_MS,
+      });
       if (!insights.length) {
         toast.error("No data available for this campaign.");
         return;
@@ -131,12 +112,17 @@ export function ReportsPage() {
     } finally {
       setExportBusy(null);
     }
-  }, [campaignId, loadCampaignInsights, selectedCampaign?.name]);
+  };
 
-  const exportPdf = useCallback(async () => {
+  const exportPdf = async () => {
     setExportBusy("pdf");
     try {
-      const insights = await loadCampaignInsights();
+      if (!campaignId) throw new Error("Select a campaign first.");
+      const insights = await queryClient.fetchQuery({
+        queryKey: dashboardQk.campaignInsights(campaignId),
+        queryFn: () => fetchCampaignInsights(campaignId),
+        staleTime: CAMPAIGN_INSIGHTS_STALE_MS,
+      });
       if (!insights.length) {
         toast.error("No data available for this campaign.");
         return;
@@ -224,7 +210,7 @@ export function ReportsPage() {
     } finally {
       setExportBusy(null);
     }
-  }, [campaignId, loadCampaignInsights, selectedCampaign?.name]);
+  };
 
   return (
     <motion.div
@@ -377,6 +363,7 @@ export function ReportsPage() {
                 });
                 setShareBusy(false);
                 if (r.ok) {
+                  void queryClient.invalidateQueries({ queryKey: dashboardQk.clients() });
                   try {
                     await navigator.clipboard.writeText(r.shareUrl);
                   } catch {

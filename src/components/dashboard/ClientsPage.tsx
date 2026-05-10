@@ -1,56 +1,32 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Eye, Pencil, Plus, Filter, Search, Mail, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-type ClientRow = {
-  id: string;
-  initials: string;
-  name: string;
-  organization: string;
-  email: string;
-  accounts: number;
-  status: "active";
-  lastShared: string;
-};
+import {
+  DASHBOARD_CLIENTS_STALE_MS,
+  dashboardQk,
+  fetchDashboardClients,
+  type ClientRow,
+} from "@/lib/dashboard-queries";
 
 export function ClientsPage() {
-  const [clients, setClients] = useState<ClientRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
   const [q, setQ] = useState("");
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/clients", { credentials: "include" });
-      const data = (await res.json()) as {
-        success?: boolean;
-        clients?: ClientRow[];
-        error?: string;
-      };
-      if (!res.ok || data.success === false) {
-        setErr(typeof data.error === "string" ? data.error : "Could not load clients");
-        setClients([]);
-        return;
-      }
-      setClients(data.clients ?? []);
-    } catch {
-      setErr("Network error");
-      setClients([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const {
+    data: clients = [],
+    isPending,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: dashboardQk.clients(),
+    queryFn: fetchDashboardClients,
+    staleTime: DASHBOARD_CLIENTS_STALE_MS,
+  });
 
   const filtered = !q.trim()
     ? clients
@@ -60,7 +36,7 @@ export function ClientsPage() {
           c.email.toLowerCase().includes(q.toLowerCase()),
       );
 
-  if (loading) {
+  if (isPending) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-label="Loading" />
@@ -68,10 +44,10 @@ export function ClientsPage() {
     );
   }
 
-  if (err) {
+  if (isError) {
     return (
       <div className="rounded-3xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
-        {err}
+        {error instanceof Error ? error.message : "Could not load clients"}
       </div>
     );
   }

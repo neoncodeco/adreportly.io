@@ -1,12 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import { useDeferredValue, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Facebook, RefreshCw, MoreVertical, Loader2, Settings, BookOpen } from "lucide-react";
+import {
+  Facebook,
+  RefreshCw,
+  MoreVertical,
+  Loader2,
+  Settings,
+  BookOpen,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -15,13 +28,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-type AdAccountRow = {
-  id: string;
-  name: string;
-  currency: string;
-  account_status: number;
-};
+import {
+  AD_ACCOUNTS_PAGE_DEFAULT,
+  AD_ACCOUNTS_STALE_MS,
+  adAccountsQk,
+  fetchAdAccountsPage,
+  patchAdAccountEnabled,
+  type AdAccountApiRow,
+} from "@/lib/ad-accounts-client";
+import { cn } from "@/lib/utils";
 
 function accountStatusLabel(code: number): string {
   switch (code) {
@@ -54,39 +69,45 @@ function statusBadgeClass(label: string) {
 
 export function MetaConnectPage() {
   const searchParams = useSearchParams();
-  const [accounts, setAccounts] = useState<AdAccountRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [banner, setBanner] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [showSetupModal, setShowSetupModal] = useState(false);
-
-  const loadAccounts = useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const res = await fetch("/api/ad-accounts", { credentials: "include" });
-      const json = (await res.json()) as {
-        success?: boolean;
-        adAccounts?: AdAccountRow[];
-        error?: string;
-      };
-      if (!res.ok || json.success === false) {
-        setLoadError(typeof json.error === "string" ? json.error : "Could not load ad accounts");
-        setAccounts([]);
-        return;
-      }
-      setAccounts(json.adAccounts ?? []);
-    } catch {
-      setLoadError("Network error");
-      setAccounts([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [page, setPage] = useState(1);
+  const [q, setQ] = useState("");
+  const deferredQ = useDeferredValue(q);
 
   useEffect(() => {
-    void loadAccounts();
-  }, [loadAccounts]);
+    setPage(1);
+  }, [deferredQ]);
+
+  const { data, isPending, isError, error, isFetching, isPlaceholderData, refetch } = useQuery({
+    queryKey: adAccountsQk.paged(page, AD_ACCOUNTS_PAGE_DEFAULT, deferredQ),
+    queryFn: () =>
+      fetchAdAccountsPage({
+        page,
+        limit: AD_ACCOUNTS_PAGE_DEFAULT,
+        q: deferredQ,
+      }),
+    staleTime: AD_ACCOUNTS_STALE_MS,
+    placeholderData: keepPreviousData,
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      patchAdAccountEnabled(id, enabled),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["ad-accounts"] });
+      await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+    },
+  });
+
+  const accounts: AdAccountApiRow[] = data?.adAccounts ?? [];
+  const pagination = data?.pagination;
+  const totalAccounts = data?.summary.totalAccounts ?? 0;
+  const listTotal = pagination?.total ?? 0;
 
   useEffect(() => {
     if (window.location.hash === "#_=_") {
@@ -95,7 +116,7 @@ export function MetaConnectPage() {
 
     if (searchParams.get("connected") === "1") {
       setBanner({ kind: "ok", text: "Facebook connected. Ad accounts refreshed below." });
-      void loadAccounts();
+      void queryClient.invalidateQueries({ queryKey: ["ad-accounts"] });
     }
     const err = searchParams.get("error");
     if (err) {
@@ -111,7 +132,7 @@ export function MetaConnectPage() {
                 : `Connection failed (${err}).`,
       });
     }
-  }, [searchParams, loadAccounts]);
+  }, [searchParams, queryClient]);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,11 +140,11 @@ export function MetaConnectPage() {
       try {
         const res = await fetch("/api/user/fb-app", { credentials: "include" });
         if (!res.ok) return;
-        const data = (await res.json()) as { fbAppId?: string | null; hasSecret?: boolean };
-        const needsSetup = !data.fbAppId || !data.hasSecret;
+        const fb = (await res.json()) as { fbAppId?: string | null; hasSecret?: boolean };
+        const needsSetup = !fb.fbAppId || !fb.hasSecret;
         if (!cancelled && needsSetup) setShowSetupModal(true);
       } catch {
-        // ignore silently
+        // ignore
       }
     })();
     return () => {
@@ -132,20 +153,26 @@ export function MetaConnectPage() {
   }, []);
 
   const connectHref = "/api/auth/facebook";
+  const loadError = isError ? (error instanceof Error ? error.message : "Could not load") : null;
+  const initialLoading = isPending && !isPlaceholderData;
+
+  const from = !pagination || listTotal === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1;
+  const to =
+    !pagination || listTotal === 0 ? 0 : Math.min(pagination.page * pagination.limit, listTotal);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="space-y-5"
+      className={cn("space-y-5", isFetching && isPlaceholderData && "opacity-85")}
     >
       <Dialog open={showSetupModal} onOpenChange={setShowSetupModal}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-[420px] rounded-2xl">
           <DialogHeader>
             <DialogTitle>Add your App ID & Secret first</DialogTitle>
             <DialogDescription>
-              Meta connect করতে আগে `Settings` থেকে Facebook App ID এবং App Secret save করতে হবে.
+              Meta connect করতে আগে `Settings` থেকে Facebook App ID এবং App Secret save করতে হবে।
               চাইলে `Docs` পেজে step-by-step guide দেখে নাও.
             </DialogDescription>
           </DialogHeader>
@@ -189,7 +216,7 @@ export function MetaConnectPage() {
         </div>
       </div>
 
-      {accounts.length === 0 && !loading && (
+      {totalAccounts === 0 && !initialLoading && !loadError && (
         <div className="relative overflow-hidden rounded-3xl border border-border bg-card p-6 text-center shadow-soft sm:p-12">
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#1877F2]/10 via-transparent to-primary/10" />
           <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#1877F2]/15 blur-3xl" />
@@ -198,11 +225,9 @@ export function MetaConnectPage() {
           <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1877F2] text-white shadow-glow sm:h-20 sm:w-20">
             <Facebook className="h-8 w-8 sm:h-10 sm:w-10" />
           </div>
-          <h3 className="relative mt-5 text-lg font-bold sm:text-xl">
-            {loadError ? "Could not load accounts" : "No Ad Accounts Yet"}
-          </h3>
+          <h3 className="relative mt-5 text-lg font-bold sm:text-xl">No Ad Accounts Yet</h3>
           <p className="relative mx-auto mt-1.5 max-w-sm text-sm text-muted-foreground">
-            {loadError ?? "Connect your Facebook account to sync the ad accounts you manage."}
+            Connect your Facebook account to sync the ad accounts you manage.
           </p>
           <Button
             className="relative mt-6 rounded-full bg-[#1877F2] text-white shadow-glow hover:opacity-95"
@@ -216,37 +241,68 @@ export function MetaConnectPage() {
       )}
 
       <div className="rounded-3xl border border-border bg-card p-4 shadow-soft sm:p-6">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="text-base font-bold sm:text-lg">Ad Accounts</h3>
-            <p className="text-xs text-muted-foreground">From Meta (live)</p>
+            <p className="text-xs text-muted-foreground">
+              From Meta (live). Turn off to exclude an account from Dashboard &amp; Campaigns.
+            </p>
           </div>
-          <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-primary/10 px-2 text-xs font-bold text-primary">
-            {loading ? "…" : accounts.length}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-primary/10 px-2 text-xs font-bold text-primary">
+              {initialLoading ? "…" : totalAccounts}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={isFetching}
+              onClick={() => void refetch()}
+            >
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Refresh
+            </Button>
+          </div>
         </div>
 
-        {loading ? (
+        {totalAccounts > 0 ? (
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search by name or account id…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                className="h-10 rounded-full border-border bg-background pl-9"
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {initialLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-label="Loading" />
           </div>
         ) : loadError ? (
           <div className="flex flex-col items-center gap-3 py-8">
             <p className="text-center text-sm text-destructive">{loadError}</p>
-            <Button type="button" variant="outline" size="sm" onClick={() => void loadAccounts()}>
+            <Button type="button" variant="outline" size="sm" onClick={() => void refetch()}>
               Retry
             </Button>
           </div>
-        ) : accounts.length === 0 ? (
+        ) : totalAccounts === 0 ? (
           <p className="text-sm text-muted-foreground">
             No ad accounts returned yet. Connect Facebook above, then refresh this list.
           </p>
+        ) : listTotal === 0 ? (
+          <p className="text-sm text-muted-foreground">No accounts match your search.</p>
         ) : (
           <>
             <div className="space-y-3 lg:hidden">
               {accounts.map((a) => {
                 const status = accountStatusLabel(a.account_status);
                 const displayId = a.id.replace(/^act_/, "");
+                const rowBusy = toggleMutation.isPending && toggleMutation.variables?.id === a.id;
                 return (
                   <div
                     key={a.id}
@@ -282,24 +338,18 @@ export function MetaConnectPage() {
                     <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3">
                       <div>
                         <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                          Last synced
+                          In dashboard
                         </div>
                         <div className="text-xs font-semibold text-muted-foreground">
-                          Live via API
+                          {a.enabled ? "Included" : "Excluded"}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <Switch defaultChecked disabled aria-label="Active (read-only)" />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="rounded-full"
-                          type="button"
-                          onClick={() => void loadAccounts()}
-                        >
-                          <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Refresh
-                        </Button>
-                      </div>
+                      <Switch
+                        checked={a.enabled}
+                        disabled={rowBusy}
+                        aria-label={`Include ad account ${a.name} in dashboard`}
+                        onCheckedChange={(enabled) => toggleMutation.mutate({ id: a.id, enabled })}
+                      />
                     </div>
                   </div>
                 );
@@ -313,15 +363,16 @@ export function MetaConnectPage() {
                     <th className="pb-3 pr-4">Account</th>
                     <th className="pb-3 pr-4">Currency</th>
                     <th className="pb-3 pr-4">Status</th>
-                    <th className="pb-3 pr-4">Last synced</th>
-                    <th className="pb-3 pr-4 text-center">Active</th>
-                    <th className="pb-3 text-right">Actions</th>
+                    <th className="pb-3 pr-4 text-center">In dashboard</th>
+                    <th className="pb-3 text-right">Include</th>
                   </tr>
                 </thead>
                 <tbody>
                   {accounts.map((a) => {
                     const status = accountStatusLabel(a.account_status);
                     const displayId = a.id.replace(/^act_/, "");
+                    const rowBusy =
+                      toggleMutation.isPending && toggleMutation.variables?.id === a.id;
                     return (
                       <tr key={a.id} className="border-t border-border/60">
                         <td className="py-4 pr-4">
@@ -336,18 +387,18 @@ export function MetaConnectPage() {
                             {status}
                           </span>
                         </td>
-                        <td className="py-4 pr-4 text-muted-foreground">Live via API</td>
-                        <td className="py-4 pr-4 text-center">
-                          <Switch defaultChecked disabled aria-label="Active (read-only)" />
+                        <td className="py-4 pr-4 text-center text-muted-foreground">
+                          {a.enabled ? "Yes" : "No"}
                         </td>
                         <td className="py-4 text-right">
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase text-primary hover:underline"
-                            onClick={() => void loadAccounts()}
-                          >
-                            <RefreshCw className="h-3.5 w-3.5" /> Refresh
-                          </button>
+                          <Switch
+                            checked={a.enabled}
+                            disabled={rowBusy}
+                            aria-label={`Include ad account ${a.name} in dashboard`}
+                            onCheckedChange={(enabled) =>
+                              toggleMutation.mutate({ id: a.id, enabled })
+                            }
+                          />
                         </td>
                       </tr>
                     );
@@ -355,6 +406,52 @@ export function MetaConnectPage() {
                 </tbody>
               </table>
             </div>
+
+            {listTotal > 0 && pagination ? (
+              <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-muted-foreground">
+                  Showing{" "}
+                  <span className="font-medium text-foreground">
+                    {from}–{to}
+                  </span>{" "}
+                  of <span className="font-medium text-foreground">{listTotal}</span>
+                  {deferredQ ? ` (search)` : ""}
+                  {isFetching ? (
+                    <Loader2
+                      className="ml-2 inline h-3.5 w-3.5 animate-spin align-middle text-muted-foreground"
+                      aria-hidden
+                    />
+                  ) : null}
+                </p>
+                <div className="flex items-center justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    disabled={pagination.page <= 1 || isFetching}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="min-w-[7rem] text-center text-xs font-semibold tabular-nums">
+                    Page {pagination.page} / {pagination.totalPages}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    disabled={pagination.page >= pagination.totalPages || isFetching}
+                    onClick={() => setPage((p) => p + 1)}
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </>
         )}
       </div>

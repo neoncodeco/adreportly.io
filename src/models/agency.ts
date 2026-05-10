@@ -8,6 +8,8 @@ const AgencySchema = new Schema(
     encryptedToken: { type: String, required: true },
     fbUserId: { type: String, unique: true, sparse: true },
     appUserId: { type: String, sparse: true, index: true },
+    /** Normalized `act_*` ids excluded from dashboard overview / campaigns aggregation */
+    disabledAdAccountIds: { type: [String], default: [] },
   },
   { versionKey: false },
 );

@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { metaAccessContext } from "@/lib/agency-from-request";
-import { getOrSetCache, USER_CACHE_HEADERS } from "@/lib/server-cache";
-import { emptyOverviewPayload } from "@/lib/facebook/overview-payload";
+import { USER_CACHE_HEADERS } from "@/lib/server-cache";
 import {
-  getOverviewSnapshot,
-  isOverviewSnapshotFresh,
-  syncAgencyOverviewSnapshot,
-} from "@/lib/facebook/overview-snapshot";
+  emptyOverviewPayloadDisconnected,
+  getCachedDashboardOverviewPayload,
+} from "@/lib/dashboard-overview-cache";
 
-export async function GET(req: NextRequest) {
-  const { agencyId, isAuthenticated } = await metaAccessContext(req);
+export async function GET(request: NextRequest) {
+  const { agencyId, isAuthenticated } = await metaAccessContext(request);
   await auth();
 
   if (!isAuthenticated) {
@@ -18,22 +16,11 @@ export async function GET(req: NextRequest) {
   }
 
   if (!agencyId) {
-    return NextResponse.json(emptyOverviewPayload(false), { headers: USER_CACHE_HEADERS });
+    return NextResponse.json(emptyOverviewPayloadDisconnected(), { headers: USER_CACHE_HEADERS });
   }
 
   try {
-    const payload = await getOrSetCache(`user:dashboard-overview:${agencyId}`, 20_000, async () => {
-      const snapshot = await getOverviewSnapshot(agencyId);
-      if (snapshot?.payload && isOverviewSnapshotFresh(snapshot.fetchedAt)) {
-        return snapshot.payload;
-      }
-
-      if (snapshot?.payload) {
-        void syncAgencyOverviewSnapshot(agencyId).catch(() => undefined);
-        return snapshot.payload;
-      }
-      return syncAgencyOverviewSnapshot(agencyId);
-    });
+    const payload = await getCachedDashboardOverviewPayload(agencyId);
 
     return NextResponse.json(payload, { headers: USER_CACHE_HEADERS });
   } catch (e) {

@@ -1,5 +1,5 @@
 import { connectDb } from "@/lib/db";
-import { getDecryptedTokenForAgency } from "@/lib/agency-service";
+import { getDecryptedTokenForAgency, getDisabledAdAccountIdSet } from "@/lib/agency-service";
 import { resolvePlanForUsage } from "@/lib/billing/usage";
 import {
   buildOverviewPayloadFromFacebook,
@@ -43,11 +43,16 @@ export async function syncAgencyOverviewSnapshot(agencyId: string) {
     await connectDb();
     const token = await getDecryptedTokenForAgency(agencyId);
     const plan = await resolvePlanForUsage({ agencyId });
+    const disabledAdAccountIds = await getDisabledAdAccountIdSet(agencyId);
     const payload = token
-      ? await buildOverviewPayloadFromFacebook(token, {
-          adAccounts: plan.limits.adAccounts,
-          campaigns: plan.limits.campaigns,
-        })
+      ? await buildOverviewPayloadFromFacebook(
+          token,
+          {
+            adAccounts: plan.limits.adAccounts,
+            campaigns: plan.limits.campaigns,
+          },
+          { disabledAdAccountIds },
+        )
       : emptyOverviewPayload(false);
 
     await AnalyticsOverviewSnapshotModel.updateOne(
