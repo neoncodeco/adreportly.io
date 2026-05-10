@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="AdReportly">
+  <rect width="512" height="512" rx="115" fill="#16181c"/>
+  <!-- Brand mark: electric lime bolt on ink (matches in-app Zap / lime accent) -->
+  <path
+    fill="#D8FF30"
+    d="M277.5 72 152 288h88.5l-34.2 152L360 224h-91.8l66.3-152h-57z"
+  />
+</svg>
