@@ -29,25 +29,41 @@ export async function GET() {
         .lean()
         .exec(),
       UserModel.findById(session.user.id)
-        .select("billingPlanId billingStatus billingCurrentPeriodEnd")
+        .select("billingPlanId billingStatus billingCycle billingCurrentPeriodEnd")
         .lean()
         .exec(),
     ]);
+
+    const billingCycle =
+      user?.billingCycle === "yearly" || user?.billingCycle === "monthly"
+        ? user.billingCycle
+        : sub &&
+            ((sub as { billingCycle?: string }).billingCycle === "yearly" ||
+              (sub as { billingCycle?: string }).billingCycle === "monthly")
+          ? (sub as { billingCycle: "monthly" | "yearly" }).billingCycle
+          : null;
 
     return {
       currentPlan:
         BILLING_PLANS.find((p) => p.id === (user?.billingPlanId || sub?.planId || "free")) ??
         BILLING_PLANS[0],
       currentStatus: user?.billingStatus || sub?.status || "inactive",
+      billingCycle,
       renewalAt: user?.billingCurrentPeriodEnd || sub?.nextBillingAt || null,
       subscription: sub
         ? {
             id: sub._id.toString(),
             status: sub.status,
             planId: sub.planId,
+            billingCycle:
+              (sub as { billingCycle?: string }).billingCycle === "yearly" ||
+              (sub as { billingCycle?: string }).billingCycle === "monthly"
+                ? (sub as { billingCycle: "monthly" | "yearly" }).billingCycle
+                : null,
             amount: sub.amount,
             currency: sub.currency,
             nextBillingAt: sub.nextBillingAt,
+            periodEndAt: (sub as { periodEndAt?: Date | null }).periodEndAt ?? null,
             canceledAt: sub.canceledAt,
             updatedAt: sub.updatedAt,
           }

@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { getSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Zap, Loader2, Facebook } from "lucide-react";
+import { Zap, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "sonner";
 
 type FormData = { email: string; password: string };
@@ -156,11 +157,11 @@ export default function LoginPage() {
                   Forgot password?
                 </Link>
               </div>
-              <Input
+              <PasswordInput
                 className="rounded"
                 id="password"
-                type="password"
                 placeholder="••••••••"
+                autoComplete="current-password"
                 {...register("password", {
                   required: "Enter your password",
                   minLength: { value: 8, message: "Min 8 characters" },
@@ -179,29 +180,6 @@ export default function LoginPage() {
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
             </Button>
           </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase tracking-wide">
-              <span className="bg-card px-2 text-muted-foreground">Or</span>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            className="w-full rounded border-2 border-[#1877F2]/40 bg-background py-3 font-semibold hover:bg-[#1877F2]/5"
-            asChild
-          >
-            <a href="/api/auth/facebook">
-              <Facebook className="mr-2 h-4 w-4 shrink-0 text-[#1877F2]" />
-              Continue with Facebook
-            </a>
-          </Button>
-          <p className="mt-2 text-center text-xs text-muted-foreground">
-            Opens Meta OAuth, then returns to Meta Connect. Sign in with email first if you want the
-            same user linked in MongoDB.
-          </p>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Don't have an account?{" "}

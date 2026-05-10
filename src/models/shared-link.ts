@@ -6,6 +6,8 @@ const SharedLinkSchema = new Schema(
     campaignId: { type: String, required: true },
     agencyId: { type: String, required: true },
     clientEmail: { type: String, required: true },
+    /** Display name for the client; shown on the public /view/[token] page. */
+    clientName: { type: String, default: "" },
     expiresAt: { type: Date, required: true },
     createdAt: { type: Date, required: true },
   },

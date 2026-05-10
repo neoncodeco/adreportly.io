@@ -135,3 +135,43 @@ export function getBillingCyclePrice(
     priceLabel: `${plan.priceLabel}${plan.interval ? `/${plan.interval}` : ""}`,
   };
 }
+
+/** Months covered by one payment for each cycle. */
+export const BILLING_CYCLE_MONTHS: Record<BillingCycle, number> = {
+  monthly: 1,
+  yearly: 12,
+};
+
+/**
+ * Per-payment total sent to the gateway: monthly = one month at list rate;
+ * yearly = 12 × the discounted monthly equivalent (industry-standard annual prepay).
+ */
+export function getCheckoutChargeAmount(plan: BillingPlan, cycle: BillingCycle): number {
+  const p = getBillingCyclePrice(plan, cycle);
+  if (cycle === "yearly") {
+    return Math.round(p.amount * BILLING_CYCLE_MONTHS.yearly);
+  }
+  return p.amount;
+}
+
+export type CheckoutPricing = {
+  /** Amount per month at this cycle (Meta “৳399/mo” for yearly). */
+  unitAmount: number;
+  monthsCharged: number;
+  /** Total charged today (yearly = unit × 12). */
+  totalDue: number;
+  unitPriceLabel: string;
+  compareAtLabel?: string;
+};
+
+export function getCheckoutPricing(plan: BillingPlan, cycle: BillingCycle): CheckoutPricing {
+  const p = getBillingCyclePrice(plan, cycle);
+  const monthsCharged = BILLING_CYCLE_MONTHS[cycle];
+  return {
+    unitAmount: p.amount,
+    monthsCharged,
+    totalDue: cycle === "yearly" ? Math.round(p.amount * monthsCharged) : p.amount,
+    unitPriceLabel: p.priceLabel,
+    compareAtLabel: p.compareAtLabel,
+  };
+}

@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { createUddoktaPayCheckoutSession, resolveCheckoutUrl } from "@/lib/billing/uddoktapay";
-import { getBillingCyclePrice, getBillingPlanById } from "@/lib/billing/plans";
+import {
+  getBillingPlanById,
+  getCheckoutChargeAmount,
+  getCheckoutPricing,
+} from "@/lib/billing/plans";
 import { requireMongo } from "@/lib/db";
 import { PaymentTransactionModel } from "@/models/payment-transaction";
 import { SubscriptionModel } from "@/models/subscription";
@@ -48,7 +52,8 @@ export async function POST(request: Request) {
   if (!plan || !plan.isPaid) {
     return NextResponse.json({ error: "Invalid plan for checkout." }, { status: 400 });
   }
-  const selectedPrice = getBillingCyclePrice(plan, parsed.data.billingCycle);
+  const pricing = getCheckoutPricing(plan, parsed.data.billingCycle);
+  const chargeAmount = getCheckoutChargeAmount(plan, parsed.data.billingCycle);
 
   try {
     await requireMongo();
@@ -77,7 +82,7 @@ export async function POST(request: Request) {
     checkout = await createUddoktaPayCheckoutSession({
       plan,
       billingCycle: parsed.data.billingCycle,
-      amount: selectedPrice.amount,
+      amount: chargeAmount,
       userId: session.user.id,
       userEmail: resolvedEmail,
       userName: resolvedName,
@@ -117,8 +122,9 @@ export async function POST(request: Request) {
     userId: session.user.id,
     agencyId: userRow?.agencyId ?? null,
     planId: plan.id,
+    billingCycle: parsed.data.billingCycle,
     status: "pending",
-    amount: selectedPrice.amount,
+    amount: chargeAmount,
     currency: plan.currency,
     providerReference: typeof checkout.reference === "string" ? checkout.reference : null,
     providerCustomerId: typeof checkout.customer_id === "string" ? checkout.customer_id : null,
@@ -126,6 +132,7 @@ export async function POST(request: Request) {
     metadata: {
       ...checkout,
       billingCycle: parsed.data.billingCycle,
+      checkoutPricing: pricing,
       billingInfo: billingInfo ?? null,
     },
   });
@@ -143,7 +150,7 @@ export async function POST(request: Request) {
         planId: plan.id,
         providerPaymentId,
         providerReference: typeof checkout.reference === "string" ? checkout.reference : null,
-        amount: selectedPrice.amount,
+        amount: chargeAmount,
         currency: plan.currency,
         status: "pending",
         raw: {

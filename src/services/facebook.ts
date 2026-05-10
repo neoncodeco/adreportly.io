@@ -60,7 +60,7 @@ export async function fetchCampaignInsights(
   url.searchParams.set("access_token", accessToken);
   url.searchParams.set(
     "fields",
-    "spend,reach,impressions,clicks,actions,date_start,date_stop,cpc,ctr,frequency",
+    "spend,reach,impressions,clicks,actions,action_values,cost_per_action_type,date_start,date_stop,cpc,cpm,ctr,frequency,inline_link_clicks,purchase_roas",
   );
   url.searchParams.set("date_preset", datePreset);
   if (options?.timeIncrement) {
@@ -74,7 +74,7 @@ export async function fetchCampaignInsights(
 export async function fetchCampaignById(accessToken: string, campaignId: string) {
   const url = new URL(`${GRAPH_BASE}/${campaignId}`);
   url.searchParams.set("access_token", accessToken);
-  url.searchParams.set("fields", "id,name,objective,status,effective_status");
+  url.searchParams.set("fields", "id,name,objective,status,effective_status,account_id");
   const res = await fetch(url.toString(), { cache: "no-store" });
   if (!res.ok) throw new Error(await res.text());
   return res.json() as Promise<{
@@ -83,7 +83,93 @@ export async function fetchCampaignById(accessToken: string, campaignId: string)
     objective?: string;
     status?: string;
     effective_status?: string;
+    account_id?: string;
   }>;
+}
+
+/** Billing-style fields (amounts in account minor units except where noted in Meta docs). */
+export async function fetchAdAccountBilling(accessToken: string, adAccountId: string) {
+  const id = normalizeActId(adAccountId);
+  const url = new URL(`${GRAPH_BASE}/${id}`);
+  url.searchParams.set("access_token", accessToken);
+  url.searchParams.set("fields", "currency,balance,amount_spent,spend_cap");
+  const res = await fetch(url.toString(), { cache: "no-store" });
+  if (!res.ok) return null;
+  return res.json() as Promise<{
+    currency?: string;
+    balance?: string;
+    amount_spent?: string;
+    spend_cap?: string;
+  }>;
+}
+
+export type CampaignAdInsightRow = {
+  date_start?: string;
+  date_stop?: string;
+  spend?: string;
+  impressions?: string;
+  reach?: string;
+  clicks?: string;
+  ctr?: string;
+  cpc?: string;
+  cpm?: string;
+  frequency?: string;
+  inline_link_clicks?: string;
+  actions?: Array<{ action_type: string; value: string }>;
+  action_values?: Array<{ action_type: string; value: string }>;
+  cost_per_action_type?: Array<{ action_type: string; value: string }>;
+  purchase_roas?: Array<{ action_type: string; value: string }>;
+};
+
+export type CampaignAdRow = {
+  id: string;
+  name?: string;
+  status?: string;
+  effective_status?: string;
+  adset?: {
+    id?: string;
+    daily_budget?: string;
+    lifetime_budget?: string;
+    end_time?: string;
+    effective_status?: string;
+  };
+  insights?: { data?: CampaignAdInsightRow[] };
+};
+
+/** Ads belonging to a campaign (via ad account filtering). */
+export async function fetchAdsForCampaign(
+  accessToken: string,
+  adAccountId: string,
+  campaignId: string,
+  datePreset: string,
+): Promise<CampaignAdRow[]> {
+  const id = normalizeActId(adAccountId);
+  const url = new URL(`${GRAPH_BASE}/${id}/ads`);
+  url.searchParams.set("access_token", accessToken);
+  url.searchParams.set("limit", "150");
+  url.searchParams.set(
+    "filtering",
+    JSON.stringify([{ field: "campaign.id", operator: "EQUAL", value: campaignId }]),
+  );
+  const preset = /^last_7d$|^last_14d$|^last_28d$|^last_30d$|^last_90d$|^this_month$/i.test(
+    datePreset,
+  )
+    ? datePreset
+    : "last_30d";
+  const fields = [
+    "id",
+    "name",
+    "status",
+    "effective_status",
+    "adset{id,daily_budget,lifetime_budget,end_time,effective_status}",
+    `insights.date_preset(${preset}){spend,impressions,reach,clicks,ctr,cpc,frequency,actions,action_values,cost_per_action_type,inline_link_clicks,purchase_roas}`,
+  ].join(",");
+  url.searchParams.set("fields", fields);
+  try {
+    return await fetchGraphPagedJson<CampaignAdRow>(url.toString());
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchCampaignsForAdAccount(accessToken: string, accountId: string) {

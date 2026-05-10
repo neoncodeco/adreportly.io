@@ -6,7 +6,12 @@ import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
-import { BILLING_PLANS, getBillingCyclePrice, type BillingCycle } from "@/lib/billing/plans";
+import {
+  BILLING_PLANS,
+  getBillingCyclePrice,
+  getCheckoutPricing,
+  type BillingCycle,
+} from "@/lib/billing/plans";
 import { cn } from "@/lib/utils";
 
 export function Pricing() {
@@ -50,6 +55,8 @@ export function Pricing() {
         <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:items-center">
           {BILLING_PLANS.map((plan, i) => {
             const selectedPrice = getBillingCyclePrice(plan, billingCycle);
+            const yearlyP =
+              plan.isPaid && billingCycle === "yearly" ? getCheckoutPricing(plan, "yearly") : null;
             return (
               <motion.div
                 key={plan.name}
@@ -88,8 +95,20 @@ export function Pricing() {
                       plan.highlight ? "text-ink-foreground" : "text-foreground",
                     )}
                   >
-                    {selectedPrice.priceLabel}
+                    {yearlyP
+                      ? `৳${yearlyP.totalDue.toLocaleString()}/yr`
+                      : selectedPrice.priceLabel}
                   </span>
+                  {yearlyP ? (
+                    <span
+                      className={cn(
+                        "block text-sm font-medium",
+                        plan.highlight ? "text-ink-foreground/85" : "text-muted-foreground",
+                      )}
+                    >
+                      {yearlyP.unitPriceLabel} × {yearlyP.monthsCharged} months · pay once
+                    </span>
+                  ) : null}
                   {plan.isPaid && selectedPrice.compareAtLabel ? (
                     <span
                       className={cn(
@@ -160,11 +179,15 @@ export function Pricing() {
                 >
                   <Link
                     href={
-                      plan.isPaid
-                        ? `/checkout?plan=${plan.id}&cycle=${billingCycle}`
-                        : user
-                          ? "/dashboard"
-                          : "/signup"
+                      plan.id === "enterprise"
+                        ? user
+                          ? "/dashboard/billing/custom"
+                          : `/signup?next=${encodeURIComponent("/dashboard/billing/custom")}`
+                        : plan.isPaid
+                          ? `/checkout?plan=${plan.id}&cycle=${billingCycle}`
+                          : user
+                            ? "/dashboard"
+                            : "/signup"
                     }
                   >
                     {plan.isPaid && user ? `Choose ${plan.name}` : plan.cta}

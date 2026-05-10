@@ -124,6 +124,17 @@ export async function getDisabledAdAccountIdSet(agencyId: string): Promise<Set<s
   return new Set(ids.map((id) => normalizeActId(id)));
 }
 
+/** Clear in-memory Meta link (dev / no Mongo). */
+export function clearInMemoryMetaForUser(appUserId: string): void {
+  const agencyId = memoryAppUserToAgency.get(appUserId);
+  if (!agencyId) return;
+  const row = memoryAgenciesById.get(agencyId);
+  if (row?.fbUserId) memoryByFb.delete(row.fbUserId);
+  memoryAgenciesById.delete(agencyId);
+  memoryDisabledAdAccountIds.delete(agencyId);
+  memoryAppUserToAgency.delete(appUserId);
+}
+
 export async function setAdAccountEnabledForAgency(
   agencyId: string,
   adAccountId: string,

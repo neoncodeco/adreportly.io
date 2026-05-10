@@ -25,8 +25,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   BILLING_PLANS,
-  getBillingCyclePrice,
   getBillingPlanById,
+  getCheckoutPricing,
   type BillingCycle,
 } from "@/lib/billing/plans";
 import { cn } from "@/lib/utils";
@@ -143,10 +143,8 @@ export function CheckoutPage() {
       setBilling((prev) => ({ ...prev, [k]: e.target.value }));
 
   const canSubmit = billing.fullName.trim().length > 1 && billing.email.trim().includes("@");
-  const selectedPrice = useMemo(
-    () => getBillingCyclePrice(plan, billingCycle),
-    [plan, billingCycle],
-  );
+  const pricing = useMemo(() => getCheckoutPricing(plan, billingCycle), [plan, billingCycle]);
+  const sym = "৳";
 
   const startCheckout = async () => {
     if (!plan.isPaid) {
@@ -358,7 +356,9 @@ export function CheckoutPage() {
               ) : (
                 <Lock className="mr-2 h-4 w-4" />
               )}
-              {loading ? "Redirecting to payment…" : `Pay ${selectedPrice.priceLabel} securely`}
+              {loading
+                ? "Redirecting to payment…"
+                : `Pay ${sym}${pricing.totalDue.toLocaleString()} securely`}
               {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
 
@@ -392,10 +392,19 @@ export function CheckoutPage() {
                   <h3 className="mt-1 text-2xl font-bold">{plan.name}</h3>
                 </div>
                 <div className="text-right">
-                  <p className="text-3xl font-bold">{selectedPrice.priceLabel}</p>
-                  {selectedPrice.compareAtLabel ? (
+                  <p className="text-3xl font-bold">
+                    {billingCycle === "yearly"
+                      ? `${sym}${pricing.totalDue.toLocaleString()}/yr`
+                      : pricing.unitPriceLabel}
+                  </p>
+                  {pricing.compareAtLabel ? (
                     <p className="text-xs text-muted-foreground line-through">
-                      {selectedPrice.compareAtLabel}
+                      {pricing.compareAtLabel}
+                    </p>
+                  ) : null}
+                  {plan.billingCycles && billingCycle === "yearly" ? (
+                    <p className="text-[11px] text-muted-foreground">
+                      {pricing.unitPriceLabel} × {pricing.monthsCharged} months
                     </p>
                   ) : null}
                 </div>
@@ -472,13 +481,25 @@ export function CheckoutPage() {
               </div>
 
               <div className="mt-4 space-y-2">
-                <InvoiceRow label={`${plan.name} plan`} value={selectedPrice.priceLabel} muted />
+                <InvoiceRow
+                  label={`${plan.name} (${billingCycle})`}
+                  value={
+                    billingCycle === "yearly"
+                      ? `${sym}${pricing.unitAmount.toLocaleString()} × ${pricing.monthsCharged} mo`
+                      : pricing.unitPriceLabel
+                  }
+                  muted
+                />
                 <InvoiceRow label="Discount" value="—" muted />
                 <InvoiceRow label="Tax" value="Incl." muted />
               </div>
 
               <div className="mt-4 rounded-2xl bg-muted/50 px-4 py-3">
-                <InvoiceRow label="Total due today" value={selectedPrice.priceLabel} bold />
+                <InvoiceRow
+                  label="Total due today"
+                  value={`${sym}${pricing.totalDue.toLocaleString()}`}
+                  bold
+                />
               </div>
 
               <p className="mt-3 text-xs text-foreground/75">

@@ -11,6 +11,8 @@ export interface IUser extends Document {
   bannedAt: Date | null;
   billingPlanId: "free" | "starter" | "pro" | "enterprise";
   billingStatus: "inactive" | "pending" | "active" | "past_due" | "canceled" | "expired";
+  /** Mirrors active subscription: monthly vs yearly prepay. */
+  billingCycle?: "monthly" | "yearly" | null;
   billingCurrentPeriodEnd: Date | null;
   isEmailVerified: boolean;
   emailVerificationToken: string | null;
@@ -53,6 +55,11 @@ const UserSchema = new Schema<IUser>(
       enum: ["inactive", "pending", "active", "past_due", "canceled", "expired"],
       default: "inactive",
       index: true,
+    },
+    billingCycle: {
+      type: String,
+      enum: ["monthly", "yearly"],
+      default: undefined,
     },
     billingCurrentPeriodEnd: { type: Date, default: null },
     isEmailVerified: { type: Boolean, default: false, index: true },

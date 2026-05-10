@@ -1,4 +1,7 @@
 import nodemailer from "nodemailer";
+import type Mail from "nodemailer/lib/mailer";
+
+import { renderInvoiceHtml } from "@/lib/billing/invoice-html";
 
 let transporterCache: nodemailer.Transporter | null = null;
 
@@ -9,6 +12,14 @@ function getBaseUrl() {
     process.env.NEXT_PUBLIC_SITE_URL ??
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
   ).replace(/\/$/, "");
+}
+
+function escapeEmailHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function wrapEmailHtml(params: {
@@ -89,6 +100,7 @@ async function sendMail(params: {
   html: string;
   text: string;
   headers?: Record<string, string>;
+  attachments?: Mail.Attachment[];
 }) {
   const from = process.env.SMTP_FROM || process.env.SMTP_USER;
   const transporter = getTransporter();
@@ -106,6 +118,7 @@ async function sendMail(params: {
       "X-Mailer": BRAND_NAME,
       ...params.headers,
     },
+    ...(params.attachments?.length ? { attachments: params.attachments } : {}),
   });
 }
 
@@ -167,5 +180,88 @@ export async function sendPasswordResetEmail(to: string, token: string) {
     subject: `Reset your ${BRAND_NAME} password`,
     html,
     text,
+  });
+}
+
+export async function sendPaymentPaidInvoiceEmail(params: {
+  to: string;
+  customerName: string;
+  planLabel: string;
+  amount: number;
+  currency: string;
+  providerPaymentId: string;
+  paidAt: Date | null;
+  invoiceMongoId: string | null;
+}) {
+  const base = getBaseUrl();
+  const issuedAt = new Date();
+  const attachmentHtml = renderInvoiceHtml({
+    invoiceNo: params.providerPaymentId,
+    customerName: params.customerName,
+    customerEmail: params.to,
+    planLabel: params.planLabel,
+    amount: params.amount,
+    currency: params.currency,
+    paidAt: params.paidAt,
+    issuedAt,
+  });
+  const safeFile = params.providerPaymentId.replace(/[^a-zA-Z0-9_-]+/g, "_").slice(0, 72);
+  const billingUrl = `${base}/dashboard/billing`;
+  const downloadPath = params.invoiceMongoId
+    ? `${base}/api/billing/invoice/${params.invoiceMongoId}`
+    : billingUrl;
+  const paidLine = params.paidAt
+    ? params.paidAt.toLocaleString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "—";
+
+  const planEsc = escapeEmailHtml(params.planLabel);
+  const refEsc = escapeEmailHtml(params.providerPaymentId);
+  const paidEsc = escapeEmailHtml(paidLine);
+  const dlEsc = escapeEmailHtml(downloadPath);
+
+  const html = wrapEmailHtml({
+    title: "Payment received",
+    preheader: `Your ${BRAND_NAME} subscription payment is confirmed.`,
+    bodyHtml: `
+      <p style="margin:0 0 12px;font-size:18px;font-weight:700;color:#18181b;">Payment received</p>
+      <p style="margin:0 0 8px;">Thank you — we&apos;ve recorded your payment for the <strong>${planEsc}</strong> plan.</p>
+      <p style="margin:0 0 4px;"><strong>Amount:</strong> ${escapeEmailHtml(params.currency)} ${escapeEmailHtml(String(params.amount))}</p>
+      <p style="margin:0 0 4px;"><strong>Reference:</strong> ${refEsc}</p>
+      <p style="margin:0 0 16px;"><strong>Paid:</strong> ${paidEsc}</p>
+      <p style="margin:0 0 16px;">Your invoice is attached as an HTML file. While signed in, you can also open Billing and use <strong>Invoice</strong> next to this payment.</p>
+      ${ctaButton(billingUrl, "Open billing")}
+      <p style="margin:16px 0 0;font-size:13px;color:#71717a;">Direct download (requires sign-in): <a href="${dlEsc}" style="color:#16a34a;">${dlEsc}</a></p>
+    `,
+  });
+  const text = [
+    `${BRAND_NAME} — payment received`,
+    "",
+    `Plan: ${params.planLabel}`,
+    `Amount: ${params.currency} ${params.amount}`,
+    `Reference: ${params.providerPaymentId}`,
+    `Paid: ${paidLine}`,
+    "",
+    "An invoice is attached to this email.",
+    `Billing: ${billingUrl}`,
+  ].join("\n");
+
+  await sendMail({
+    to: params.to,
+    subject: `Receipt — ${BRAND_NAME} ${params.planLabel}`,
+    html,
+    text,
+    attachments: [
+      {
+        filename: `AdReportly-invoice-${safeFile}.html`,
+        content: attachmentHtml,
+        contentType: "text/html; charset=utf-8",
+      },
+    ],
   });
 }

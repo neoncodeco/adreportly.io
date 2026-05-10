@@ -11,15 +11,22 @@ import {
   ArrowRight,
   BadgeCheck,
   Crown,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { BILLING_PLANS, getBillingCyclePrice, type BillingCycle } from "@/lib/billing/plans";
+import {
+  BILLING_PLANS,
+  getBillingCyclePrice,
+  getCheckoutPricing,
+  type BillingCycle,
+} from "@/lib/billing/plans";
 import { cn } from "@/lib/utils";
 
 type BillingSummary = {
   currentPlan: { id: string; name: string; priceLabel: string; interval: string | null };
   currentStatus: string;
+  billingCycle: "monthly" | "yearly" | null;
   renewalAt: string | null;
   payments: Array<{
     id: string;
@@ -40,6 +47,18 @@ function statusBadge(status: string) {
   if (s === "past_due" || s === "past due")
     return "bg-rose-500/15 text-rose-700 ring-1 ring-rose-500/30";
   if (s === "canceled" || s === "expired")
+    return "bg-muted text-muted-foreground ring-1 ring-border";
+  return "bg-muted text-muted-foreground ring-1 ring-border";
+}
+
+/** Payment row statuses (paid / pending / …). */
+function paymentStatusBadge(status: string) {
+  const s = status.toLowerCase();
+  if (s === "paid")
+    return "bg-emerald-500/20 text-emerald-800 ring-1 ring-emerald-600/40 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-500/40";
+  if (s === "pending") return "bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/30";
+  if (s === "failed") return "bg-rose-500/15 text-rose-700 ring-1 ring-rose-500/30";
+  if (s === "refunded" || s === "canceled")
     return "bg-muted text-muted-foreground ring-1 ring-border";
   return "bg-muted text-muted-foreground ring-1 ring-border";
 }
@@ -140,7 +159,7 @@ export function UserBillingPage() {
             </div>
             <div className="rounded-3xl border border-border bg-card p-5 shadow-soft">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Next renewal
+                {data.billingCycle === "yearly" ? "Annual renewal" : "Next renewal"}
               </p>
               <p className="mt-2 text-lg font-bold">
                 {data.renewalAt
@@ -151,6 +170,11 @@ export function UserBillingPage() {
                     })
                   : "Not scheduled"}
               </p>
+              {data.billingCycle ? (
+                <p className="mt-1 text-[11px] text-muted-foreground capitalize">
+                  {data.billingCycle} billing
+                </p>
+              ) : null}
             </div>
           </div>
 
@@ -190,6 +214,10 @@ export function UserBillingPage() {
                 const isCurrent = plan.id === currentPlanId;
                 const isHighlight = plan.highlight;
                 const selectedPrice = getBillingCyclePrice(plan, billingCycle);
+                const yearlyTotal =
+                  plan.isPaid && billingCycle === "yearly"
+                    ? getCheckoutPricing(plan, "yearly")
+                    : null;
 
                 return (
                   <motion.div
@@ -240,18 +268,26 @@ export function UserBillingPage() {
                       {/* Price */}
                       <div className="mt-2 space-y-1">
                         <span className="text-3xl font-extrabold tracking-tight text-foreground">
-                          {selectedPrice.priceLabel}
+                          {yearlyTotal
+                            ? `৳${yearlyTotal.totalDue.toLocaleString()}/yr`
+                            : selectedPrice.priceLabel}
                         </span>
                         {plan.isPaid && selectedPrice.compareAtLabel ? (
                           <span className="text-sm text-muted-foreground line-through">
                             {selectedPrice.compareAtLabel}
                           </span>
                         ) : null}
+                        {yearlyTotal ? (
+                          <p className="text-[11px] text-muted-foreground">
+                            {yearlyTotal.unitPriceLabel} × {yearlyTotal.monthsCharged} months, one
+                            payment today
+                          </p>
+                        ) : null}
                         {plan.isPaid && plan.pricingInfo ? (
                           <div className="text-[11px] text-muted-foreground">
                             {billingCycle === "monthly"
                               ? `Regular: ${plan.pricingInfo.regular ?? "—"}  |  Discount: ${plan.pricingInfo.discount ?? selectedPrice.priceLabel}`
-                              : `Regular: ${plan.pricingInfo.regular ?? "—"}  |  Yearly: ${plan.pricingInfo.yearly ?? selectedPrice.priceLabel}`}
+                              : `Regular: ${plan.pricingInfo.regular ?? "—"}  |  Per month on annual: ${plan.pricingInfo.yearly ?? selectedPrice.priceLabel}`}
                           </div>
                         ) : null}
                       </div>
@@ -296,8 +332,8 @@ export function UserBillingPage() {
                             variant="outline"
                             className="h-10 w-full rounded-full border-amber-400/50 text-amber-700 hover:bg-amber-50"
                           >
-                            <Link href="mailto:support@adreportly.com">
-                              Contact Sales
+                            <Link href="/dashboard/billing/custom">
+                              Request custom quote
                               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                             </Link>
                           </Button>
@@ -368,14 +404,25 @@ export function UserBillingPage() {
                           {payment.currency} {payment.amount}
                         </td>
                         <td className="px-4 py-3">
-                          <span
-                            className={cn(
-                              "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize",
-                              statusBadge(payment.status),
-                            )}
-                          >
-                            {payment.status.replace(/_/g, " ")}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={cn(
+                                "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize",
+                                paymentStatusBadge(payment.status),
+                              )}
+                            >
+                              {payment.status.replace(/_/g, " ")}
+                            </span>
+                            {payment.status.toLowerCase() === "paid" ? (
+                              <a
+                                href={`/api/billing/invoice/${payment.id}`}
+                                className="inline-flex items-center gap-1 rounded-full border border-emerald-600/35 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-500/20 dark:text-emerald-300"
+                              >
+                                <Download className="h-3.5 w-3.5 shrink-0" />
+                                Invoice
+                              </a>
+                            ) : null}
+                          </div>
                         </td>
                         <td className="px-5 py-3 text-muted-foreground">
                           {payment.paidAt

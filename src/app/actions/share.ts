@@ -3,14 +3,9 @@
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { getAgencyIdForAppUser } from "@/lib/agency-service";
-import { resolvePlanForUsage } from "@/lib/billing/usage";
+import { agencyClientExists } from "@/lib/agency-client-service";
 import { verifyAgencyJwt, COOKIE_NAME } from "@/lib/jwt";
-import {
-  buildShareUrl,
-  listClientEmailsForAgency,
-  newShareToken,
-  persistShareLink,
-} from "@/lib/share-service";
+import { buildShareUrl, newShareToken, persistShareLink } from "@/lib/share-service";
 
 export type CreateShareResult =
   | { ok: true; shareUrl: string; shareToken: string }
@@ -19,6 +14,7 @@ export type CreateShareResult =
 export async function createShareLinkAction(input: {
   campaignId: string;
   clientEmail: string;
+  clientName?: string;
   expiryDays: number;
 }): Promise<CreateShareResult> {
   let agencyId: string | null = null;
@@ -46,18 +42,14 @@ export async function createShareLinkAction(input: {
     return { ok: false, error: "Connect Meta (Facebook) first to link this account." };
   }
 
-  const plan = await resolvePlanForUsage({ userId, agencyId });
-  const maxClients = plan.limits.clients;
-  if (maxClients !== null) {
-    const rows = await listClientEmailsForAgency(agencyId);
-    const email = input.clientEmail.trim().toLowerCase();
-    const hasEmail = rows.some((r) => r.email.trim().toLowerCase() === email);
-    if (!hasEmail && rows.length >= maxClients) {
-      return {
-        ok: false,
-        error: `Client limit reached for ${plan.name} plan (max ${maxClients}). Upgrade to continue.`,
-      };
-    }
+  const emailNorm = input.clientEmail.trim().toLowerCase();
+  const roster = await agencyClientExists(agencyId, emailNorm);
+  if (!roster) {
+    return {
+      ok: false,
+      error:
+        "Add this client under Dashboard → Clients (name and email) before creating a share link.",
+    };
   }
 
   const shareToken = newShareToken();
@@ -68,7 +60,8 @@ export async function createShareLinkAction(input: {
     shareToken,
     campaignId: input.campaignId,
     agencyId,
-    clientEmail: input.clientEmail,
+    clientEmail: input.clientEmail.trim(),
+    clientName: (input.clientName ?? "").trim(),
     expiresAt,
     createdAt: now,
   });

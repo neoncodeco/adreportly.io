@@ -8,13 +8,23 @@ import {
   Share2,
   MoreHorizontal,
   Search,
-  SlidersHorizontal,
   Loader2,
   ChevronLeft,
   ChevronRight,
+  Filter,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
   DASHBOARD_CAMPAIGNS_PAGE_SIZE,
@@ -22,6 +32,8 @@ import {
   dashboardQk,
   fetchDashboardCampaignsPage,
   type DashboardCampaignRow,
+  type DashboardCampaignsSort,
+  type DashboardCampaignsStatusFilter,
 } from "@/lib/dashboard-queries";
 
 const statusStyle: Record<string, string> = {
@@ -35,18 +47,29 @@ export function CampaignsPage() {
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
   const deferredQ = useDeferredValue(q);
+  const [statusFilter, setStatusFilter] = useState<DashboardCampaignsStatusFilter>("all");
+  const [sortBy, setSortBy] = useState<DashboardCampaignsSort>("spend");
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
     setPage(1);
-  }, [deferredQ]);
+  }, [deferredQ, statusFilter, sortBy]);
 
   const { data, isPending, isError, error, isFetching, isPlaceholderData } = useQuery({
-    queryKey: dashboardQk.campaignsPage(page, DASHBOARD_CAMPAIGNS_PAGE_SIZE, deferredQ),
+    queryKey: dashboardQk.campaignsPage(
+      page,
+      DASHBOARD_CAMPAIGNS_PAGE_SIZE,
+      deferredQ,
+      statusFilter,
+      sortBy,
+    ),
     queryFn: () =>
       fetchDashboardCampaignsPage({
         page,
         limit: DASHBOARD_CAMPAIGNS_PAGE_SIZE,
         q: deferredQ,
+        status: statusFilter,
+        sort: sortBy,
       }),
     staleTime: DASHBOARD_OVERVIEW_STALE_MS,
     placeholderData: keepPreviousData,
@@ -118,24 +141,164 @@ export function CampaignsPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search campaigns…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            className="h-10 rounded-full border-border bg-card pl-9"
-          />
+      <div className="rounded-3xl border border-border bg-card p-3 shadow-soft sm:p-5">
+        <div className="sm:hidden">
+          <Collapsible open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+            <CollapsibleTrigger
+              type="button"
+              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-muted/40 px-3 py-3 text-left transition hover:bg-muted/60"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Filter className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-bold">Filters</div>
+                <div className="truncate text-[11px] text-muted-foreground">
+                  {total} match{total === 1 ? "" : "es"}
+                  {statusFilter !== "all" ? ` · ${statusFilter}` : ""}
+                  {q.trim() ? " · search" : ""} · tap to {mobileFiltersOpen ? "hide" : "edit"}
+                </div>
+              </div>
+              <ChevronDown
+                className={cn(
+                  "h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200",
+                  mobileFiltersOpen && "rotate-180",
+                )}
+              />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+              <div className="grid gap-4 border-t border-border pt-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="camp-search-m" className="text-xs">
+                    Search
+                  </Label>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="camp-search-m"
+                      placeholder="Name, ID, or code…"
+                      value={q}
+                      onChange={(e) => setQ(e.target.value)}
+                      className="h-11 rounded-xl pl-9"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="camp-status-m" className="text-xs">
+                      Status
+                    </Label>
+                    <Select
+                      value={statusFilter}
+                      onValueChange={(v) => setStatusFilter(v as DashboardCampaignsStatusFilter)}
+                    >
+                      <SelectTrigger id="camp-status-m" className="h-11 rounded-xl">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="paused">Paused</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="camp-sort-m" className="text-xs">
+                      Sort
+                    </Label>
+                    <Select
+                      value={sortBy}
+                      onValueChange={(v) => setSortBy(v as DashboardCampaignsSort)}
+                    >
+                      <SelectTrigger id="camp-sort-m" className="h-11 rounded-xl">
+                        <SelectValue placeholder="Sort" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="spend">Spend (high → low)</SelectItem>
+                        <SelectItem value="results">Results (high → low)</SelectItem>
+                        <SelectItem value="roas">ROAS (high → low)</SelectItem>
+                        <SelectItem value="ctr">CTR (high → low)</SelectItem>
+                        <SelectItem value="cpc">CPC (low → high)</SelectItem>
+                        <SelectItem value="name">Name (A–Z)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-10 w-10 shrink-0 rounded-full"
-          type="button"
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-        </Button>
+
+        <div className="hidden sm:block">
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Filter className="h-4 w-4" />
+            </span>
+            <div>
+              <h2 className="text-sm font-bold sm:text-base">Filter campaigns</h2>
+              <p className="text-[11px] text-muted-foreground sm:text-xs">
+                Search, status, and sort apply to the full list (last 30 days).
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-4">
+            <div className="space-y-1.5 lg:col-span-2">
+              <Label htmlFor="camp-search" className="text-xs">
+                Search
+              </Label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="camp-search"
+                  placeholder="Name, ID, or code…"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  className="h-10 rounded-xl pl-9"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="camp-status" className="text-xs">
+                Status
+              </Label>
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => setStatusFilter(v as DashboardCampaignsStatusFilter)}
+              >
+                <SelectTrigger id="camp-status" className="h-10 rounded-xl">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="paused">Paused</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="camp-sort" className="text-xs">
+                Sort by
+              </Label>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as DashboardCampaignsSort)}>
+                <SelectTrigger id="camp-sort" className="h-10 rounded-xl">
+                  <SelectValue placeholder="Sort" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="spend">Spend (high → low)</SelectItem>
+                  <SelectItem value="results">Results (high → low)</SelectItem>
+                  <SelectItem value="roas">ROAS (high → low)</SelectItem>
+                  <SelectItem value="ctr">CTR (high → low)</SelectItem>
+                  <SelectItem value="cpc">CPC (low → high)</SelectItem>
+                  <SelectItem value="name">Name (A–Z)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
       </div>
 
       {total === 0 ? (

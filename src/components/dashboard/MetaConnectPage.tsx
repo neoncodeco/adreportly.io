@@ -1,7 +1,7 @@
 "use client";
 
-import { useDeferredValue, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useDeferredValue, useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -15,11 +15,22 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  Unplug,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -67,14 +78,33 @@ function statusBadgeClass(label: string) {
   return "bg-muted text-muted-foreground";
 }
 
+type FbAppInfo = {
+  fbAppId: string | null;
+  hasSecret: boolean;
+  metaLinked?: boolean;
+};
+
 export function MetaConnectPage() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const queryClient = useQueryClient();
+  const setupAutoShown = useRef(false);
   const [banner, setBanner] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [showSetupModal, setShowSetupModal] = useState(false);
+  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
   const deferredQ = useDeferredValue(q);
+
+  const { data: fbAppInfo } = useQuery({
+    queryKey: ["user", "fb-app"],
+    queryFn: async (): Promise<FbAppInfo | null> => {
+      const res = await fetch("/api/user/fb-app", { credentials: "include" });
+      if (!res.ok) return null;
+      return (await res.json()) as FbAppInfo;
+    },
+  });
 
   useEffect(() => {
     setPage(1);
@@ -104,6 +134,34 @@ export function MetaConnectPage() {
     },
   });
 
+  const disconnectMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/user/meta-disconnect", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) {
+        throw new Error(typeof data.error === "string" ? data.error : "Could not disconnect.");
+      }
+    },
+    onSuccess: async () => {
+      setupAutoShown.current = false;
+      setShowDisconnectDialog(false);
+      await queryClient.invalidateQueries({ queryKey: ["user", "fb-app"] });
+      await queryClient.invalidateQueries({ queryKey: ["ad-accounts"] });
+      await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      setBanner({
+        kind: "ok",
+        text: "Meta disconnected and app credentials removed. Add App ID & Secret in Settings, then connect again.",
+      });
+      toast.success("Meta disconnected");
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+    },
+  });
+
   const accounts: AdAccountApiRow[] = data?.adAccounts ?? [];
   const pagination = data?.pagination;
   const totalAccounts = data?.summary.totalAccounts ?? 0;
@@ -114,9 +172,24 @@ export function MetaConnectPage() {
       history.replaceState(null, "", window.location.pathname + window.location.search);
     }
 
+    const stripQueryKeys = (keys: string[]) => {
+      const next = new URLSearchParams(searchParams.toString());
+      let changed = false;
+      for (const k of keys) {
+        if (next.has(k)) {
+          next.delete(k);
+          changed = true;
+        }
+      }
+      if (!changed) return;
+      const q = next.toString();
+      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+    };
+
     if (searchParams.get("connected") === "1") {
       setBanner({ kind: "ok", text: "Facebook connected. Ad accounts refreshed below." });
       void queryClient.invalidateQueries({ queryKey: ["ad-accounts"] });
+      stripQueryKeys(["connected"]);
     }
     const err = searchParams.get("error");
     if (err) {
@@ -131,30 +204,25 @@ export function MetaConnectPage() {
                 ? "Could not exchange code for token — check FACEBOOK_APP_ID / SECRET and redirect URI."
                 : `Connection failed (${err}).`,
       });
+      stripQueryKeys(["error"]);
     }
-  }, [searchParams, queryClient]);
+  }, [searchParams, queryClient, router, pathname]);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await fetch("/api/user/fb-app", { credentials: "include" });
-        if (!res.ok) return;
-        const fb = (await res.json()) as { fbAppId?: string | null; hasSecret?: boolean };
-        const needsSetup = !fb.fbAppId || !fb.hasSecret;
-        if (!cancelled && needsSetup) setShowSetupModal(true);
-      } catch {
-        // ignore
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (!fbAppInfo) return;
+    const needsSetup = !fbAppInfo.fbAppId || !fbAppInfo.hasSecret;
+    if (needsSetup && !setupAutoShown.current) {
+      setShowSetupModal(true);
+      setupAutoShown.current = true;
+    }
+  }, [fbAppInfo]);
 
   const connectHref = "/api/auth/facebook";
   const loadError = isError ? (error instanceof Error ? error.message : "Could not load") : null;
   const initialLoading = isPending && !isPlaceholderData;
+  const canDisconnect = Boolean(
+    fbAppInfo?.metaLinked || fbAppInfo?.hasSecret || fbAppInfo?.fbAppId,
+  );
 
   const from = !pagination || listTotal === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1;
   const to =
@@ -199,11 +267,25 @@ export function MetaConnectPage() {
           role="status"
           className={
             banner.kind === "ok"
-              ? "rounded-2xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-foreground"
-              : "rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+              ? "flex items-start gap-3 rounded-2xl border border-success/30 bg-success/10 py-3 pl-4 pr-2 text-sm text-foreground"
+              : "flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 py-3 pl-4 pr-2 text-sm text-destructive"
           }
         >
-          {banner.text}
+          <p className="min-w-0 flex-1 pt-0.5 leading-snug">{banner.text}</p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className={
+              banner.kind === "ok"
+                ? "h-8 w-8 shrink-0 rounded-lg text-foreground/70 hover:bg-success/20 hover:text-foreground"
+                : "h-8 w-8 shrink-0 rounded-lg text-destructive/80 hover:bg-destructive/15 hover:text-destructive"
+            }
+            onClick={() => setBanner(null)}
+            aria-label="Dismiss message"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       ) : null}
 
@@ -215,6 +297,59 @@ export function MetaConnectPage() {
           </p>
         </div>
       </div>
+
+      <AlertDialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Meta connection?</AlertDialogTitle>
+            <AlertDialogDescription className="text-left leading-relaxed">
+              This disconnects your Facebook access, deletes saved <strong>App ID</strong> and{" "}
+              <strong>App Secret</strong> from your account, and removes synced ad data, clients,
+              and share links for this workspace. To use Meta again, add credentials in{" "}
+              <strong>Settings</strong> and connect here.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              className="rounded-xl"
+              disabled={disconnectMutation.isPending}
+              onClick={() => disconnectMutation.mutate()}
+            >
+              {disconnectMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Remove Meta & app credentials"
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {canDisconnect ? (
+        <div className="rounded-3xl border border-border bg-card p-4 shadow-soft sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold">Disconnect</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Remove Meta and clear App ID / Secret from the database. Re-add them in Settings
+                before connecting again.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 shrink-0 rounded-full border-destructive/40 text-destructive hover:bg-destructive/10"
+              onClick={() => setShowDisconnectDialog(true)}
+            >
+              <Unplug className="mr-2 h-4 w-4" />
+              Remove Meta account
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {totalAccounts === 0 && !initialLoading && !loadError && (
         <div className="relative overflow-hidden rounded-3xl border border-border bg-card p-6 text-center shadow-soft sm:p-12">

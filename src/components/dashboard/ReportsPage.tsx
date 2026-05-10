@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Download, Link2, FileText, Share2 } from "lucide-react";
+import { Download, Link2, FileText, Share2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,25 +19,51 @@ import { createShareLinkAction } from "@/app/actions/share";
 import {
   CAMPAIGN_INSIGHTS_STALE_MS,
   DASHBOARD_OVERVIEW_STALE_MS,
+  REPORT_DATE_PRESET_OPTIONS,
+  SHELL_PROFILE_STALE_MS,
   dashboardQk,
+  fetchCampaignInsightRollup,
   fetchCampaignInsights,
   fetchDashboardOverview,
+  fetchUserProfileSnippet,
+  shellQk,
+  type ReportDatePreset,
 } from "@/lib/dashboard-queries";
+import {
+  aggregatePerformanceReport,
+  brandLetterFromText,
+  buildDailyReportRows,
+  buildPerformanceReportHtml,
+  downloadPerformanceReportPdf,
+  periodLabelFromDaily,
+} from "@/lib/performance-report";
 
 type CampOpt = { id: string; name: string };
 
 export function ReportsPage() {
   const queryClient = useQueryClient();
   const [campaignId, setCampaignId] = useState("");
+  const [reportClientName, setReportClientName] = useState("");
+  const [reportClientEmail, setReportClientEmail] = useState("");
+  const [reportDatePreset, setReportDatePreset] = useState<ReportDatePreset>("last_30d");
+  const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [expiryDays, setExpiryDays] = useState(30);
   const [shareBusy, setShareBusy] = useState(false);
+  const [lastShareUrl, setLastShareUrl] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [exportBusy, setExportBusy] = useState<null | "csv" | "pdf">(null);
 
   const { data: overview } = useQuery({
     queryKey: dashboardQk.overview(),
     queryFn: fetchDashboardOverview,
     staleTime: DASHBOARD_OVERVIEW_STALE_MS,
+  });
+
+  const { data: profile } = useQuery({
+    queryKey: shellQk.profile(),
+    queryFn: fetchUserProfileSnippet,
+    staleTime: SHELL_PROFILE_STALE_MS,
   });
 
   const campaigns: CampOpt[] = useMemo(() => {
@@ -58,15 +84,19 @@ export function ReportsPage() {
     try {
       if (!campaignId) throw new Error("Select a campaign first.");
       const insights = await queryClient.fetchQuery({
-        queryKey: dashboardQk.campaignInsights(campaignId),
-        queryFn: () => fetchCampaignInsights(campaignId),
+        queryKey: dashboardQk.campaignInsights(campaignId, reportDatePreset),
+        queryFn: () => fetchCampaignInsights(campaignId, { datePreset: reportDatePreset }),
         staleTime: CAMPAIGN_INSIGHTS_STALE_MS,
       });
       if (!insights.length) {
         toast.error("No data available for this campaign.");
         return;
       }
+      const cn = reportClientName.trim();
+      const ce = reportClientEmail.trim();
       const headers = [
+        "Client Name",
+        "Client Email",
         "Campaign ID",
         "Campaign Name",
         "Date Start",
@@ -84,6 +114,8 @@ export function ReportsPage() {
         return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
       };
       const rows = insights.map((row) => [
+        cn,
+        ce,
         campaignId,
         selectedCampaign?.name ?? "Campaign",
         row.date_start ?? "",
@@ -101,7 +133,7 @@ export function ReportsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `report-${campaignId}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `report-${campaignId}-${reportDatePreset}-${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -118,93 +150,54 @@ export function ReportsPage() {
     setExportBusy("pdf");
     try {
       if (!campaignId) throw new Error("Select a campaign first.");
-      const insights = await queryClient.fetchQuery({
-        queryKey: dashboardQk.campaignInsights(campaignId),
-        queryFn: () => fetchCampaignInsights(campaignId),
-        staleTime: CAMPAIGN_INSIGHTS_STALE_MS,
-      });
-      if (!insights.length) {
+      const [insights, rollup] = await Promise.all([
+        queryClient.fetchQuery({
+          queryKey: dashboardQk.campaignInsights(campaignId, reportDatePreset),
+          queryFn: () => fetchCampaignInsights(campaignId, { datePreset: reportDatePreset }),
+          staleTime: CAMPAIGN_INSIGHTS_STALE_MS,
+        }),
+        fetchCampaignInsightRollup(campaignId, reportDatePreset),
+      ]);
+
+      const rowsForReport = insights.length ? insights : rollup ? [rollup] : [];
+      if (!rowsForReport.length) {
         toast.error("No data available for this campaign.");
         return;
       }
-      const totalSpend = insights.reduce(
-        (acc, row) => acc + (parseFloat(row.spend ?? "0") || 0),
-        0,
-      );
-      const totalImpressions = insights.reduce(
-        (acc, row) => acc + (parseInt(row.impressions ?? "0", 10) || 0),
-        0,
-      );
-      const totalClicks = insights.reduce(
-        (acc, row) => acc + (parseInt(row.clicks ?? "0", 10) || 0),
-        0,
-      );
-      const avgCtr = totalImpressions ? (totalClicks / totalImpressions) * 100 : 0;
 
-      const reportHtml = `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Campaign Report</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 24px; color: #111827; }
-    h1 { margin: 0 0 6px; font-size: 22px; }
-    p { margin: 0 0 8px; color: #4b5563; }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 16px 0 20px; }
-    .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; }
-    .label { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
-    .value { font-size: 16px; font-weight: 700; }
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-    th, td { border: 1px solid #e5e7eb; padding: 8px; font-size: 12px; text-align: left; }
-    th { background: #f9fafb; }
-  </style>
-</head>
-<body>
-  <h1>Campaign Report</h1>
-  <p><strong>Campaign:</strong> ${selectedCampaign?.name ?? "Campaign"} (${campaignId})</p>
-  <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-  <div class="grid">
-    <div class="card"><div class="label">Total Spend</div><div class="value">${totalSpend.toFixed(2)}</div></div>
-    <div class="card"><div class="label">Impressions</div><div class="value">${totalImpressions.toLocaleString()}</div></div>
-    <div class="card"><div class="label">Clicks</div><div class="value">${totalClicks.toLocaleString()}</div></div>
-    <div class="card"><div class="label">Average CTR</div><div class="value">${avgCtr.toFixed(2)}%</div></div>
-  </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Date Start</th>
-        <th>Date Stop</th>
-        <th>Spend</th>
-        <th>Impressions</th>
-        <th>Clicks</th>
-        <th>CTR</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${insights
-        .map(
-          (row) => `<tr>
-        <td>${row.date_start ?? ""}</td>
-        <td>${row.date_stop ?? ""}</td>
-        <td>${row.spend ?? "0"}</td>
-        <td>${row.impressions ?? "0"}</td>
-        <td>${row.clicks ?? "0"}</td>
-        <td>${row.ctr ?? "0"}%</td>
-      </tr>`,
-        )
-        .join("")}
-    </tbody>
-  </table>
-</body>
-</html>`;
-      const w = window.open("", "_blank", "noopener,noreferrer,width=1100,height=800");
-      if (!w) throw new Error("Popup blocked. Allow popups and try again.");
-      w.document.open();
-      w.document.write(reportHtml);
-      w.document.close();
-      w.focus();
-      w.print();
-      toast.success("Printable report opened. Save as PDF from print dialog.");
+      const currency = overview?.currency ?? "USD";
+      const aggregates = aggregatePerformanceReport(rowsForReport, rollup);
+      const dailyRows = buildDailyReportRows(rowsForReport);
+      const orgOrName = profile?.organization?.trim() || profile?.full_name?.trim() || "";
+      const brandLetter = brandLetterFromText(orgOrName);
+      const presetLabel =
+        REPORT_DATE_PRESET_OPTIONS.find((o) => o.value === reportDatePreset)?.label ??
+        reportDatePreset;
+      const periodLabelForPdf = rowsForReport.some((r) => r.date_start)
+        ? periodLabelFromDaily(rowsForReport)
+        : presetLabel;
+
+      const html = buildPerformanceReportHtml({
+        brandLetter,
+        campaignName: selectedCampaign?.name ?? "Campaign",
+        clientName: reportClientName,
+        clientEmail: reportClientEmail,
+        periodLabel: periodLabelForPdf,
+        generatedAt: new Date(),
+        currency,
+        aggregates,
+        dailyRows,
+      });
+
+      const safeSlug = (selectedCampaign?.name ?? campaignId)
+        .replace(/[^\w-]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 48);
+      await downloadPerformanceReportPdf({
+        html,
+        filename: `performance-report-${safeSlug || campaignId}-${reportDatePreset}-${new Date().toISOString().slice(0, 10)}.pdf`,
+      });
+      toast.success("PDF downloaded.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "PDF export failed.");
     } finally {
@@ -222,7 +215,8 @@ export function ReportsPage() {
       <div>
         <h1 className="text-xl font-bold sm:text-2xl">Reports</h1>
         <p className="text-xs text-muted-foreground sm:text-sm">
-          Export real campaign data as CSV or open a print-ready PDF view.
+          Pick a date range for exports—shorter ranges load faster. PDF and CSV use the same Meta
+          preset.
         </p>
       </div>
 
@@ -235,7 +229,9 @@ export function ReportsPage() {
             </span>
             <div>
               <h3 className="text-base font-bold sm:text-lg">Generate Report</h3>
-              <p className="text-xs text-muted-foreground">PDF or CSV export</p>
+              <p className="text-xs text-muted-foreground">
+                PDF (summary + daily rows) or CSV — choose how many days to pull
+              </p>
             </div>
           </div>
 
@@ -263,7 +259,57 @@ export function ReportsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-1 gap-2 pt-2 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="report-date-range">Date range</Label>
+              <Select
+                value={reportDatePreset}
+                onValueChange={(v) => setReportDatePreset(v as ReportDatePreset)}
+              >
+                <SelectTrigger id="report-date-range" className="h-11 rounded-xl">
+                  <SelectValue placeholder="Date range" />
+                </SelectTrigger>
+                <SelectContent>
+                  {REPORT_DATE_PRESET_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Fewer days = quicker download. &quot;Lifetime&quot; can be very slow.
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="report-client-name">Client name</Label>
+                <Input
+                  id="report-client-name"
+                  type="text"
+                  placeholder="e.g. Fashion House BD"
+                  value={reportClientName}
+                  onChange={(e) => setReportClientName(e.target.value)}
+                  className="h-11 rounded-xl"
+                  autoComplete="name"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="report-client-email">Client email</Label>
+                <Input
+                  id="report-client-email"
+                  type="email"
+                  placeholder="client@company.com"
+                  value={reportClientEmail}
+                  onChange={(e) => setReportClientEmail(e.target.value)}
+                  className="h-11 rounded-xl"
+                  autoComplete="email"
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Included on PDF and every CSV row for this export.
+            </p>
+            <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-2">
               <Button
                 type="button"
                 disabled={exportBusy !== null || !campaignId}
@@ -325,16 +371,30 @@ export function ReportsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="share-email">Client email</Label>
-              <Input
-                id="share-email"
-                type="email"
-                placeholder="client@company.com"
-                value={clientEmail}
-                onChange={(e) => setClientEmail(e.target.value)}
-                className="h-11 rounded-xl"
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="share-name">Client name</Label>
+                <Input
+                  id="share-name"
+                  type="text"
+                  placeholder="e.g. Acme Marketing"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  className="h-11 rounded-xl"
+                  autoComplete="name"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="share-email">Client email</Label>
+                <Input
+                  id="share-email"
+                  type="email"
+                  placeholder="client@company.com"
+                  value={clientEmail}
+                  onChange={(e) => setClientEmail(e.target.value)}
+                  className="h-11 rounded-xl"
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="exp">Expires in (days)</Label>
@@ -352,24 +412,26 @@ export function ReportsPage() {
             </div>
             <Button
               type="button"
-              disabled={shareBusy || !campaignId || !clientEmail.trim()}
+              disabled={
+                shareBusy || !campaignId || !clientEmail.trim() || clientName.trim().length < 2
+              }
               className="h-11 w-full rounded-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-95 disabled:opacity-50"
               onClick={async () => {
                 setShareBusy(true);
                 const r = await createShareLinkAction({
                   campaignId,
                   clientEmail: clientEmail.trim(),
+                  clientName: clientName.trim(),
                   expiryDays,
                 });
                 setShareBusy(false);
                 if (r.ok) {
                   void queryClient.invalidateQueries({ queryKey: dashboardQk.clients() });
-                  try {
-                    await navigator.clipboard.writeText(r.shareUrl);
-                  } catch {
-                    /* ignore */
-                  }
-                  toast.success("Share link created and copied", { description: r.shareUrl });
+                  setLastShareUrl(r.shareUrl);
+                  setLinkCopied(false);
+                  toast.success("Share link created", {
+                    description: "Copy it from the box below or use the Copy button.",
+                  });
                 } else {
                   toast.error(r.error);
                 }
@@ -377,6 +439,49 @@ export function ReportsPage() {
             >
               <Link2 className="mr-2 h-4 w-4" /> Create link
             </Button>
+
+            {lastShareUrl ? (
+              <div className="space-y-2 rounded-2xl border border-border bg-muted/25 p-4">
+                <Label className="text-xs font-semibold text-muted-foreground">
+                  Your share link
+                </Label>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                  <Input
+                    readOnly
+                    value={lastShareUrl}
+                    className="h-11 flex-1 rounded-xl font-mono text-xs"
+                    onFocus={(e) => e.currentTarget.select()}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 shrink-0 rounded-xl sm:w-auto"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(lastShareUrl);
+                        setLinkCopied(true);
+                        toast.success("Link copied to clipboard");
+                        window.setTimeout(() => setLinkCopied(false), 2200);
+                      } catch {
+                        toast.error(
+                          "Could not copy automatically — select the link and press Ctrl+C.",
+                        );
+                      }
+                    }}
+                  >
+                    {linkCopied ? (
+                      <Check className="mr-2 h-4 w-4 text-emerald-600" />
+                    ) : (
+                      <Copy className="mr-2 h-4 w-4" />
+                    )}
+                    {linkCopied ? "Copied" : "Copy link"}
+                  </Button>
+                </div>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  Send this URL to your client. It stays read-only until it expires.
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

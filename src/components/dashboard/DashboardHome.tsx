@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -16,7 +16,6 @@ import {
 import {
   TrendingUp,
   TrendingDown,
-  ChevronDown,
   ArrowUpRight,
   Activity,
   Target,
@@ -24,13 +23,32 @@ import {
   MousePointerClick,
   Sparkles,
   Loader2,
+  Filter,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DASHBOARD_OVERVIEW_STALE_MS,
   dashboardQk,
   fetchDashboardOverview,
+  type DashboardOverview,
 } from "@/lib/dashboard-queries";
+
+type CampaignRow = NonNullable<DashboardOverview["campaigns"]>[number];
+type StatusFilter = "all" | CampaignRow["status"];
+type SortKey = "spend" | "results" | "roas" | "name";
+
+const DASHBOARD_CAMPAIGN_LIST_LIMIT = 5;
 
 const statMeta = [
   { key: "overview" as const, label: "Live overview · 30d", icon: Sparkles, highlight: true },
@@ -64,6 +82,12 @@ const accentByKey = {
 } as const;
 
 export function DashboardHome() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sortBy, setSortBy] = useState<SortKey>("spend");
+  /** Collapsed by default on small screens to save vertical space */
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
   const { data, isPending, isError, error, refetch, isRefetching } = useQuery({
     queryKey: dashboardQk.overview(),
     queryFn: fetchDashboardOverview,
@@ -72,10 +96,57 @@ export function DashboardHome() {
 
   const sym = data?.currencySymbol ?? "৳";
   const spendTrend = data?.spendTrend ?? [];
-  const topCampaigns = data?.topCampaigns ?? [];
-  const recentCampaigns = data?.recentCampaigns ?? [];
   const kpis = data?.kpis;
+
+  const baseCampaignRows = useMemo((): CampaignRow[] => {
+    if (!data) return [];
+    if (data.campaigns?.length) return data.campaigns;
+    return (data.recentCampaigns ?? []) as CampaignRow[];
+  }, [data]);
+
+  const narrowedCampaigns = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return baseCampaignRows.filter((c) => {
+      if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        c.name.toLowerCase().includes(q) ||
+        c.id.toLowerCase().includes(q) ||
+        c.code.toLowerCase().includes(q)
+      );
+    });
+  }, [baseCampaignRows, searchQuery, statusFilter]);
+
+  const topCampaigns = useMemo(() => {
+    const colors = ["primary", "dark", "muted"] as const;
+    const sorted = [...narrowedCampaigns].sort((a, b) => b.spend - a.spend).slice(0, 5);
+    return sorted.map((c, i) => ({
+      id: c.id,
+      code: c.code,
+      name: c.name,
+      spend: c.spend,
+      color: colors[i % colors.length] as (typeof colors)[number],
+    }));
+  }, [narrowedCampaigns]);
+
+  const sortedTableCampaigns = useMemo(() => {
+    const rows = [...narrowedCampaigns];
+    rows.sort((a, b) => {
+      if (sortBy === "spend") return b.spend - a.spend;
+      if (sortBy === "results") return b.results - a.results;
+      if (sortBy === "roas") return b.roas - a.roas;
+      return a.name.localeCompare(b.name);
+    });
+    return rows;
+  }, [narrowedCampaigns, sortBy]);
+
+  const previewTableCampaigns = useMemo(
+    () => sortedTableCampaigns.slice(0, DASHBOARD_CAMPAIGN_LIST_LIMIT),
+    [sortedTableCampaigns],
+  );
+
   const maxTopSpend = topCampaigns[0]?.spend ?? 0;
+  const totalCampaignCount = baseCampaignRows.length;
 
   const stats = useMemo(() => {
     const total = kpis?.totalSpend ?? 0;
@@ -127,7 +198,7 @@ export function DashboardHome() {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="space-y-5 sm:space-y-6"
+      className="min-w-0 space-y-4 sm:space-y-6"
     >
       {data?.connected === false && (
         <div className="rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
@@ -142,13 +213,199 @@ export function DashboardHome() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
+      {data?.connected !== false && totalCampaignCount > 0 ? (
+        <div className="rounded-3xl border border-border bg-card p-3 shadow-soft sm:p-5">
+          {/* Mobile: collapsible filters */}
+          <div className="sm:hidden">
+            <Collapsible open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+              <CollapsibleTrigger
+                type="button"
+                className="flex w-full items-center gap-3 rounded-2xl border border-border bg-muted/40 px-3 py-3 text-left transition hover:bg-muted/60"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Filter className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold">Campaign filters</div>
+                  <div className="truncate text-[11px] text-muted-foreground">
+                    {narrowedCampaigns.length} of {totalCampaignCount} match · tap to{" "}
+                    {mobileFiltersOpen ? "hide" : "edit"}
+                  </div>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    "h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200",
+                    mobileFiltersOpen && "rotate-180",
+                  )}
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+                <div className="grid gap-4 border-t border-border pt-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="dash-campaign-search-m" className="text-xs">
+                      Search
+                    </Label>
+                    <Input
+                      id="dash-campaign-search-m"
+                      placeholder="Name, ID, or code…"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="h-11 rounded-xl"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="dash-status-m" className="text-xs">
+                        Status
+                      </Label>
+                      <Select
+                        value={statusFilter}
+                        onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+                      >
+                        <SelectTrigger id="dash-status-m" className="h-11 rounded-xl">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="paused">Paused</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="dash-sort-m" className="text-xs">
+                        Sort
+                      </Label>
+                      <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
+                        <SelectTrigger id="dash-sort-m" className="h-11 rounded-xl">
+                          <SelectValue placeholder="Sort" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="spend">Spend</SelectItem>
+                          <SelectItem value="results">Results</SelectItem>
+                          <SelectItem value="roas">ROAS</SelectItem>
+                          <SelectItem value="name">Name</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    KPIs and chart use all accounts (30d). Lists use filters —{" "}
+                    <Link
+                      href="/dashboard/campaigns"
+                      className="font-medium text-primary underline"
+                    >
+                      full list
+                    </Link>
+                    .
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Preview:{" "}
+                    <span className="font-semibold text-foreground">
+                      {Math.min(DASHBOARD_CAMPAIGN_LIST_LIMIT, sortedTableCampaigns.length)}
+                    </span>{" "}
+                    rows below.
+                  </p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+
+          {/* Tablet/desktop: always expanded */}
+          <div className="hidden sm:block">
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Filter className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="text-sm font-bold sm:text-base">Filter campaigns</h2>
+                <p className="text-[11px] text-muted-foreground sm:text-xs">
+                  Chart and KPI cards use all enabled accounts (last 30 days). The campaigns block
+                  shows up to five rows from your filters — open{" "}
+                  <Link
+                    href="/dashboard/campaigns"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Campaigns
+                  </Link>{" "}
+                  for the full list.
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="dash-campaign-search" className="text-xs">
+                  Search
+                </Label>
+                <Input
+                  id="dash-campaign-search"
+                  placeholder="Name, ID, or short code…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-10 rounded-xl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="dash-status" className="text-xs">
+                  Status
+                </Label>
+                <Select
+                  value={statusFilter}
+                  onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+                >
+                  <SelectTrigger id="dash-status" className="h-10 rounded-xl">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="paused">Paused</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="dash-sort" className="text-xs">
+                  Sort list by
+                </Label>
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
+                  <SelectTrigger id="dash-sort" className="h-10 rounded-xl">
+                    <SelectValue placeholder="Sort" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="spend">Spend (high → low)</SelectItem>
+                    <SelectItem value="results">Results (high → low)</SelectItem>
+                    <SelectItem value="roas">ROAS (high → low)</SelectItem>
+                    <SelectItem value="name">Name (A–Z)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <p className="mt-3 text-[11px] text-muted-foreground">
+              <span className="font-semibold text-foreground">{narrowedCampaigns.length}</span> of{" "}
+              <span className="font-semibold text-foreground">{totalCampaignCount}</span> campaigns
+              match
+              {narrowedCampaigns.length !== totalCampaignCount ? " filters" : ""}. Dashboard
+              preview:{" "}
+              <span className="font-semibold text-foreground">
+                {Math.min(DASHBOARD_CAMPAIGN_LIST_LIMIT, sortedTableCampaigns.length)}
+              </span>{" "}
+              shown below.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 lg:grid-cols-5">
         {stats.map((s) => (
           <div
             key={s.key}
             className={cn(
-              "group relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-elegant sm:p-5",
-              s.highlight && "col-span-2 lg:col-span-1",
+              "group relative min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-elegant sm:p-5",
+              s.highlight && "min-[420px]:col-span-2 lg:col-span-1",
             )}
           >
             <div
@@ -174,29 +431,30 @@ export function DashboardHome() {
               ) : null}
             </div>
             <div className="relative mt-3 sm:mt-4">
-              <div className="text-xl font-bold leading-tight sm:text-2xl">{s.value}</div>
-              <div className="mt-0.5 truncate text-xs text-muted-foreground">{s.label}</div>
+              <div className="break-words text-lg font-bold leading-tight min-[420px]:text-xl sm:text-2xl">
+                {s.value}
+              </div>
+              <div className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground sm:text-xs">
+                {s.label}
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="grid gap-5 sm:gap-6 lg:grid-cols-3">
-        <div className="rounded-3xl border border-border bg-card p-4 shadow-soft sm:p-6 lg:col-span-2">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+      <div className="grid min-w-0 gap-4 sm:gap-6 lg:grid-cols-3">
+        <div className="min-w-0 rounded-3xl border border-border bg-card p-3 shadow-soft sm:p-6 lg:col-span-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-3">
+            <div className="min-w-0">
               <h3 className="text-base font-bold sm:text-lg">Ad Spend Trend</h3>
               <p className="text-xs text-muted-foreground">Daily spend vs. clicks (last 30 days)</p>
             </div>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-            >
-              Last 30 Days <ChevronDown className="h-3.5 w-3.5" />
-            </button>
+            <span className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[10px] font-medium text-muted-foreground sm:px-3 sm:py-1.5 sm:text-xs">
+              Last 30 days <span className="hidden opacity-80 sm:inline">(account total)</span>
+            </span>
           </div>
 
-          <div className="mt-5 h-56 w-full sm:h-72">
+          <div className="mt-4 h-52 w-full min-w-0 sm:mt-5 sm:h-72">
             {spendTrend.length === 0 ? (
               <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-border text-sm text-muted-foreground">
                 No spend series yet for this period.
@@ -217,11 +475,13 @@ export function DashboardHome() {
                   <CartesianGrid stroke="var(--border)" vertical={false} strokeDasharray="3 3" />
                   <XAxis
                     dataKey="label"
-                    interval={4}
+                    interval="preserveStartEnd"
+                    minTickGap={28}
                     tickLine={false}
                     axisLine={false}
                     stroke="var(--muted-foreground)"
-                    fontSize={10}
+                    fontSize={9}
+                    tick={{ fill: "var(--muted-foreground)" }}
                   />
                   <YAxis hide />
                   <Tooltip
@@ -253,11 +513,11 @@ export function DashboardHome() {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-border bg-card p-4 shadow-soft sm:p-6">
-          <div className="flex items-start justify-between">
-            <div>
+        <div className="min-w-0 rounded-3xl border border-border bg-card p-3 shadow-soft sm:p-6">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
               <h3 className="text-base font-bold sm:text-lg">Top Campaigns</h3>
-              <p className="text-xs text-muted-foreground">By spend · 30 days</p>
+              <p className="text-xs text-muted-foreground">By spend · filtered · top 5</p>
             </div>
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
               {topCampaigns.length}
@@ -322,25 +582,31 @@ export function DashboardHome() {
         </div>
       </div>
 
-      <div className="rounded-3xl border border-border bg-card p-4 shadow-soft sm:p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-bold sm:text-lg">Recent Campaigns</h3>
-            <p className="text-xs text-muted-foreground">Highest spend · last 30 days</p>
+      <div className="min-w-0 rounded-3xl border border-border bg-card p-3 shadow-soft sm:p-6">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h3 className="text-base font-bold sm:text-lg">Campaigns</h3>
+            <p className="text-xs text-muted-foreground">
+              Recent {DASHBOARD_CAMPAIGN_LIST_LIMIT} · filtered · last 30 day metrics
+            </p>
           </div>
           <Link
             href="/dashboard/campaigns"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+            className="inline-flex w-fit shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline"
           >
             View all <ArrowUpRight className="h-3.5 w-3.5" />
           </Link>
         </div>
 
         <div className="space-y-3 lg:hidden">
-          {recentCampaigns.slice(0, 3).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No campaigns to show.</p>
+          {sortedTableCampaigns.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {totalCampaignCount === 0
+                ? "No campaigns to show."
+                : "No campaigns match your filters."}
+            </p>
           ) : (
-            recentCampaigns.slice(0, 3).map((c) => (
+            previewTableCampaigns.map((c) => (
               <div key={c.id} className="rounded-2xl border border-border/60 bg-background/40 p-4">
                 <div className="flex items-start gap-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">
@@ -409,14 +675,16 @@ export function DashboardHome() {
                 </tr>
               </thead>
               <tbody>
-                {recentCampaigns.slice(0, 3).length === 0 ? (
+                {sortedTableCampaigns.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                      No campaigns to show.
+                      {totalCampaignCount === 0
+                        ? "No campaigns to show."
+                        : "No campaigns match your filters."}
                     </td>
                   </tr>
                 ) : (
-                  recentCampaigns.slice(0, 3).map((c, i) => (
+                  previewTableCampaigns.map((c, i) => (
                     <tr key={c.id} className="border-t border-border/60">
                       <td className="py-4 pr-4 text-muted-foreground">{i + 1}</td>
                       <td className="py-4 pr-4">

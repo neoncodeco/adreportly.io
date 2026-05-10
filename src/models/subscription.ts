@@ -1,5 +1,5 @@
 import mongoose, { Schema, type Document } from "mongoose";
-import type { BillingPlanId } from "@/lib/billing/plans";
+import type { BillingCycle, BillingPlanId } from "@/lib/billing/plans";
 
 export type SubscriptionStatus =
   | "pending"
@@ -13,6 +13,7 @@ export interface ISubscription extends Document {
   userId: string;
   agencyId: string | null;
   planId: BillingPlanId;
+  billingCycle?: BillingCycle;
   status: SubscriptionStatus;
   currency: string;
   amount: number;
@@ -37,6 +38,12 @@ const SubscriptionSchema = new Schema<ISubscription>(
       type: String,
       enum: ["free", "starter", "pro", "enterprise"] satisfies BillingPlanId[],
       required: true,
+      index: true,
+    },
+    billingCycle: {
+      type: String,
+      enum: ["monthly", "yearly"] satisfies BillingCycle[],
+      default: "monthly",
       index: true,
     },
     status: {

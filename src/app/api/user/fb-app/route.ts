@@ -22,12 +22,13 @@ export async function GET() {
 
   const payload = await getOrSetCache(`user:fb-app:${session.user.id}`, 30_000, async () => {
     const user = await UserModel.findById(session.user.id)
-      .select("fbAppId encryptedFbAppSecret")
+      .select("fbAppId encryptedFbAppSecret agencyId")
       .lean()
       .exec();
     return {
       fbAppId: user?.fbAppId ?? null,
       hasSecret: Boolean(user?.encryptedFbAppSecret),
+      metaLinked: Boolean(user?.agencyId),
     };
   });
 

@@ -6,6 +6,22 @@ import {
 } from "@/lib/billing/env";
 import type { BillingCycle, BillingPlan } from "@/lib/billing/plans";
 
+/**
+ * UddoktaPay docs use `{origin}/api/checkout-v2` and `{origin}/api/verify-payment`.
+ * Many installs set `UDDOKTAPAY_BASE_URL` to `https://pay.example.com/api` — in that case
+ * paths must NOT get a second `/api` prefix.
+ */
+export function uddoktaPayApiUrl(
+  envBaseUrl: string,
+  segment: "checkout-v2" | "verify-payment",
+): string {
+  const base = envBaseUrl.replace(/\/+$/, "");
+  if (/\/api$/i.test(base)) {
+    return `${base}/${segment}`;
+  }
+  return `${base}/api/${segment}`;
+}
+
 type BillingDetails = {
   company?: string | null;
   phone?: string | null;
@@ -43,7 +59,9 @@ export function normalizeProviderStatus(rawStatus: unknown): {
   const status = String(rawStatus || "")
     .trim()
     .toLowerCase();
-  if (["success", "paid", "completed", "active"].includes(status)) {
+  if (
+    ["success", "paid", "completed", "complete", "active", "approve", "approved"].includes(status)
+  ) {
     return { subscriptionStatus: "active", paymentStatus: "paid" };
   }
   if (["failed", "declined", "unpaid"].includes(status)) {
@@ -94,7 +112,7 @@ export async function createUddoktaPayCheckoutSession(
     webhook_url: webhookUrl,
   };
 
-  const endpoint = `${env.apiBaseUrl}/checkout-v2`;
+  const endpoint = uddoktaPayApiUrl(env.apiBaseUrl, "checkout-v2");
   const res = await fetch(endpoint, {
     method: "POST",
     headers: {
@@ -133,6 +151,15 @@ export async function createUddoktaPayCheckoutSession(
   return json;
 }
 
+/** Header used by UddoktaPay / Paymently IPN (API key or signature). */
+export function getBillingWebhookCredential(request: Request): string | null {
+  return (
+    request.headers.get("rt-uddoktapay-api-key") ||
+    request.headers.get("x-uddoktapay-signature") ||
+    null
+  );
+}
+
 export function verifyUddoktaPayWebhook(
   rawBody: string,
   providedSignature: string | null,
@@ -140,13 +167,31 @@ export function verifyUddoktaPayWebhook(
   if (!providedSignature) return false;
   const env = assertBillingEnvForWebhook();
   const provided = providedSignature.trim();
+
+  // UddoktaPay / Paymently docs: webhook sends the same value as RT-UDDOKTAPAY-API-KEY (API key).
+  if (env.apiKey && env.apiKey.length === provided.length) {
+    try {
+      if (crypto.timingSafeEqual(Buffer.from(env.apiKey), Buffer.from(provided))) {
+        return true;
+      }
+    } catch {
+      /* length mismatch should not happen after check */
+    }
+  }
+
+  // Optional HMAC secret if the gateway is configured to sign bodies.
   if (env.webhookSecret) {
     const digest = crypto.createHmac("sha256", env.webhookSecret).update(rawBody).digest("hex");
-    if (digest.length !== provided.length) return false;
-    return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(provided));
+    if (digest.length === provided.length) {
+      try {
+        return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(provided));
+      } catch {
+        return false;
+      }
+    }
   }
-  if (!env.apiKey) return false;
-  return provided === env.apiKey;
+
+  return false;
 }
 
 export function resolveCheckoutUrl(payload: UddoktaPayCreateSessionResponse): string | null {
@@ -205,6 +250,50 @@ export function resolveCheckoutUrl(payload: UddoktaPayCreateSessionResponse): st
   if (fallbackUrl) return fallbackUrl;
 
   return null;
+}
+
+/**
+ * Confirms payment after redirect (return_type GET appends invoice_id to success URL).
+ * @see https://uddoktapay.readme.io/reference/verify-payment-api-guideline
+ */
+export async function verifyUddoktaPayInvoice(invoiceId: string): Promise<Record<string, unknown>> {
+  const env = assertBillingEnvForCheckout();
+  const verifyUrl = uddoktaPayApiUrl(env.apiBaseUrl, "verify-payment");
+  const res = await fetch(verifyUrl, {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "content-type": "application/json",
+      "RT-UDDOKTAPAY-API-KEY": env.apiKey,
+    },
+    body: JSON.stringify({ invoice_id: invoiceId }),
+    cache: "no-store",
+  });
+  const raw = await res.text();
+  let parsed: Record<string, unknown> = {};
+  try {
+    parsed = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+  } catch {
+    parsed = {};
+  }
+  if (!res.ok) {
+    const msg =
+      typeof parsed.message === "string"
+        ? parsed.message
+        : raw || "Could not verify payment with gateway.";
+    throw new Error(msg);
+  }
+  const bodyStatus = String(parsed.status ?? "")
+    .trim()
+    .toUpperCase();
+  if (bodyStatus === "ERROR") {
+    const msg =
+      typeof parsed.message === "string"
+        ? parsed.message
+        : "Gateway returned an error for this invoice.";
+    throw new Error(msg);
+  }
+  return parsed;
 }
 
 export function getUddoktaPayDebugConfig() {
