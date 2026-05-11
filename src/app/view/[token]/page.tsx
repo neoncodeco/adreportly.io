@@ -80,6 +80,7 @@ type AdPerfRow = {
   id: string;
   name: string;
   status: string;
+  previewUrl: string | null;
   dailyBudget: number | null;
   endDate: string | null;
   spend: number;
@@ -99,6 +100,7 @@ type ApiPayload = {
   error?: string;
   datePreset?: string;
   campaign?: { id: string; name: string; objective: string; status: string };
+  campaignPreviewUrl?: string | null;
   insights?: InsightRow[];
   financial?: FinancialPayload | null;
   ads?: AdPerfRow[];
@@ -114,6 +116,7 @@ const DATE_PRESET_LABELS: Record<string, string> = {
   last_30d: "Last 30 days",
   last_90d: "Last 90 days",
   this_month: "This month",
+  lifetime: "Lifetime",
 };
 
 type BillingCardKey =
@@ -513,16 +516,24 @@ export default function SharedCampaignPage() {
             className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/[0.08] via-transparent to-violet-500/[0.07] dark:from-primary/[0.12] dark:to-violet-500/[0.1]"
             aria-hidden
           />
-          <div className="relative flex flex-col gap-4 p-4 sm:gap-5 sm:p-6 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-            <div className="flex min-w-0 gap-3 sm:gap-5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow ring-4 ring-primary/15 sm:h-16 sm:w-16 sm:rounded-2xl">
-                <Zap className="h-6 w-6 sm:h-8 sm:w-8" strokeWidth={2.25} />
+          <div className="relative flex flex-col items-center gap-4 p-4 text-center sm:items-start sm:gap-5 sm:p-6 sm:text-left lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+            <div className="flex min-w-0 flex-col items-center gap-3 sm:flex-row sm:items-start sm:gap-5">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-primary text-primary-foreground shadow-glow ring-4 ring-primary/15 sm:h-16 sm:w-16">
+                {payload?.campaignPreviewUrl ? (
+                  // Use <img> (not next/image) since preview is a remote FB CDN URL.
+                  <img
+                    src={payload.campaignPreviewUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <Zap className="h-6 w-6 sm:h-8 sm:w-8" strokeWidth={2.25} />
+                )}
               </div>
               <div className="min-w-0 flex-1 space-y-2.5 sm:space-y-3">
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                  <span className="rounded-full bg-background/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground shadow-sm backdrop-blur-sm">
-                    Client report
-                  </span>
+                <div className="flex flex-wrap items-center justify-center gap-1.5 sm:justify-start sm:gap-2">
                   {clientDisplayPrimary ? (
                     <span
                       className="inline-flex max-w-full items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary shadow-sm"
@@ -540,7 +551,7 @@ export default function SharedCampaignPage() {
                 </h1>
                 <div className="flex flex-col gap-2.5 text-sm">
                   {payload?.campaign?.objective ? (
-                    <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
+                    <div className="flex flex-wrap items-center justify-center gap-2 text-muted-foreground sm:justify-start">
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground/80">
                         <Crosshair className="h-3.5 w-3.5" aria-hidden />
                         Objective
@@ -551,7 +562,7 @@ export default function SharedCampaignPage() {
                     </div>
                   ) : null}
                   {clientNameTrimmed && clientEmailRaw ? (
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground sm:justify-start">
                       <Mail className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
                       <span className="break-all">{clientEmailRaw}</span>
                     </div>
@@ -559,7 +570,7 @@ export default function SharedCampaignPage() {
                 </div>
               </div>
             </div>
-            <div className="flex w-full shrink-0 flex-row flex-wrap items-center gap-2 border-t border-border/50 pt-3 sm:w-auto sm:border-t-0 sm:pt-0 lg:flex-col lg:items-stretch lg:gap-2.5">
+            <div className="flex w-full shrink-0 flex-row flex-wrap items-center justify-center gap-2 border-t border-border/50 pt-3 sm:w-auto sm:justify-start sm:border-t-0 sm:pt-0 lg:flex-col lg:items-stretch lg:justify-start lg:gap-2.5">
               {payload?.campaign?.status ? (
                 <span
                   className={`inline-flex items-center justify-center rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide shadow-sm ring-1 ring-black/5 ${statusColor(payload.campaign.status)}`}
@@ -636,6 +647,7 @@ export default function SharedCampaignPage() {
                         "last_30d",
                         "last_90d",
                         "this_month",
+                        "lifetime",
                       ] as const
                     ).map((v) => (
                       <SelectItem key={v} value={v}>

@@ -37,6 +37,7 @@ import {
   DASHBOARD_CLIENTS_STALE_MS,
   dashboardQk,
   fetchDashboardClients,
+  type DashboardClientsPayload,
   type ClientRow,
 } from "@/lib/dashboard-queries";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,7 @@ export function ClientsPage() {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<ClientRow | null>(null);
+  const [deletedClientIds, setDeletedClientIds] = useState<Set<string>>(() => new Set());
 
   const { data, isPending, isError, error } = useQuery({
     queryKey: dashboardQk.clients(),
@@ -59,7 +61,7 @@ export function ClientsPage() {
     staleTime: DASHBOARD_CLIENTS_STALE_MS,
   });
 
-  const clients = data?.clients ?? [];
+  const clients = (data?.clients ?? []).filter((c) => !deletedClientIds.has(c.id));
   const clientCount = data?.clientCount ?? 0;
   const clientLimit = data?.clientLimit ?? null;
   const planName = data?.planName ?? "";
@@ -97,12 +99,31 @@ export function ClientsPage() {
         credentials: "include",
       });
       const j = (await res.json()) as { success?: boolean; error?: string };
-      if (!res.ok)
+      // If the server says "not found", it was likely already deleted but still visible due to cache.
+      if (!res.ok && res.status !== 404) {
         throw new Error(typeof j.error === "string" ? j.error : "Could not delete client");
-      return j;
+      }
+      return { ...(j ?? {}), success: true };
     },
-    onSuccess: () => {
+    onSuccess: (_, deletedId) => {
+      setDeletedClientIds((prev) => {
+        const next = new Set(prev);
+        next.add(deletedId);
+        return next;
+      });
+      // Update the UI immediately, even if the list endpoint is cached briefly.
+      queryClient.setQueryData(
+        dashboardQk.clients(),
+        (prev: DashboardClientsPayload | undefined) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            clients: (prev.clients ?? []).filter((c) => c.id !== deletedId),
+          };
+        },
+      );
       void queryClient.invalidateQueries({ queryKey: dashboardQk.clients() });
+      void queryClient.refetchQueries({ queryKey: dashboardQk.clients() });
       toast.success("Client removed");
       setDeleteTarget(null);
       setPage(1);
@@ -184,8 +205,9 @@ export function ClientsPage() {
           {clientLimit !== null ? (
             <p className="text-xs text-muted-foreground">
               <span className="font-semibold text-foreground">{clientCount}</span> /{" "}
-              <span className="font-semibold text-foreground">{clientLimit}</span> clients
+              <span className="font-semibold text-foreground">{clientLimit}</span> clients created
               {planName ? ` on ${planName}` : ""}
+              <span className="text-muted-foreground/80"> (deleting doesn’t free slots)</span>
               {atClientLimit ? (
                 <>
                   {" "}

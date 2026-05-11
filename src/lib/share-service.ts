@@ -6,6 +6,7 @@ export type ShareRecord = {
   shareToken: string;
   campaignId: string;
   agencyId: string;
+  clientId?: string | null;
   clientEmail: string;
   clientName: string;
   expiresAt: Date;
@@ -30,6 +31,7 @@ export async function persistShareLink(record: ShareRecord) {
     token: normalized.shareToken,
     campaignId: normalized.campaignId,
     agencyId: normalized.agencyId,
+    clientId: normalized.clientId ?? null,
     clientEmail: normalized.clientEmail,
     clientName: normalized.clientName || "",
     expiresAt: normalized.expiresAt,
@@ -46,6 +48,7 @@ export async function getShareByToken(token: string): Promise<ShareRecord | null
     token: string;
     campaignId: string;
     agencyId: string;
+    clientId?: string | null;
     clientEmail: string;
     clientName?: string;
     expiresAt: Date;
@@ -56,6 +59,7 @@ export async function getShareByToken(token: string): Promise<ShareRecord | null
     shareToken: doc.token,
     campaignId: doc.campaignId,
     agencyId: doc.agencyId,
+    clientId: doc.clientId ?? null,
     clientEmail: doc.clientEmail,
     clientName: typeof doc.clientName === "string" ? doc.clientName : "",
     expiresAt: doc.expiresAt,
@@ -112,6 +116,41 @@ export async function findLatestActiveShareUrl(
   return doc?.token ? buildShareUrl(doc.token) : null;
 }
 
+/** Latest non-expired share URL for this agency + roster clientId, or null. */
+export async function findLatestActiveShareUrlByClientId(
+  agencyId: string,
+  clientId: string,
+): Promise<string | null> {
+  const now = Date.now();
+  if (!process.env.MONGODB_URI) {
+    let best: ShareRecord | null = null;
+    for (const r of memoryShares.values()) {
+      if (r.agencyId !== agencyId || (r.clientId ?? null) !== clientId) continue;
+      const exp = r.expiresAt instanceof Date ? r.expiresAt : new Date(r.expiresAt);
+      if (exp.getTime() <= now) continue;
+      const created = r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt);
+      if (!best) {
+        best = r;
+        continue;
+      }
+      const bCreated = best.createdAt instanceof Date ? best.createdAt : new Date(best.createdAt);
+      if (created > bCreated) best = r;
+    }
+    return best ? buildShareUrl(best.shareToken) : null;
+  }
+  await connectDb();
+  const doc = (await SharedLinkModel.findOne({
+    agencyId,
+    clientId,
+    expiresAt: { $gt: new Date() },
+  })
+    .sort({ createdAt: -1 })
+    .select("token")
+    .lean()
+    .exec()) as { token?: string } | null;
+  return doc?.token ? buildShareUrl(doc.token) : null;
+}
+
 export async function deleteSharesForAgencyClientEmail(agencyId: string, clientEmail: string) {
   const want = normEmail(clientEmail);
   if (!process.env.MONGODB_URI) {
@@ -127,6 +166,17 @@ export async function deleteSharesForAgencyClientEmail(agencyId: string, clientE
       $eq: [{ $toLower: { $trim: { input: { $ifNull: ["$clientEmail", ""] } } } }, want],
     },
   }).exec();
+}
+
+export async function deleteSharesForAgencyClientId(agencyId: string, clientId: string) {
+  if (!process.env.MONGODB_URI) {
+    for (const [k, v] of memoryShares) {
+      if (v.agencyId === agencyId && (v.clientId ?? null) === clientId) memoryShares.delete(k);
+    }
+    return;
+  }
+  await connectDb();
+  await SharedLinkModel.deleteMany({ agencyId, clientId }).exec();
 }
 
 export type AgencyClientEmailRow = {

@@ -70,6 +70,7 @@ export type AdPerformanceNormalized = {
   id: string;
   name: string;
   status: string;
+  previewUrl: string | null;
   dailyBudget: number | null;
   endDate: string | null;
   spend: number;
@@ -111,6 +112,7 @@ export function normalizeAdPerformanceRows(ads: CampaignAdRow[]): AdPerformanceN
       id: ad.id,
       name: ad.name ?? ad.id,
       status: ad.effective_status ?? ad.status ?? "—",
+      previewUrl: ad.creative?.thumbnail_url ?? ad.creative?.image_url ?? null,
       dailyBudget,
       endDate,
       spend,

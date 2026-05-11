@@ -53,16 +53,25 @@ export async function fetchAdAccounts(accessToken: string) {
 export async function fetchCampaignInsights(
   accessToken: string,
   campaignId: string,
-  options?: { datePreset?: string; timeIncrement?: string },
+  options?: {
+    datePreset?: string;
+    timeIncrement?: string;
+    timeRange?: { since: string; until: string };
+  },
 ) {
-  const datePreset = options?.datePreset ?? "last_30d";
   const url = new URL(`${GRAPH_BASE}/${campaignId}/insights`);
   url.searchParams.set("access_token", accessToken);
   url.searchParams.set(
     "fields",
     "spend,reach,impressions,clicks,actions,action_values,cost_per_action_type,date_start,date_stop,cpc,cpm,ctr,frequency,inline_link_clicks,purchase_roas",
   );
-  url.searchParams.set("date_preset", datePreset);
+  if (options?.timeRange) {
+    url.searchParams.set("time_range", JSON.stringify(options.timeRange));
+  } else {
+    const datePreset = options?.datePreset ?? "last_30d";
+    // Meta removed date_preset=lifetime; "maximum" is the closest supported preset.
+    url.searchParams.set("date_preset", datePreset === "lifetime" ? "maximum" : datePreset);
+  }
   if (options?.timeIncrement) {
     url.searchParams.set("time_increment", options.timeIncrement);
   }
@@ -74,7 +83,10 @@ export async function fetchCampaignInsights(
 export async function fetchCampaignById(accessToken: string, campaignId: string) {
   const url = new URL(`${GRAPH_BASE}/${campaignId}`);
   url.searchParams.set("access_token", accessToken);
-  url.searchParams.set("fields", "id,name,objective,status,effective_status,account_id");
+  url.searchParams.set(
+    "fields",
+    "id,name,objective,status,effective_status,account_id,start_time,created_time",
+  );
   const res = await fetch(url.toString(), { cache: "no-store" });
   if (!res.ok) throw new Error(await res.text());
   return res.json() as Promise<{
@@ -84,6 +96,8 @@ export async function fetchCampaignById(accessToken: string, campaignId: string)
     status?: string;
     effective_status?: string;
     account_id?: string;
+    start_time?: string;
+    created_time?: string;
   }>;
 }
 
@@ -126,6 +140,10 @@ export type CampaignAdRow = {
   name?: string;
   status?: string;
   effective_status?: string;
+  creative?: {
+    thumbnail_url?: string;
+    image_url?: string;
+  };
   adset?: {
     id?: string;
     daily_budget?: string;
@@ -151,16 +169,20 @@ export async function fetchAdsForCampaign(
     "filtering",
     JSON.stringify([{ field: "campaign.id", operator: "EQUAL", value: campaignId }]),
   );
-  const preset = /^last_7d$|^last_14d$|^last_28d$|^last_30d$|^last_90d$|^this_month$/i.test(
-    datePreset,
-  )
-    ? datePreset
-    : "last_30d";
+  const preset =
+    /^last_7d$|^last_14d$|^last_28d$|^last_30d$|^last_90d$|^this_month$|^lifetime$/i.test(
+      datePreset,
+    )
+      ? datePreset === "lifetime"
+        ? "maximum"
+        : datePreset
+      : "last_30d";
   const fields = [
     "id",
     "name",
     "status",
     "effective_status",
+    "creative{thumbnail_url,image_url}",
     "adset{id,daily_budget,lifetime_budget,end_time,effective_status}",
     `insights.date_preset(${preset}){spend,impressions,reach,clicks,ctr,cpc,frequency,actions,action_values,cost_per_action_type,inline_link_clicks,purchase_roas}`,
   ].join(",");

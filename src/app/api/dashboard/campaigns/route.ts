@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { metaAccessContext } from "@/lib/agency-from-request";
+import { getDecryptedTokenForAgency } from "@/lib/agency-service";
 import { USER_CACHE_HEADERS } from "@/lib/server-cache";
 import { getCachedDashboardOverviewPayload } from "@/lib/dashboard-overview-cache";
+import { fetchAdsForCampaign, fetchCampaignById } from "@/services/facebook";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -20,6 +22,7 @@ type CampaignRow = {
   roas?: number;
   ctr?: number;
   cpc?: number;
+  previewUrl?: string | null;
 };
 
 function asCampaignList(payload: Record<string, unknown>): unknown[] {
@@ -28,6 +31,46 @@ function asCampaignList(payload: Record<string, unknown>): unknown[] {
   if (Array.isArray(campaigns) && campaigns.length > 0) return campaigns;
   if (Array.isArray(recent)) return recent;
   return [];
+}
+
+const CAMPAIGN_PREVIEW_TTL_MS = 10 * 60 * 1000;
+const campaignPreviewCache = new Map<string, { url: string | null; expiresAt: number }>();
+
+async function getCampaignPreviewUrl(
+  accessToken: string,
+  campaignId: string,
+): Promise<string | null> {
+  const cached = campaignPreviewCache.get(campaignId);
+  if (cached && cached.expiresAt > Date.now()) return cached.url;
+
+  try {
+    const campaign = await fetchCampaignById(accessToken, campaignId);
+    const accountId = campaign.account_id;
+    if (!accountId) {
+      campaignPreviewCache.set(campaignId, {
+        url: null,
+        expiresAt: Date.now() + CAMPAIGN_PREVIEW_TTL_MS,
+      });
+      return null;
+    }
+    const ads = await fetchAdsForCampaign(accessToken, accountId, campaignId, "last_30d");
+    const url =
+      ads.find((a) => a.creative?.thumbnail_url || a.creative?.image_url)?.creative
+        ?.thumbnail_url ??
+      ads.find((a) => a.creative?.thumbnail_url || a.creative?.image_url)?.creative?.image_url ??
+      null;
+    campaignPreviewCache.set(campaignId, {
+      url,
+      expiresAt: Date.now() + CAMPAIGN_PREVIEW_TTL_MS,
+    });
+    return url;
+  } catch {
+    campaignPreviewCache.set(campaignId, {
+      url: null,
+      expiresAt: Date.now() + CAMPAIGN_PREVIEW_TTL_MS,
+    });
+    return null;
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -120,7 +163,21 @@ export async function GET(req: NextRequest) {
     const totalPages = total === 0 ? 1 : Math.ceil(total / limit);
     const safePage = Math.min(Math.max(1, page), totalPages);
     const start = (safePage - 1) * limit;
-    const campaigns = sorted.slice(start, start + limit);
+    const campaigns = sorted.slice(start, start + limit) as CampaignRow[];
+
+    const access = await getDecryptedTokenForAgency(agencyId);
+    if (access && campaigns.length > 0) {
+      const previews = await Promise.all(
+        campaigns.map(async (c) => {
+          const id = typeof c.id === "string" ? c.id : "";
+          if (!id) return null;
+          return await getCampaignPreviewUrl(access, id);
+        }),
+      );
+      for (let i = 0; i < campaigns.length; i++) {
+        campaigns[i] = { ...campaigns[i], previewUrl: previews[i] ?? null };
+      }
+    }
 
     return NextResponse.json(
       {

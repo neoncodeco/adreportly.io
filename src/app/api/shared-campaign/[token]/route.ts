@@ -23,6 +23,7 @@ const ALLOWED_DATE_PRESETS = new Set([
   "last_30d",
   "last_90d",
   "this_month",
+  "lifetime",
 ]);
 
 function insightNum(row: unknown, key: string): number {
@@ -95,18 +96,25 @@ export async function GET(request: Request, ctx: { params: Promise<{ token: stri
 
   try {
     const campaign = await fetchCampaignById(access, share.campaignId);
+    const isLifetime = datePreset === "lifetime";
+    const since =
+      (campaign.start_time ?? campaign.created_time ?? "").slice(0, 10) ||
+      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const until = new Date().toISOString().slice(0, 10);
     let insights = await fetchCampaignInsights(access, share.campaignId, {
-      datePreset,
+      ...(isLifetime ? { timeRange: { since, until } } : { datePreset }),
       timeIncrement: "1",
     });
     if (!insights.data?.length) {
       insights = await fetchCampaignInsights(access, share.campaignId, {
-        datePreset,
+        ...(isLifetime ? { timeRange: { since, until } } : { datePreset }),
       });
     }
     const insightRows = insights.data ?? [];
 
-    const rollupRes = await fetchCampaignInsights(access, share.campaignId, { datePreset });
+    const rollupRes = await fetchCampaignInsights(access, share.campaignId, {
+      ...(isLifetime ? { timeRange: { since, until } } : { datePreset }),
+    });
     const rollupRow = rollupRes.data?.[0] ?? null;
     const finTotals = financialTotalsFromRollup(rollupRow, insightRows);
 
@@ -136,14 +144,22 @@ export async function GET(request: Request, ctx: { params: Promise<{ token: stri
     };
 
     let adsPayload: ReturnType<typeof normalizeAdPerformanceRows> = [];
+    let campaignPreviewUrl: string | null = null;
     if (accountId) {
       const rawAds = await fetchAdsForCampaign(access, accountId, share.campaignId, datePreset);
+      campaignPreviewUrl =
+        rawAds.find((a) => a.creative?.thumbnail_url || a.creative?.image_url)?.creative
+          ?.thumbnail_url ??
+        rawAds.find((a) => a.creative?.thumbnail_url || a.creative?.image_url)?.creative
+          ?.image_url ??
+        null;
       adsPayload = normalizeAdPerformanceRows(rawAds);
     }
 
     return NextResponse.json({
       success: true,
       datePreset,
+      campaignPreviewUrl,
       campaign: {
         id: campaign.id,
         name: campaign.name ?? share.campaignId,

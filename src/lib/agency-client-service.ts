@@ -4,7 +4,9 @@ import { connectDb } from "@/lib/db";
 import { AgencyClientModel } from "@/models/agency-client";
 import {
   deleteSharesForAgencyClientEmail,
+  deleteSharesForAgencyClientId,
   findLatestActiveShareUrl,
+  findLatestActiveShareUrlByClientId,
   listClientEmailsForAgency,
 } from "@/lib/share-service";
 
@@ -14,6 +16,7 @@ export type AgencyClientDoc = {
   name: string;
   email: string;
   createdAt: Date;
+  deletedAt?: Date | null;
 };
 
 type MemAgencyClient = AgencyClientDoc;
@@ -29,6 +32,17 @@ export async function countAgencyClients(agencyId: string): Promise<number> {
     return memoryAgencyClients.filter((c) => c.agencyId === agencyId).length;
   }
   await connectDb();
+  return AgencyClientModel.countDocuments({ agencyId, deletedAt: null });
+}
+
+/** Lifetime count — does not decrease when a client is deleted. */
+export async function countAgencyClientsLifetime(agencyId: string): Promise<number> {
+  if (!process.env.MONGODB_URI) {
+    // In-memory storage deletes rows, so we cannot keep lifetime history here.
+    // Best effort: treat active count as lifetime in dev mode.
+    return memoryAgencyClients.filter((c) => c.agencyId === agencyId).length;
+  }
+  await connectDb();
   return AgencyClientModel.countDocuments({ agencyId });
 }
 
@@ -38,7 +52,7 @@ export async function agencyClientExists(agencyId: string, email: string): Promi
     return memoryAgencyClients.some((c) => c.agencyId === agencyId && c.email === e);
   }
   await connectDb();
-  const n = await AgencyClientModel.countDocuments({ agencyId, email: e });
+  const n = await AgencyClientModel.countDocuments({ agencyId, email: e, deletedAt: null });
   return n > 0;
 }
 
@@ -50,8 +64,8 @@ export async function backfillAgencyClientsFromSharesIfEmpty(
   agencyId: string,
   maxClients: number | null,
 ) {
-  const existing = await countAgencyClients(agencyId);
-  if (existing > 0) return;
+  const historicalExisting = await countAgencyClientsLifetime(agencyId);
+  if (historicalExisting > 0) return;
 
   const rows = await listClientEmailsForAgency(agencyId);
   const slice = maxClients === null ? rows : rows.slice(0, maxClients);
@@ -112,7 +126,7 @@ export async function listAgencyClients(agencyId: string): Promise<AgencyClientD
       .sort((a, b) => a.email.localeCompare(b.email));
   }
   await connectDb();
-  const rows = (await AgencyClientModel.find({ agencyId })
+  const rows = (await AgencyClientModel.find({ agencyId, deletedAt: null })
     .sort({ email: 1 })
     .lean()
     .exec()) as unknown as Array<{
@@ -121,6 +135,7 @@ export async function listAgencyClients(agencyId: string): Promise<AgencyClientD
     name: string;
     email: string;
     createdAt: Date;
+    deletedAt?: Date | null;
   }>;
   return rows.map((r) => ({
     id: String(r._id),
@@ -128,7 +143,46 @@ export async function listAgencyClients(agencyId: string): Promise<AgencyClientD
     name: r.name,
     email: r.email,
     createdAt: r.createdAt,
+    deletedAt: r.deletedAt ?? null,
   }));
+}
+
+let mongoIndexesSynced: Promise<void> | null = null;
+async function ensureAgencyClientIndexes(force = false) {
+  if (!process.env.MONGODB_URI) return;
+  if (!mongoIndexesSynced || force) {
+    mongoIndexesSynced = (async () => {
+      await connectDb();
+      try {
+        // Align DB indexes with schema (drops old unique index on {agencyId,email}).
+        await AgencyClientModel.syncIndexes();
+        // Some deployments keep the old unique index even after syncIndexes.
+        // Drop it explicitly if present.
+        try {
+          const idx = (await AgencyClientModel.collection.indexes()) as Array<{
+            name: string;
+            key: Record<string, number>;
+            unique?: boolean;
+          }>;
+          const legacy = idx.find(
+            (i) =>
+              i.unique === true &&
+              i.key?.agencyId === 1 &&
+              i.key?.email === 1 &&
+              Object.keys(i.key ?? {}).length === 2,
+          );
+          if (legacy?.name) {
+            await AgencyClientModel.collection.dropIndex(legacy.name);
+          }
+        } catch {
+          /* ignore */
+        }
+      } catch {
+        // Ignore in case the DB user lacks permissions; app will still function in memory/dev.
+      }
+    })();
+  }
+  await mongoIndexesSynced;
 }
 
 export async function createAgencyClient(
@@ -140,10 +194,6 @@ export async function createAgencyClient(
   if (!name) return { ok: false, error: "Name is required." };
   if (!email || !email.includes("@")) return { ok: false, error: "Valid email is required." };
 
-  if (await agencyClientExists(agencyId, email)) {
-    return { ok: false, error: "A client with this email already exists.", code: "duplicate" };
-  }
-
   if (!process.env.MONGODB_URI) {
     const doc: AgencyClientDoc = {
       id: randomUUID(),
@@ -151,35 +201,57 @@ export async function createAgencyClient(
       name,
       email,
       createdAt: new Date(),
+      deletedAt: null,
     };
     memoryAgencyClients.push(doc);
     return { ok: true, client: doc };
   }
 
   await connectDb();
-  try {
+  await ensureAgencyClientIndexes();
+  const attemptCreate = async () => {
     const created = await AgencyClientModel.create({
       agencyId,
       name,
       email,
+      deletedAt: null,
     });
     const lean = created.toObject();
     return {
-      ok: true,
+      ok: true as const,
       client: {
         id: String(lean._id),
         agencyId,
         name: lean.name,
         email: lean.email,
         createdAt: lean.createdAt,
+        deletedAt: lean.deletedAt ?? null,
       },
     };
+  };
+
+  try {
+    return await attemptCreate();
   } catch (e: unknown) {
     const code = (e as { code?: number })?.code;
-    if (code === 11000) {
-      return { ok: false, error: "A client with this email already exists.", code: "duplicate" };
+    if (code !== 11000) throw e;
+
+    // Legacy unique index on (agencyId,email) may still exist; drop + retry once.
+    await ensureAgencyClientIndexes(true);
+    try {
+      return await attemptCreate();
+    } catch (e2: unknown) {
+      const code2 = (e2 as { code?: number })?.code;
+      if (code2 === 11000) {
+        return {
+          ok: false,
+          code: "duplicate",
+          error:
+            "Could not create duplicate-email client because the database still enforces a legacy unique index. Please ensure the DB user has permission to drop indexes, then retry.",
+        };
+      }
+      throw e2;
     }
-    throw e;
   }
 }
 
@@ -196,14 +268,36 @@ export async function deleteAgencyClient(agencyId: string, clientId: string): Pr
     return true;
   }
   await connectDb();
-  const docRaw = await AgencyClientModel.findOneAndDelete({
-    _id: clientId,
+  // Use the underlying collection update to avoid dev-server model caching issues
+  // (an older compiled Mongoose model might strip unknown fields like deletedAt).
+  const now = new Date();
+  const raw = await AgencyClientModel.collection.findOneAndUpdate(
+    {
+      _id: new mongoose.Types.ObjectId(clientId),
+      agencyId,
+      $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+    },
+    { $set: { deletedAt: now } },
+    { returnDocument: "before", projection: { email: 1 } },
+  );
+  const doc = (raw && typeof raw === "object" && "value" in raw ? raw.value : raw) ?? null;
+  if (!doc) return false;
+  const email =
+    typeof (doc as { email?: unknown }).email === "string"
+      ? ((doc as { email?: unknown }).email as string)
+      : "";
+  // Prefer clientId-based cleanup.
+  await deleteSharesForAgencyClientId(agencyId, clientId);
+  // Only delete legacy email-based shares if no other active client uses this email.
+  const otherActiveWithEmail = await AgencyClientModel.countDocuments({
     agencyId,
-  }).lean();
-  const doc = Array.isArray(docRaw) ? docRaw[0] : docRaw;
-  if (!doc || typeof doc !== "object" || !("email" in doc)) return false;
-  const email = typeof doc.email === "string" ? doc.email : "";
-  await deleteSharesForAgencyClientEmail(agencyId, email);
+    deletedAt: null,
+    email,
+    _id: { $ne: clientId },
+  });
+  if (otherActiveWithEmail === 0 && email) {
+    await deleteSharesForAgencyClientEmail(agencyId, email);
+  }
   return true;
 }
 
@@ -215,9 +309,18 @@ export async function listAgencyClientsWithShareUrls(agencyId: string): Promise<
   >
 > {
   const clients = await listAgencyClients(agencyId);
+  const emailCounts = new Map<string, number>();
+  for (const c of clients) {
+    emailCounts.set(c.email, (emailCounts.get(c.email) ?? 0) + 1);
+  }
   const out: Array<AgencyClientDoc & { latestShareUrl: string | null }> = [];
   for (const c of clients) {
-    const latestShareUrl = await findLatestActiveShareUrl(agencyId, c.email);
+    // Only fall back to email-based links when the email is unique in the roster.
+    // Otherwise, we might show another client's link.
+    const byClientId = await findLatestActiveShareUrlByClientId(agencyId, c.id);
+    const allowEmailFallback = (emailCounts.get(c.email) ?? 0) <= 1;
+    const latestShareUrl =
+      byClientId ?? (allowEmailFallback ? await findLatestActiveShareUrl(agencyId, c.email) : null);
     out.push({ ...c, latestShareUrl });
   }
   return out;

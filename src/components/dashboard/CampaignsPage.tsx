@@ -318,8 +318,18 @@ export function CampaignsPage() {
         {rows.map((c) => (
           <div key={c.id} className="rounded-2xl border border-border bg-card p-4 shadow-soft">
             <div className="flex items-start gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-primary text-sm font-bold text-primary-foreground shadow-glow">
-                {c.code}
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-primary text-sm font-bold text-primary-foreground shadow-glow">
+                {c.previewUrl ? (
+                  <img
+                    src={c.previewUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  c.code
+                )}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
@@ -411,8 +421,18 @@ export function CampaignsPage() {
                 <tr key={c.id} className="border-t border-border/60">
                   <td className="py-4 pr-4">
                     <div className="flex items-center gap-3">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary">
-                        {c.code}
+                      <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-primary/10 text-xs font-semibold text-primary">
+                        {c.previewUrl ? (
+                          <img
+                            src={c.previewUrl}
+                            alt=""
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          c.code
+                        )}
                       </span>
                       <div>
                         <div className="font-medium">{c.name}</div>

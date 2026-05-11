@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { getAgencyIdForAppUser } from "@/lib/agency-service";
-import { agencyClientExists } from "@/lib/agency-client-service";
+import { createAgencyClient } from "@/lib/agency-client-service";
 import { verifyAgencyJwt, COOKIE_NAME } from "@/lib/jwt";
 import { buildShareUrl, newShareToken, persistShareLink } from "@/lib/share-service";
 
@@ -42,15 +42,12 @@ export async function createShareLinkAction(input: {
     return { ok: false, error: "Connect Meta (Facebook) first to link this account." };
   }
 
-  const emailNorm = input.clientEmail.trim().toLowerCase();
-  const roster = await agencyClientExists(agencyId, emailNorm);
-  if (!roster) {
-    return {
-      ok: false,
-      error:
-        "Add this client under Dashboard → Clients (name and email) before creating a share link.",
-    };
-  }
+  // Create a roster row for this share link (allows same email for multiple clients/campaigns).
+  const createdClient = await createAgencyClient(agencyId, {
+    name: (input.clientName ?? "").trim() || input.clientEmail.trim(),
+    email: input.clientEmail.trim(),
+  });
+  if (!createdClient.ok) return { ok: false, error: createdClient.error };
 
   const shareToken = newShareToken();
   const now = new Date();
@@ -60,6 +57,7 @@ export async function createShareLinkAction(input: {
     shareToken,
     campaignId: input.campaignId,
     agencyId,
+    clientId: createdClient.client.id,
     clientEmail: input.clientEmail.trim(),
     clientName: (input.clientName ?? "").trim(),
     expiresAt,

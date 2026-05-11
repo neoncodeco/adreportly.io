@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import {
   backfillAgencyClientsFromSharesIfEmpty,
-  countAgencyClients,
+  countAgencyClientsLifetime,
   createAgencyClient,
   listAgencyClientsWithShareUrls,
 } from "@/lib/agency-client-service";
@@ -41,10 +41,11 @@ export async function GET(request: NextRequest) {
     const payload = await getOrSetCache(`user:clients:${agencyId}`, 15_000, async () => {
       await backfillAgencyClientsFromSharesIfEmpty(agencyId, plan.limits.clients);
       const rows = await listAgencyClientsWithShareUrls(agencyId);
-      const count = await countAgencyClients(agencyId);
+      const count = await countAgencyClientsLifetime(agencyId);
       const clients = rows.map((r) => ({
         id: r.id,
-        displayId: stableClientDisplayId(r.email),
+        // Must be stable and unique per roster row (email may be duplicated).
+        displayId: stableClientDisplayId(r.id),
         initials: initialsFromName(r.name),
         name: r.name,
         organization: "Shared reports",
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
   const plan = await resolvePlanForUsage({ userId: session?.user?.id ?? null, agencyId });
   const maxClients = plan.limits.clients;
   if (maxClients !== null) {
-    const n = await countAgencyClients(agencyId);
+    const n = await countAgencyClientsLifetime(agencyId);
     if (n >= maxClients) {
       return NextResponse.json(
         {
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
     success: true,
     client: {
       id: r.id,
-      displayId: stableClientDisplayId(r.email),
+      displayId: stableClientDisplayId(r.id),
       initials: initialsFromName(r.name),
       name: r.name,
       organization: "Shared reports",

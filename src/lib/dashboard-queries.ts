@@ -72,6 +72,7 @@ export type DashboardOverview = {
     id: string;
     code: string;
     name: string;
+    previewUrl?: string | null;
     accounts: number;
     spend: number;
     results: number;
@@ -84,6 +85,7 @@ export type DashboardOverview = {
     id: string;
     code: string;
     name: string;
+    previewUrl?: string | null;
     accounts: number;
     spend: number;
     results: number;
