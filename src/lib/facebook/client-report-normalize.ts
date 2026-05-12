@@ -66,6 +66,17 @@ export function costPerResultFromInsight(row: CampaignAdInsightRow | undefined):
   return null;
 }
 
+export function creativePreviewUrlFromAd(ad: CampaignAdRow): string | null {
+  const spec = ad.creative?.object_story_spec;
+  return (
+    ad.creative?.image_url ??
+    spec?.link_data?.child_attachments?.find((item) => item.picture)?.picture ??
+    spec?.link_data?.picture ??
+    ad.creative?.thumbnail_url ??
+    null
+  );
+}
+
 export type AdPerformanceNormalized = {
   id: string;
   name: string;
@@ -112,7 +123,7 @@ export function normalizeAdPerformanceRows(ads: CampaignAdRow[]): AdPerformanceN
       id: ad.id,
       name: ad.name ?? ad.id,
       status: ad.effective_status ?? ad.status ?? "—",
-      previewUrl: ad.creative?.thumbnail_url ?? ad.creative?.image_url ?? null,
+      previewUrl: creativePreviewUrlFromAd(ad),
       dailyBudget,
       endDate,
       spend,

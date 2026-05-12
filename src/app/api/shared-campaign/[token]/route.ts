@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  creativePreviewUrlFromAd,
   countResultsFromInsight,
   costPerResultFromInsight,
   minorToMajor,
@@ -13,6 +14,7 @@ import {
   fetchAdsForCampaign,
   fetchCampaignById,
   fetchCampaignInsights,
+  fetchPageProfilePicture,
   type CampaignAdInsightRow,
 } from "@/services/facebook";
 
@@ -66,8 +68,8 @@ function financialTotalsFromRollup(rollupRow: unknown | null, dailyFallback: unk
 export async function GET(request: Request, ctx: { params: Promise<{ token: string }> }) {
   const { token } = await ctx.params;
   const { searchParams } = new URL(request.url);
-  const datePresetRaw = searchParams.get("datePreset") ?? "last_30d";
-  const datePreset = ALLOWED_DATE_PRESETS.has(datePresetRaw) ? datePresetRaw : "last_30d";
+  const datePresetRaw = searchParams.get("datePreset") ?? "lifetime";
+  const datePreset = ALLOWED_DATE_PRESETS.has(datePresetRaw) ? datePresetRaw : "lifetime";
 
   const share = await getShareByToken(token);
   if (!share || share.expiresAt.getTime() < Date.now()) {
@@ -85,6 +87,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ token: stri
         objective: "",
         status: "",
       },
+      pageLogoUrl: null,
       insights: [] as unknown[],
       financial: null,
       ads: [],
@@ -145,14 +148,16 @@ export async function GET(request: Request, ctx: { params: Promise<{ token: stri
 
     let adsPayload: ReturnType<typeof normalizeAdPerformanceRows> = [];
     let campaignPreviewUrl: string | null = null;
+    let pageLogoUrl: string | null = null;
     if (accountId) {
       const rawAds = await fetchAdsForCampaign(access, accountId, share.campaignId, datePreset);
-      campaignPreviewUrl =
-        rawAds.find((a) => a.creative?.thumbnail_url || a.creative?.image_url)?.creative
-          ?.thumbnail_url ??
-        rawAds.find((a) => a.creative?.thumbnail_url || a.creative?.image_url)?.creative
-          ?.image_url ??
-        null;
+      campaignPreviewUrl = rawAds.map(creativePreviewUrlFromAd).find(Boolean) ?? null;
+      const pageId =
+        rawAds.find((a) => a.creative?.object_story_spec?.page_id)?.creative?.object_story_spec
+          ?.page_id ?? null;
+      if (pageId) {
+        pageLogoUrl = await fetchPageProfilePicture(access, pageId);
+      }
       adsPayload = normalizeAdPerformanceRows(rawAds);
     }
 
@@ -160,6 +165,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ token: stri
       success: true,
       datePreset,
       campaignPreviewUrl,
+      pageLogoUrl,
       campaign: {
         id: campaign.id,
         name: campaign.name ?? share.campaignId,

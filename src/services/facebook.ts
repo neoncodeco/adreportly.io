@@ -143,6 +143,16 @@ export type CampaignAdRow = {
   creative?: {
     thumbnail_url?: string;
     image_url?: string;
+    object_story_spec?: {
+      page_id?: string;
+      instagram_actor_id?: string;
+      link_data?: {
+        picture?: string;
+        child_attachments?: Array<{
+          picture?: string;
+        }>;
+      };
+    };
   };
   adset?: {
     id?: string;
@@ -182,7 +192,7 @@ export async function fetchAdsForCampaign(
     "name",
     "status",
     "effective_status",
-    "creative{thumbnail_url,image_url}",
+    "creative{thumbnail_url,image_url,object_story_spec{page_id,instagram_actor_id,link_data{picture,child_attachments{picture}}}}",
     "adset{id,daily_budget,lifetime_budget,end_time,effective_status}",
     `insights.date_preset(${preset}){spend,impressions,reach,clicks,ctr,cpc,frequency,actions,action_values,cost_per_action_type,inline_link_clicks,purchase_roas}`,
   ].join(",");
@@ -192,6 +202,16 @@ export async function fetchAdsForCampaign(
   } catch {
     return [];
   }
+}
+
+export async function fetchPageProfilePicture(accessToken: string, pageId: string) {
+  const url = new URL(`${GRAPH_BASE}/${pageId}`);
+  url.searchParams.set("access_token", accessToken);
+  url.searchParams.set("fields", "picture{url}");
+  const res = await fetch(url.toString(), { cache: "no-store" });
+  if (!res.ok) return null;
+  const body = (await res.json()) as { picture?: { data?: { url?: string } } };
+  return body.picture?.data?.url ?? null;
 }
 
 export async function fetchCampaignsForAdAccount(accessToken: string, accountId: string) {

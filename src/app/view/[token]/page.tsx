@@ -16,7 +16,6 @@ import {
   YAxis,
 } from "recharts";
 import {
-  Zap,
   TrendingUp,
   Eye,
   MousePointerClick,
@@ -33,7 +32,6 @@ import {
   LayoutGrid,
   User,
   Mail,
-  Crosshair,
   RefreshCw,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -101,6 +99,7 @@ type ApiPayload = {
   datePreset?: string;
   campaign?: { id: string; name: string; objective: string; status: string };
   campaignPreviewUrl?: string | null;
+  pageLogoUrl?: string | null;
   insights?: InsightRow[];
   financial?: FinancialPayload | null;
   ads?: AdPerfRow[];
@@ -138,40 +137,40 @@ type CardVisibility = {
 
 const DEFAULT_CARD_VISIBILITY: CardVisibility = {
   billing: {
-    deposit: true,
+    deposit: false,
     spend: true,
-    balance: true,
-    noBalance: true,
+    balance: false,
+    noBalance: false,
     impressions: true,
     reach: true,
     results: true,
-    costPerResult: true,
+    costPerResult: false,
   },
   engagement: {
     clicks: true,
     ctr: true,
-    cpc: true,
-    conversions: true,
-    frequency: true,
+    cpc: false,
+    conversions: false,
+    frequency: false,
   },
 };
 
 const BILLING_CARD_LABELS: Record<BillingCardKey, string> = {
-  deposit: "Deposit / cap",
+  deposit: "Account cap",
   spend: "Total spend",
-  balance: "Remaining balance",
-  noBalance: "No balance flag",
+  balance: "Wallet balance",
+  noBalance: "Wallet status",
   impressions: "Impressions",
   reach: "Reach",
   results: "Results",
-  costPerResult: "Cost / result",
+  costPerResult: "Avg cost / result",
 };
 
 const ENGAGEMENT_CARD_LABELS: Record<EngagementCardKey, string> = {
   clicks: "Clicks",
   ctr: "CTR",
   cpc: "Avg CPC",
-  conversions: "Conversions",
+  conversions: "Purchase conversions",
   frequency: "Frequency",
 };
 
@@ -355,7 +354,7 @@ async function fetchSharedCampaign(token: string, preset: string, signal?: Abort
 export default function SharedCampaignPage() {
   const routeParams = useParams();
   const tokenParam = typeof routeParams?.token === "string" ? routeParams.token : "";
-  const [datePreset, setDatePreset] = useState("last_30d");
+  const [datePreset, setDatePreset] = useState("lifetime");
   const [cardVisibility, setCardVisibility] = useState<CardVisibility>(DEFAULT_CARD_VISIBILITY);
   const [metricPickerOpen, setMetricPickerOpen] = useState(false);
   const cardPrefsHydrated = useRef(false);
@@ -413,9 +412,10 @@ export default function SharedCampaignPage() {
 
   const title = payload?.campaign?.name ?? "Shared campaign";
   const rangeLabel =
-    DATE_PRESET_LABELS[payload?.datePreset ?? datePreset] ?? DATE_PRESET_LABELS.last_30d;
+    DATE_PRESET_LABELS[payload?.datePreset ?? datePreset] ?? DATE_PRESET_LABELS.lifetime;
   const fin = payload?.financial;
   const finCurrency = fin?.currency ?? "USD";
+  const campaignPreviewUrl = payload?.campaignPreviewUrl ?? null;
   const clientNameTrimmed = payload?.clientName?.trim() ?? "";
   const clientEmailRaw = payload?.clientEmail?.trim() ?? "";
   const clientDisplayPrimary = clientNameTrimmed || (clientEmailRaw ? clientEmailRaw : "");
@@ -484,6 +484,15 @@ export default function SharedCampaignPage() {
     () => Object.values(cardVisibility.engagement).some(Boolean),
     [cardVisibility],
   );
+  const visibleCardCount = useMemo(
+    () =>
+      Object.values(cardVisibility.billing).filter(Boolean).length +
+      Object.values(cardVisibility.engagement).filter(Boolean).length,
+    [cardVisibility],
+  );
+  const totalCardCount =
+    Object.keys(DEFAULT_CARD_VISIBILITY.billing).length +
+    Object.keys(DEFAULT_CARD_VISIBILITY.engagement).length;
 
   const setBillingCard = (key: BillingCardKey, checked: boolean) => {
     setCardVisibility((prev) => ({
@@ -516,87 +525,88 @@ export default function SharedCampaignPage() {
             className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/[0.08] via-transparent to-violet-500/[0.07] dark:from-primary/[0.12] dark:to-violet-500/[0.1]"
             aria-hidden
           />
-          <div className="relative flex flex-col items-center gap-4 p-4 text-center sm:items-start sm:gap-5 sm:p-6 sm:text-left lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-            <div className="flex min-w-0 flex-col items-center gap-3 sm:flex-row sm:items-start sm:gap-5">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-primary text-primary-foreground shadow-glow ring-4 ring-primary/15 sm:h-16 sm:w-16">
-                {payload?.campaignPreviewUrl ? (
-                  // Use <img> (not next/image) since preview is a remote FB CDN URL.
-                  <img
-                    src={payload.campaignPreviewUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <Zap className="h-6 w-6 sm:h-8 sm:w-8" strokeWidth={2.25} />
-                )}
-              </div>
-              <div className="min-w-0 flex-1 space-y-2.5 sm:space-y-3">
-                <div className="flex flex-wrap items-center justify-center gap-1.5 sm:justify-start sm:gap-2">
-                  {clientDisplayPrimary ? (
-                    <span
-                      className="inline-flex max-w-full items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary shadow-sm"
-                      title={clientNameTrimmed || clientEmailRaw}
-                    >
-                      <User className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
-                      <span className="truncate">
-                        {clientNameTrimmed ? clientNameTrimmed : clientEmailRaw}
-                      </span>
-                    </span>
-                  ) : null}
-                </div>
-                <h1 className="text-balance break-words text-lg font-bold leading-snug tracking-tight text-foreground sm:text-xl sm:leading-tight md:text-2xl lg:text-[1.65rem] lg:leading-snug">
-                  {title}
-                </h1>
-                <div className="flex flex-col gap-2.5 text-sm">
-                  {payload?.campaign?.objective ? (
-                    <div className="flex flex-wrap items-center justify-center gap-2 text-muted-foreground sm:justify-start">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground/80">
-                        <Crosshair className="h-3.5 w-3.5" aria-hidden />
-                        Objective
-                      </span>
-                      <span className="rounded-lg bg-background/70 px-2.5 py-1 text-xs font-semibold text-foreground shadow-sm ring-1 ring-border/60">
-                        {formatCampaignObjective(payload.campaign.objective)}
-                      </span>
+          <div className="relative space-y-5 p-4 sm:p-6">
+            <div className="min-w-0 space-y-4">
+              <div className="grid items-stretch gap-4 sm:grid-cols-[172px_minmax(0,1fr)] sm:gap-5">
+                <div className="min-w-0">
+                  {campaignPreviewUrl ? (
+                    <div className="flex h-[176px] items-center justify-center overflow-hidden rounded-2xl border border-border/70 bg-white/80 shadow-[0_18px_45px_-28px_rgba(15,23,42,0.35)]">
+                      <img
+                        src={campaignPreviewUrl}
+                        alt="Ad preview"
+                        className="h-full w-full object-contain"
+                        loading="eager"
+                        referrerPolicy="no-referrer"
+                      />
                     </div>
-                  ) : null}
-                  {clientNameTrimmed && clientEmailRaw ? (
-                    <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground sm:justify-start">
-                      <Mail className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
-                      <span className="break-all">{clientEmailRaw}</span>
+                  ) : (
+                    <div className="flex h-[176px] items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/70 px-4 text-center text-xs text-muted-foreground">
+                      No ad creative preview available
                     </div>
-                  ) : null}
+                  )}
                 </div>
-              </div>
-            </div>
-            <div className="flex w-full shrink-0 flex-row flex-wrap items-center justify-center gap-2 border-t border-border/50 pt-3 sm:w-auto sm:justify-start sm:border-t-0 sm:pt-0 lg:flex-col lg:items-stretch lg:justify-start lg:gap-2.5">
-              {payload?.campaign?.status ? (
-                <span
-                  className={`inline-flex items-center justify-center rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide shadow-sm ring-1 ring-black/5 ${statusColor(payload.campaign.status)}`}
-                >
-                  {payload.campaign.status}
-                </span>
-              ) : null}
-              <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-background/80 px-4 py-2 text-xs font-semibold text-muted-foreground shadow-sm backdrop-blur-sm">
-                {loading ? null : isBackgroundRefresh ? (
-                  <RefreshCw
-                    className="h-3.5 w-3.5 shrink-0 animate-spin text-primary"
-                    aria-hidden
-                  />
-                ) : !payload?.demo ? (
-                  <span className="relative flex h-2 w-2" aria-hidden>
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                  </span>
-                ) : null}
-                {loading
-                  ? "Loading…"
-                  : payload?.demo
-                    ? "Demo preview"
-                    : isBackgroundRefresh
-                      ? "Updating…"
-                      : "Live metrics"}
+
+                <div className="min-w-0">
+                  <div className="flex h-full min-h-[176px] flex-col justify-between text-center sm:text-left">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                        {clientDisplayPrimary ? (
+                          <span
+                            className="inline-flex max-w-full items-center gap-2 rounded-full border border-primary/20 bg-white/90 px-3.5 py-2 text-sm font-semibold text-foreground shadow-sm backdrop-blur"
+                            title={clientNameTrimmed || clientEmailRaw}
+                          >
+                            <User className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                            <span className="truncate">
+                              {clientNameTrimmed ? clientNameTrimmed : clientEmailRaw}
+                            </span>
+                          </span>
+                        ) : null}
+                        {payload?.campaign?.status ? (
+                          <span
+                            className={`inline-flex items-center justify-center rounded-full px-3.5 py-2 text-xs font-bold uppercase tracking-wide shadow-sm ring-1 ring-black/5 ${statusColor(payload.campaign.status)}`}
+                          >
+                            {payload.campaign.status}
+                          </span>
+                        ) : null}
+                        <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-background/85 px-3.5 py-2 text-xs font-semibold text-muted-foreground shadow-sm backdrop-blur-sm">
+                          {loading ? null : isBackgroundRefresh ? (
+                            <RefreshCw
+                              className="h-3.5 w-3.5 shrink-0 animate-spin text-primary"
+                              aria-hidden
+                            />
+                          ) : !payload?.demo ? (
+                            <span className="relative flex h-2 w-2" aria-hidden>
+                              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
+                              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                            </span>
+                          ) : null}
+                          {loading
+                            ? "Loading…"
+                            : payload?.demo
+                              ? "Demo preview"
+                              : isBackgroundRefresh
+                                ? "Updating…"
+                                : "Live metrics"}
+                        </div>
+                      </div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground/70">
+                        Shared ad report
+                      </p>
+                      <h1 className="break-words text-2xl font-black leading-tight tracking-tight text-foreground sm:text-[2rem]">
+                        {title}
+                      </h1>
+                    </div>
+
+                    <div className="space-y-3">
+                      {clientNameTrimmed && clientEmailRaw ? (
+                        <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground sm:justify-start">
+                          <Mail className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+                          <span className="break-all">{clientEmailRaw}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -620,8 +630,8 @@ export default function SharedCampaignPage() {
               <div className="flex min-w-0 items-start gap-2 text-xs text-muted-foreground sm:items-center sm:text-sm">
                 <Filter className="mt-0.5 h-4 w-4 shrink-0 text-foreground/70 sm:mt-0" />
                 <span className="min-w-0 leading-relaxed">
-                  Charts, tables, and totals follow the date range ({rangeLabel}). Choose which
-                  summary cards appear below.
+                  Charts, tables, and totals follow the date range ({rangeLabel}). Showing{" "}
+                  {visibleCardCount} of {totalCardCount} metric cards right now.
                 </span>
               </div>
               <div className="flex w-full flex-col gap-1.5 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
@@ -679,8 +689,8 @@ export default function SharedCampaignPage() {
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-4 pt-1">
                 <p className="pt-1 text-xs text-muted-foreground">
-                  Turn metrics on or off for this report. Your choices are saved in this browser for
-                  this link.
+                  Start with the most important cards, then tick any extra metrics you want to see.
+                  Your choices are saved in this browser for this link.
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2 rounded-xl border border-border/80 bg-muted/20 p-3">
@@ -774,13 +784,13 @@ export default function SharedCampaignPage() {
                   <KpiCard
                     delay={0.02}
                     icon={<PiggyBank className="h-4 w-4 text-sky-600" />}
-                    label={`Total deposit / cap (${finCurrency})`}
+                    label={`Account cap (${finCurrency})`}
                     value={
                       fin.totalDeposit != null && fin.totalDeposit > 0
                         ? fmtMoneyCurrency(fin.totalDeposit, finCurrency)
                         : "—"
                     }
-                    sub="Account spend cap when set"
+                    sub="Maximum Meta can spend when a cap is set"
                     color="bg-sky-500"
                   />
                 ) : null}
@@ -798,13 +808,13 @@ export default function SharedCampaignPage() {
                   <KpiCard
                     delay={0.06}
                     icon={<Wallet className="h-4 w-4 text-emerald-600" />}
-                    label="Remaining balance"
+                    label="Wallet balance"
                     value={
                       fin.remainingBalance != null
                         ? fmtMoneyCurrency(fin.remainingBalance, finCurrency)
                         : "—"
                     }
-                    sub="Ad account wallet"
+                    sub="Prepaid balance left in the ad account"
                     color="bg-emerald-500"
                   />
                 ) : null}
@@ -812,9 +822,9 @@ export default function SharedCampaignPage() {
                   <KpiCard
                     delay={0.08}
                     icon={<Activity className="h-4 w-4 text-amber-600" />}
-                    label="No balance"
-                    value={fin.noBalance ? "Yes" : "No"}
-                    sub="Zero wallet balance"
+                    label="Wallet status"
+                    value={fin.noBalance ? "Empty" : "Available"}
+                    sub="Shows whether the prepaid ad balance is zero"
                     color="bg-amber-500"
                   />
                 ) : null}
@@ -852,13 +862,13 @@ export default function SharedCampaignPage() {
                   <KpiCard
                     delay={0.16}
                     icon={<TrendingUp className="h-4 w-4 text-indigo-600" />}
-                    label="Cost / result"
+                    label="Avg cost / result"
                     value={
                       fin.costPerResult != null
                         ? fmtMoneyCurrency(fin.costPerResult, finCurrency)
                         : "—"
                     }
-                    sub="Avg. for campaign"
+                    sub="Average spend for each result"
                     color="bg-indigo-500"
                   />
                 ) : null}
@@ -935,7 +945,7 @@ export default function SharedCampaignPage() {
                   <KpiCard
                     delay={0.2}
                     icon={<Target className="h-4 w-4 text-amber-600" />}
-                    label="Conversions"
+                    label="Purchase conversions"
                     value={fmtCount(kpis.totalConversions)}
                     sub="Purchase events"
                     color="bg-amber-500"
