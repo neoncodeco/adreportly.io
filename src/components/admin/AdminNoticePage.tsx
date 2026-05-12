@@ -1,50 +1,39 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { BellRing, Send } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { postAdmin } from "@/lib/admin-queries";
 
 export function AdminNoticePage() {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [targetRole, setTargetRole] = useState<"all" | "user" | "admin">("all");
   const [link, setLink] = useState("");
-  const [sending, setSending] = useState(false);
 
-  const sendNotification = async () => {
-    if (!title.trim() || !message.trim()) return;
-    setSending(true);
-    try {
-      const res = await fetch("/api/admin/notifications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          title: title.trim(),
-          message: message.trim(),
-          targetRole,
-          link: link.trim() || "",
-        }),
-      });
-      const json = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string };
-      if (!res.ok || json.success === false) {
-        toast.error(typeof json.error === "string" ? json.error : "Could not send notification.");
-        return;
-      }
+  const sendMutation = useMutation({
+    mutationFn: () =>
+      postAdmin<{ success: true; id: string }>("/api/admin/notifications", {
+        title: title.trim(),
+        message: message.trim(),
+        targetRole,
+        link: link.trim() || "",
+      }),
+    onSuccess: () => {
       toast.success("Notification sent.");
       setTitle("");
       setMessage("");
       setLink("");
-    } catch {
-      toast.error("Network error.");
-    } finally {
-      setSending(false);
-    }
-  };
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Could not send notification.");
+    },
+  });
 
   return (
     <motion.div
@@ -106,11 +95,12 @@ export function AdminNoticePage() {
           <div className="sm:col-span-2">
             <Button
               type="button"
-              disabled={sending || !title.trim() || !message.trim()}
-              onClick={() => void sendNotification()}
+              disabled={sendMutation.isPending || !title.trim() || !message.trim()}
+              onClick={() => sendMutation.mutate()}
               className="h-10 rounded-full bg-gradient-primary text-primary-foreground"
             >
-              <Send className="mr-2 h-4 w-4" /> {sending ? "Sending..." : "Send notification"}
+              <Send className="mr-2 h-4 w-4" />{" "}
+              {sendMutation.isPending ? "Sending..." : "Send notification"}
             </Button>
           </div>
         </div>

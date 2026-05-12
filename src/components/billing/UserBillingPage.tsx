@@ -14,6 +14,7 @@ import {
   Download,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   BILLING_PLANS,
@@ -23,11 +24,19 @@ import {
 } from "@/lib/billing/plans";
 import { cn } from "@/lib/utils";
 
+type BillingPlanId = "free" | "starter" | "pro" | "enterprise";
+
 type BillingSummary = {
   currentPlan: { id: string; name: string; priceLabel: string; interval: string | null };
   currentStatus: string;
   billingCycle: "monthly" | "yearly" | null;
   renewalAt: string | null;
+  scheduledChange: {
+    planId: string;
+    planName: string;
+    billingCycle: "monthly" | "yearly" | null;
+    effectiveAt: string;
+  } | null;
   payments: Array<{
     id: string;
     amount: number;
@@ -39,6 +48,48 @@ type BillingSummary = {
     providerPaymentId: string;
   }>;
 };
+
+const PLAN_RANK: Record<BillingPlanId, number> = {
+  free: 0,
+  starter: 1,
+  pro: 2,
+  enterprise: 3,
+};
+
+const CYCLE_RANK: Record<BillingCycle, number> = {
+  monthly: 0,
+  yearly: 1,
+};
+
+function normalizeCycle(value: string | null | undefined): BillingCycle | null {
+  return value === "monthly" || value === "yearly" ? value : null;
+}
+
+function getPlanCycleForUi(planId: string, cycle: BillingCycle): BillingCycle | null {
+  return planId === "free" ? null : cycle;
+}
+
+function getChangeKind(params: {
+  currentPlanId: string;
+  currentCycle: BillingCycle | null;
+  targetPlanId: string;
+  targetCycle: BillingCycle | null;
+}): "same" | "upgrade" | "downgrade" {
+  const currentPlanRank = PLAN_RANK[params.currentPlanId as BillingPlanId] ?? 0;
+  const targetPlanRank = PLAN_RANK[params.targetPlanId as BillingPlanId] ?? 0;
+
+  if (targetPlanRank > currentPlanRank) return "upgrade";
+  if (targetPlanRank < currentPlanRank) return "downgrade";
+
+  const currentCycle = normalizeCycle(params.currentCycle);
+  const targetCycle = normalizeCycle(params.targetCycle);
+  if (currentCycle === targetCycle) return "same";
+  if (!currentCycle && targetCycle) return "upgrade";
+  if (currentCycle && !targetCycle) return "downgrade";
+  if (!currentCycle || !targetCycle) return "same";
+
+  return CYCLE_RANK[targetCycle] > CYCLE_RANK[currentCycle] ? "upgrade" : "downgrade";
+}
 
 function statusBadge(status: string) {
   const s = status.toLowerCase();
@@ -68,6 +119,7 @@ export function UserBillingPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
+  const [planActionKey, setPlanActionKey] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -94,6 +146,43 @@ export function UserBillingPage() {
   }, [load]);
 
   const currentPlanId = data?.currentPlan?.id ?? "free";
+  const currentCycle = normalizeCycle(data?.billingCycle);
+
+  const schedulePlanChange = useCallback(
+    async (planId: string, targetCycle: BillingCycle | null) => {
+      const actionKey = `${planId}:${targetCycle ?? "none"}`;
+      setPlanActionKey(actionKey);
+      try {
+        const res = await fetch("/api/billing/change-plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            planId,
+            ...(targetCycle ? { billingCycle: targetCycle } : {}),
+          }),
+        });
+        const json = (await res.json().catch(() => ({}))) as { error?: string; action?: string };
+        if (!res.ok) {
+          toast.error(json.error || "Could not update your plan.");
+          return;
+        }
+        if (json.action === "cleared") {
+          toast.success("Scheduled downgrade removed. Your current plan will stay active.");
+        } else if (json.action === "scheduled" || json.action === "updated") {
+          toast.success("Plan change scheduled for your next billing cycle.");
+        } else {
+          toast.success("Billing updated.");
+        }
+        await load();
+      } catch {
+        toast.error("Network error.");
+      } finally {
+        setPlanActionKey(null);
+      }
+    },
+    [load],
+  );
 
   return (
     <motion.div
@@ -130,6 +219,25 @@ export function UserBillingPage() {
 
       {data ? (
         <>
+          {data.scheduledChange ? (
+            <div className="rounded-3xl border border-amber-500/30 bg-amber-500/8 p-5 text-sm text-amber-950 shadow-soft dark:text-amber-100">
+              <p className="font-semibold">Scheduled plan change</p>
+              <p className="mt-1 text-amber-900/80 dark:text-amber-100/80">
+                Your plan will switch to {data.scheduledChange.planName}
+                {data.scheduledChange.billingCycle
+                  ? ` (${data.scheduledChange.billingCycle} billing)`
+                  : ""}{" "}
+                on{" "}
+                {new Date(data.scheduledChange.effectiveAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
+                . Your current access stays active until then.
+              </p>
+            </div>
+          ) : null}
+
           {/* ── Current plan summary cards ── */}
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-3xl border border-border bg-card p-5 shadow-soft">
@@ -214,6 +322,18 @@ export function UserBillingPage() {
                 const isCurrent = plan.id === currentPlanId;
                 const isHighlight = plan.highlight;
                 const selectedPrice = getBillingCyclePrice(plan, billingCycle);
+                const targetCycle = getPlanCycleForUi(plan.id, billingCycle);
+                const isCurrentSelection = isCurrent && currentCycle === targetCycle;
+                const changeKind = getChangeKind({
+                  currentPlanId,
+                  currentCycle,
+                  targetPlanId: plan.id,
+                  targetCycle,
+                });
+                const isScheduledTarget =
+                  data.scheduledChange?.planId === plan.id &&
+                  normalizeCycle(data.scheduledChange.billingCycle) === targetCycle;
+                const isActionLoading = planActionKey === `${plan.id}:${targetCycle ?? "none"}`;
                 const yearlyTotal =
                   plan.isPaid && billingCycle === "yearly"
                     ? getCheckoutPricing(plan, "yearly")
@@ -321,11 +441,28 @@ export function UserBillingPage() {
 
                       {/* CTA button */}
                       <div className="mt-5">
-                        {isCurrent ? (
-                          <div className="flex h-10 w-full items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/15 text-sm font-semibold text-emerald-700">
-                            <BadgeCheck className="mr-1.5 h-4 w-4" />
-                            Active Plan
-                          </div>
+                        {isCurrentSelection ? (
+                          data.scheduledChange ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-10 w-full rounded-full border-emerald-500/40 text-emerald-700 hover:bg-emerald-50"
+                              disabled={isActionLoading}
+                              onClick={() => void schedulePlanChange(plan.id, currentCycle)}
+                            >
+                              {isActionLoading ? (
+                                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                              ) : (
+                                <BadgeCheck className="mr-1.5 h-4 w-4" />
+                              )}
+                              Keep Current Plan
+                            </Button>
+                          ) : (
+                            <div className="flex h-10 w-full items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/15 text-sm font-semibold text-emerald-700">
+                              <BadgeCheck className="mr-1.5 h-4 w-4" />
+                              Active Plan
+                            </div>
+                          )
                         ) : plan.id === "enterprise" ? (
                           <Button
                             asChild
@@ -337,7 +474,7 @@ export function UserBillingPage() {
                               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                             </Link>
                           </Button>
-                        ) : plan.isPaid ? (
+                        ) : changeKind === "upgrade" && plan.isPaid ? (
                           <Button
                             asChild
                             className={cn(
@@ -348,9 +485,31 @@ export function UserBillingPage() {
                             )}
                           >
                             <Link href={`/checkout?plan=${plan.id}&cycle=${billingCycle}`}>
-                              Upgrade to {plan.name}
+                              {currentPlanId === plan.id ? "Switch Now" : `Upgrade to ${plan.name}`}
                               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                             </Link>
+                          </Button>
+                        ) : changeKind === "downgrade" ? (
+                          <Button
+                            type="button"
+                            variant={isScheduledTarget ? "outline" : "secondary"}
+                            className={cn(
+                              "h-10 w-full rounded-full font-semibold",
+                              isScheduledTarget
+                                ? "border-amber-500/40 text-amber-800 hover:bg-amber-50"
+                                : "",
+                            )}
+                            disabled={isActionLoading || isScheduledTarget}
+                            onClick={() => void schedulePlanChange(plan.id, targetCycle)}
+                          >
+                            {isActionLoading ? (
+                              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                            ) : null}
+                            {isScheduledTarget
+                              ? "Scheduled for Renewal"
+                              : isCurrent
+                                ? "Switch Next Cycle"
+                                : `Downgrade to ${plan.name}`}
                           </Button>
                         ) : (
                           <Button

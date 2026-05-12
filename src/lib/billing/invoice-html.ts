@@ -1,3 +1,9 @@
+import {
+  DHAKA_TIMEZONE_LABEL,
+  formatDhakaDate,
+  formatDhakaDateTime,
+} from "@/lib/billing/date-format";
+
 const BRAND = "AdReportly";
 
 export type InvoiceRenderInput = {
@@ -35,19 +41,8 @@ function formatMoney(amount: number, currency: string): string {
 
 /** Standalone HTML document for download or email attachment. */
 export function renderInvoiceHtml(p: InvoiceRenderInput): string {
-  const paid =
-    p.paidAt?.toLocaleString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }) ?? "—";
-  const issued = p.issuedAt.toLocaleString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const paid = `${formatDhakaDateTime(p.paidAt)} (${DHAKA_TIMEZONE_LABEL})`;
+  const issued = formatDhakaDate(p.issuedAt);
   const lineTotal = formatMoney(p.amount, p.currency);
 
   return `<!DOCTYPE html>

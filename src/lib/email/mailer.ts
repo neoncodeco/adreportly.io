@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import type Mail from "nodemailer/lib/mailer";
 
+import { DHAKA_TIMEZONE_LABEL, formatDhakaDateTime } from "@/lib/billing/date-format";
 import { renderInvoiceHtml } from "@/lib/billing/invoice-html";
 
 let transporterCache: nodemailer.Transporter | null = null;
@@ -208,17 +209,9 @@ export async function sendPaymentPaidInvoiceEmail(params: {
   const safeFile = params.providerPaymentId.replace(/[^a-zA-Z0-9_-]+/g, "_").slice(0, 72);
   const billingUrl = `${base}/dashboard/billing`;
   const downloadPath = params.invoiceMongoId
-    ? `${base}/api/billing/invoice/${params.invoiceMongoId}`
+    ? `${base}/api/billing/invoice/${params.invoiceMongoId}?download=1`
     : billingUrl;
-  const paidLine = params.paidAt
-    ? params.paidAt.toLocaleString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "—";
+  const paidLine = `${formatDhakaDateTime(params.paidAt)} (${DHAKA_TIMEZONE_LABEL})`;
 
   const planEsc = escapeEmailHtml(params.planLabel);
   const refEsc = escapeEmailHtml(params.providerPaymentId);

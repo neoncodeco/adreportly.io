@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Loader2,
@@ -127,6 +127,17 @@ export function CheckoutPage() {
     country: "Bangladesh",
   });
 
+  const [couponInput, setCouponInput] = useState("");
+  const [couponApplying, setCouponApplying] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    percentOff: number;
+    originalChargeAmount: number;
+    discountedChargeAmount: number;
+    discountAmount: number;
+  } | null>(null);
+
   const invoiceNumber = useMemo(() => {
     const d = new Date();
     return `INV-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -145,6 +156,72 @@ export function CheckoutPage() {
   const canSubmit = billing.fullName.trim().length > 1 && billing.email.trim().includes("@");
   const pricing = useMemo(() => getCheckoutPricing(plan, billingCycle), [plan, billingCycle]);
   const sym = "৳";
+
+  const displayTotal =
+    appliedCoupon?.discountedChargeAmount != null
+      ? appliedCoupon.discountedChargeAmount
+      : pricing.totalDue;
+
+  const applyCoupon = async () => {
+    const raw = couponInput.trim();
+    if (raw.length < 4) {
+      setCouponError("Enter a coupon code (at least 4 characters).");
+      return;
+    }
+    if (!plan.isPaid) return;
+    setCouponApplying(true);
+    setCouponError(null);
+    try {
+      const res = await fetch("/api/billing/coupon-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          planId: plan.id,
+          billingCycle,
+          couponCode: raw,
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        error?: string;
+        coupon?: { code: string; percentOff: number };
+        originalChargeAmount?: number;
+        discountedChargeAmount?: number;
+        discountAmount?: number;
+      };
+      if (!res.ok || json.success === false) {
+        setAppliedCoupon(null);
+        setCouponError(typeof json.error === "string" ? json.error : "Invalid coupon.");
+        return;
+      }
+      if (
+        json.coupon &&
+        typeof json.originalChargeAmount === "number" &&
+        typeof json.discountedChargeAmount === "number" &&
+        typeof json.discountAmount === "number"
+      ) {
+        setCouponError(null);
+        setAppliedCoupon({
+          code: json.coupon.code,
+          percentOff: json.coupon.percentOff,
+          originalChargeAmount: json.originalChargeAmount,
+          discountedChargeAmount: json.discountedChargeAmount,
+          discountAmount: json.discountAmount,
+        });
+      }
+    } catch {
+      setAppliedCoupon(null);
+      setCouponError("Could not validate coupon.");
+    } finally {
+      setCouponApplying(false);
+    }
+  };
+
+  useEffect(() => {
+    setAppliedCoupon(null);
+    setCouponError(null);
+  }, [plan.id, billingCycle]);
 
   const startCheckout = async () => {
     if (!plan.isPaid) {
@@ -170,6 +247,7 @@ export function CheckoutPage() {
             city: billing.city.trim() || null,
             country: billing.country || null,
           },
+          ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
         }),
       });
       let json: { error?: string; checkout_url?: string } = {};
@@ -320,6 +398,66 @@ export function CheckoutPage() {
               </div>
             </div>
 
+            {/* Coupon */}
+            {plan.isPaid ? (
+              <div className="rounded-3xl border border-border bg-card p-5 shadow-soft sm:p-6">
+                <h2 className="mb-4 flex items-center gap-2 text-base font-bold">
+                  <Tag className="h-4 w-4 text-emerald-700" />
+                  Coupon code
+                </h2>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <Label htmlFor="coupon" className="text-xs font-semibold text-foreground/80">
+                      Have a code?
+                    </Label>
+                    <Input
+                      id="coupon"
+                      placeholder="e.g. SAVE20"
+                      value={couponInput}
+                      onChange={(e) => {
+                        setCouponInput(e.target.value);
+                        if (couponError) setCouponError(null);
+                      }}
+                      className="h-11 rounded-xl font-mono uppercase placeholder:normal-case"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="h-11 shrink-0 rounded-full px-5"
+                      disabled={couponApplying}
+                      onClick={() => void applyCoupon()}
+                    >
+                      {couponApplying ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                    </Button>
+                    {appliedCoupon ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="h-11 shrink-0 rounded-full"
+                        onClick={() => {
+                          setAppliedCoupon(null);
+                          setCouponError(null);
+                        }}
+                      >
+                        Clear
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+                {appliedCoupon ? (
+                  <p className="mt-2 text-xs font-medium text-emerald-700">
+                    Applied {appliedCoupon.code} (−{appliedCoupon.percentOff}%): −{sym}
+                    {appliedCoupon.discountAmount.toLocaleString()} today.
+                  </p>
+                ) : null}
+                {couponError ? (
+                  <p className="mt-2 text-xs text-destructive">{couponError}</p>
+                ) : null}
+              </div>
+            ) : null}
+
             {/* Payment method hint */}
             <div className="rounded-3xl border border-border bg-card p-5 shadow-soft sm:p-6">
               <h2 className="mb-4 flex items-center gap-2 text-base font-bold">
@@ -358,7 +496,7 @@ export function CheckoutPage() {
               )}
               {loading
                 ? "Redirecting to payment…"
-                : `Pay ${sym}${pricing.totalDue.toLocaleString()} securely`}
+                : `Pay ${sym}${displayTotal.toLocaleString()} securely`}
               {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
 
@@ -394,10 +532,18 @@ export function CheckoutPage() {
                 <div className="text-right">
                   <p className="text-3xl font-bold">
                     {billingCycle === "yearly"
-                      ? `${sym}${pricing.totalDue.toLocaleString()}/yr`
-                      : pricing.unitPriceLabel}
+                      ? `${sym}${displayTotal.toLocaleString()}/yr`
+                      : appliedCoupon && appliedCoupon.discountAmount > 0
+                        ? `${sym}${displayTotal.toLocaleString()}/mo`
+                        : pricing.unitPriceLabel}
                   </p>
-                  {pricing.compareAtLabel ? (
+                  {appliedCoupon && appliedCoupon.discountAmount > 0 ? (
+                    <p className="text-xs text-muted-foreground line-through">
+                      {billingCycle === "yearly"
+                        ? `${sym}${pricing.totalDue.toLocaleString()}/yr`
+                        : pricing.unitPriceLabel}
+                    </p>
+                  ) : pricing.compareAtLabel ? (
                     <p className="text-xs text-muted-foreground line-through">
                       {pricing.compareAtLabel}
                     </p>
@@ -490,14 +636,22 @@ export function CheckoutPage() {
                   }
                   muted
                 />
-                <InvoiceRow label="Discount" value="—" muted />
+                <InvoiceRow
+                  label="Discount"
+                  value={
+                    appliedCoupon && appliedCoupon.discountAmount > 0
+                      ? `−${sym}${appliedCoupon.discountAmount.toLocaleString()} (${appliedCoupon.code})`
+                      : "—"
+                  }
+                  muted
+                />
                 <InvoiceRow label="Tax" value="Incl." muted />
               </div>
 
               <div className="mt-4 rounded-2xl bg-muted/50 px-4 py-3">
                 <InvoiceRow
                   label="Total due today"
-                  value={`${sym}${pricing.totalDue.toLocaleString()}`}
+                  value={`${sym}${displayTotal.toLocaleString()}`}
                   bold
                 />
               </div>

@@ -1,7 +1,7 @@
 import { connectDb } from "@/lib/db";
+import { syncUserScheduledBillingChangeIfDue } from "@/lib/billing/subscription-state";
 import { BILLING_PLANS, type BillingPlanId } from "@/lib/billing/plans";
 import { AgencyModel } from "@/models/agency";
-import { UserModel } from "@/models/user";
 
 const FREE_PLAN = BILLING_PLANS.find((p) => p.id === "free") ?? BILLING_PLANS[0];
 
@@ -21,7 +21,7 @@ export async function resolvePlanIdForUsage(params: {
   await connectDb();
 
   if (params.userId) {
-    const user = await UserModel.findById(params.userId).select("billingPlanId").lean().exec();
+    const user = await syncUserScheduledBillingChangeIfDue(params.userId);
     if (user?.billingPlanId) return normalizePlanId(user.billingPlanId);
   }
 
@@ -31,10 +31,7 @@ export async function resolvePlanIdForUsage(params: {
       .lean()
       .exec()) as { appUserId?: string | null } | null;
     if (agency?.appUserId) {
-      const owner = await UserModel.findById(agency.appUserId)
-        .select("billingPlanId")
-        .lean()
-        .exec();
+      const owner = await syncUserScheduledBillingChangeIfDue(agency.appUserId);
       if (owner?.billingPlanId) return normalizePlanId(owner.billingPlanId);
     }
   }

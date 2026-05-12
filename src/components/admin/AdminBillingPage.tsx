@@ -1,80 +1,39 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
-type Row = {
-  id: string;
-  userId: string;
-  planId: string;
-  status: string;
-  amount: number;
-  currency: string;
-  providerSubscriptionId: string | null;
-  providerReference: string | null;
-  nextBillingAt: string | null;
-  updatedAt: string | null;
-};
+import {
+  ADMIN_PAGE_SIZE,
+  ADMIN_STALE_MS,
+  adminQk,
+  fetchAdminBilling,
+  type AdminBillingRow as Row,
+} from "@/lib/admin-queries";
 
 export function AdminBillingPage() {
-  const pageSize = 20;
-  const [rows, setRows] = useState<Row[]>([]);
-  const [total, setTotal] = useState(0);
   const [q, setQ] = useState("");
+  const deferredQ = useDeferredValue(q);
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setErr(null);
-    try {
-      const params = new URLSearchParams({
-        limit: String(pageSize),
-        skip: String((page - 1) * pageSize),
-      });
-      if (q.trim()) params.set("q", q.trim());
-      if (status.trim()) params.set("status", status.trim());
-      const res = await fetch(`/api/admin/billing?${params.toString()}`, {
-        credentials: "include",
-      });
-      const json = (await res.json()) as {
-        success?: boolean;
-        error?: string;
-        total?: number;
-        subscriptions?: Row[];
-      };
-      if (!res.ok || json.success === false) {
-        setErr(json.error || "Could not load billing records.");
-        setRows([]);
-        setTotal(0);
-        return;
-      }
-      setRows(json.subscriptions ?? []);
-      setTotal(json.total ?? 0);
-    } catch {
-      setErr("Network error.");
-      setRows([]);
-      setTotal(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [q, status, page]);
 
   useEffect(() => {
     setPage(1);
-  }, [q, status]);
+  }, [deferredQ, status]);
 
-  useEffect(() => {
-    const t = setTimeout(() => void load(), 250);
-    return () => clearTimeout(t);
-  }, [load]);
+  const { data, isPending, isError, error, isFetching, isPlaceholderData } = useQuery({
+    queryKey: adminQk.billing(page, ADMIN_PAGE_SIZE, deferredQ, status),
+    queryFn: () => fetchAdminBilling(page, ADMIN_PAGE_SIZE, deferredQ, status),
+    staleTime: ADMIN_STALE_MS,
+    placeholderData: keepPreviousData,
+  });
 
-  const lastPage = Math.max(1, Math.ceil(total / pageSize));
+  const rows = data?.subscriptions ?? [];
+  const total = data?.total ?? 0;
+  const lastPage = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
   const canPrev = page > 1;
   const canNext = page < lastPage;
 
@@ -117,13 +76,17 @@ export function AdminBillingPage() {
         </div>
       </div>
 
-      {err ? (
+      {isError ? (
         <div className="rounded-3xl border border-destructive/30 bg-destructive/5 p-6 text-sm font-medium text-destructive">
-          {err}
+          {error instanceof Error ? error.message : "Could not load billing records."}
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+      <div
+        className={`overflow-hidden rounded-2xl border border-border bg-card shadow-soft ${
+          isFetching && isPlaceholderData ? "opacity-80" : ""
+        }`}
+      >
         <div className="overflow-x-auto">
           <table className="w-full min-w-[960px] text-left text-sm">
             <thead className="border-b border-border bg-muted/50 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -138,7 +101,7 @@ export function AdminBillingPage() {
               </tr>
             </thead>
             <tbody>
-              {loading && rows.length === 0 ? (
+              {isPending && rows.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-14 text-center text-muted-foreground">
                     <Loader2 className="mx-auto h-7 w-7 animate-spin" />
@@ -178,14 +141,14 @@ export function AdminBillingPage() {
       </div>
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">
-          Showing {(total === 0 ? 0 : (page - 1) * pageSize + 1).toLocaleString()}-
-          {Math.min(page * pageSize, total).toLocaleString()} of {total.toLocaleString()}
+          Showing {(total === 0 ? 0 : (page - 1) * ADMIN_PAGE_SIZE + 1).toLocaleString()}-
+          {Math.min(page * ADMIN_PAGE_SIZE, total).toLocaleString()} of {total.toLocaleString()}
         </p>
         <div className="flex items-center gap-2">
           <Button
             size="sm"
             variant="outline"
-            disabled={!canPrev || loading}
+            disabled={!canPrev || isFetching}
             onClick={() => setPage((p) => p - 1)}
           >
             Previous
@@ -196,7 +159,7 @@ export function AdminBillingPage() {
           <Button
             size="sm"
             variant="outline"
-            disabled={!canNext || loading}
+            disabled={!canNext || isFetching}
             onClick={() => setPage((p) => p + 1)}
           >
             Next

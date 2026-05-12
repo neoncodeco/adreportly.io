@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   Bar,
@@ -12,6 +13,13 @@ import {
   Tooltip,
   XAxis,
 } from "recharts";
+import {
+  ADMIN_STALE_MS,
+  fetchAdminOverview,
+  type AdminMonthlyTrend as MonthlyTrend,
+  type AdminOverviewTotals as Totals,
+  type AdminPackageStat as PackageStat,
+} from "@/lib/admin-queries";
 import {
   Users,
   Shield,
@@ -28,35 +36,6 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-type Totals = {
-  totalUsers: number;
-  adminUsers: number;
-  usersWithAgency: number;
-  totalAgencies: number;
-  totalShareLinks: number;
-  totalIncome: number;
-  totalPackageSales: number;
-  totalPaidTransactions: number;
-  totalFailedTransactions: number;
-  totalCanceledTransactions: number;
-  totalRefundedTransactions: number;
-  avgOrderValue: number;
-};
-
-type PackageStat = {
-  planId: string;
-  planName: string;
-  income: number;
-  sales: number;
-};
-
-type MonthlyTrend = {
-  key: string;
-  label: string;
-  income: number;
-  sales: number;
-};
 
 const cards = [
   {
@@ -146,62 +125,17 @@ const cards = [
 ];
 
 export function AdminOverview() {
-  const [totals, setTotals] = useState<Totals | null>(null);
-  const [packageStats, setPackageStats] = useState<PackageStat[]>([]);
-  const [monthlyTrend, setMonthlyTrend] = useState<MonthlyTrend[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const { data, isPending, isError, error, refetch, isFetching } = useQuery({
+    queryKey: ["admin", "overview", fromDate, toDate],
+    queryFn: () => fetchAdminOverview(fromDate, toDate),
+    staleTime: ADMIN_STALE_MS,
+  });
 
-  const loadWithRange = useCallback(async (from: string, to: string) => {
-    setLoading(true);
-    setErr(null);
-    try {
-      const params = new URLSearchParams();
-      if (from) params.set("from", from);
-      if (to) params.set("to", to);
-      const query = params.toString();
-      const res = await fetch(`/api/admin/overview${query ? `?${query}` : ""}`, {
-        credentials: "include",
-      });
-      const json = (await res.json()) as {
-        success?: boolean;
-        error?: string;
-        totals?: Totals;
-        packageStats?: PackageStat[];
-        monthlyTrend?: MonthlyTrend[];
-        filters?: { from: string | null; to: string | null };
-      };
-      if (!res.ok || json.success === false) {
-        if (res.status === 403) {
-          setErr("You do not have admin access.");
-        } else {
-          setErr(typeof json.error === "string" ? json.error : "Could not load overview");
-        }
-        setTotals(null);
-        return;
-      }
-      setTotals(json.totals ?? null);
-      setPackageStats(json.packageStats ?? []);
-      setMonthlyTrend(json.monthlyTrend ?? []);
-      if (json.filters?.from !== undefined) setFromDate(json.filters.from ?? "");
-      if (json.filters?.to !== undefined) setToDate(json.filters.to ?? "");
-    } catch {
-      setErr("Network error");
-      setTotals(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const load = useCallback(async () => {
-    await loadWithRange(fromDate, toDate);
-  }, [fromDate, toDate, loadWithRange]);
-
-  useEffect(() => {
-    void loadWithRange("", "");
-  }, [loadWithRange]);
+  const totals = data?.totals ?? null;
+  const packageStats = data?.packageStats ?? [];
+  const monthlyTrend = data?.monthlyTrend ?? [];
 
   const values = useMemo(() => {
     const t = totals;
@@ -210,7 +144,7 @@ export function AdminOverview() {
       number
     >;
   }, [totals]);
-  const currency = "USD";
+  const currency = "BDT";
   const fmtMoney = (n: number) =>
     `${currency} ${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
   const totalAttempts =
@@ -224,7 +158,7 @@ export function AdminOverview() {
       ? ((values.totalFailedTransactions + values.totalCanceledTransactions) / totalAttempts) * 100
       : 0;
 
-  if (loading && !totals) {
+  if (isPending && !totals) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center rounded-3xl border border-border bg-card">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-label="Loading" />
@@ -232,14 +166,16 @@ export function AdminOverview() {
     );
   }
 
-  if (err) {
+  if (isError) {
     return (
       <div className="rounded-3xl border border-destructive/30 bg-destructive/5 p-8 text-center">
-        <p className="text-sm font-medium text-destructive">{err}</p>
+        <p className="text-sm font-medium text-destructive">
+          {error instanceof Error ? error.message : "Could not load overview"}
+        </p>
         <button
           type="button"
           className="mt-4 text-sm font-semibold text-primary underline"
-          onClick={() => void load()}
+          onClick={() => void refetch()}
         >
           Try again
         </button>
@@ -288,17 +224,16 @@ export function AdminOverview() {
           </div>
           <button
             type="button"
-            onClick={() => void load()}
+            onClick={() => void refetch()}
             className="h-10 rounded-full bg-gradient-primary px-4 text-sm font-semibold text-primary-foreground"
           >
-            Apply
+            {isFetching ? "Loading..." : "Apply"}
           </button>
           <button
             type="button"
             onClick={() => {
               setFromDate("");
               setToDate("");
-              void loadWithRange("", "");
             }}
             className="h-10 rounded-full border border-border px-4 text-sm font-semibold text-muted-foreground hover:text-foreground"
           >

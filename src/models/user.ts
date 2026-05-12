@@ -14,6 +14,9 @@ export interface IUser extends Document {
   /** Mirrors active subscription: monthly vs yearly prepay. */
   billingCycle?: "monthly" | "yearly" | null;
   billingCurrentPeriodEnd: Date | null;
+  billingScheduledPlanId?: "free" | "starter" | "pro" | "enterprise" | null;
+  billingScheduledCycle?: "monthly" | "yearly" | null;
+  billingScheduledChangeAt?: Date | null;
   isEmailVerified: boolean;
   emailVerificationToken: string | null;
   emailVerificationExpires: Date | null;
@@ -62,6 +65,17 @@ const UserSchema = new Schema<IUser>(
       default: undefined,
     },
     billingCurrentPeriodEnd: { type: Date, default: null },
+    billingScheduledPlanId: {
+      type: String,
+      enum: ["free", "starter", "pro", "enterprise"],
+      default: null,
+    },
+    billingScheduledCycle: {
+      type: String,
+      enum: ["monthly", "yearly"],
+      default: null,
+    },
+    billingScheduledChangeAt: { type: Date, default: null },
     isEmailVerified: { type: Boolean, default: false, index: true },
     emailVerificationToken: { type: String, default: null, index: true },
     emailVerificationExpires: { type: Date, default: null },

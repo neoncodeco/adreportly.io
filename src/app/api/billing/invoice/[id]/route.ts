@@ -56,9 +56,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   return new NextResponse(html, {
     status: 200,
     headers: {
-      "Content-Type": "text/html; charset=utf-8",
+      "Content-Type": "application/octet-stream",
       "Content-Disposition": `attachment; filename="AdReportly-invoice-${safe}.html"`,
       "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }

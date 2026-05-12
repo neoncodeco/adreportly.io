@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { z } from "zod";
+import { isSafeInternalLink } from "@/lib/admin-route-utils";
 import { requireMongo } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
 import { NotificationModel } from "@/models/notification";
@@ -43,11 +45,26 @@ export async function POST(request: Request) {
   const payload = parsed.data;
   const recipientUserId =
     payload.recipientUserId && payload.recipientUserId.length > 0 ? payload.recipientUserId : null;
+  const link = payload.link && payload.link.length > 0 ? payload.link : null;
+
+  if (recipientUserId && !mongoose.isValidObjectId(recipientUserId)) {
+    return NextResponse.json(
+      { success: false, error: "Invalid recipient user id." },
+      { status: 400 },
+    );
+  }
+
+  if (link && !isSafeInternalLink(link)) {
+    return NextResponse.json(
+      { success: false, error: "Link must be an internal path like /dashboard/docs." },
+      { status: 400 },
+    );
+  }
 
   const row = await NotificationModel.create({
     title: payload.title,
     message: payload.message,
-    link: payload.link && payload.link.length > 0 ? payload.link : null,
+    link,
     targetRole: recipientUserId ? "all" : (payload.targetRole ?? "all"),
     recipientUserId,
     createdByUserId: guard.userId,

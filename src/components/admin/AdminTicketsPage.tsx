@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Search, ArrowLeft, Send, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -9,45 +10,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
+  ADMIN_PAGE_SIZE,
+  ADMIN_STALE_MS,
+  adminQk,
+  fetchAdminTicketDetail,
+  fetchAdminTickets,
+  patchAdmin,
+  postAdmin,
+  type AdminTicketCategory as TicketCategory,
+  type AdminTicketDetail as TicketDetail,
+  type AdminTicketPriority as TicketPriority,
+  type AdminTicketRow as TicketRow,
+  type AdminTicketStatus as TicketStatus,
+} from "@/lib/admin-queries";
+import {
   CATEGORY_LABELS,
   PRIORITY_LABELS,
   STATUS_LABELS,
   priorityClass,
   statusClass,
-  type TicketCategory,
-  type TicketPriority,
-  type TicketStatus,
 } from "@/components/support/ticket-utils";
-
-type TicketRow = {
-  id: string;
-  ticketNumber: string;
-  userId: string;
-  userEmail: string;
-  userName: string;
-  subject: string;
-  category: TicketCategory;
-  priority: TicketPriority;
-  status: TicketStatus;
-  repliesCount: number;
-  lastRepliedByAdmin: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type Reply = {
-  _id: string;
-  authorName: string;
-  authorEmail: string;
-  isAdmin: boolean;
-  message: string;
-  createdAt: string;
-};
-
-type TicketDetail = TicketRow & {
-  description: string;
-  replies: Reply[];
-};
 
 const fadeUp = {
   initial: { opacity: 0, y: 14 },
@@ -57,87 +39,47 @@ const fadeUp = {
 };
 
 export function AdminTicketsPage() {
-  const pageSize = 20;
+  const queryClient = useQueryClient();
   const [view, setView] = useState<"list" | "detail">("list");
-  const [tickets, setTickets] = useState<TicketRow[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const deferredQ = useDeferredValue(q);
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
   const [category, setCategory] = useState("");
   const [page, setPage] = useState(1);
-  const [activeTicket, setActiveTicket] = useState<TicketDetail | null>(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setErr(null);
-    try {
-      const params = new URLSearchParams({
-        limit: String(pageSize),
-        skip: String((page - 1) * pageSize),
-      });
-      if (q.trim()) params.set("q", q.trim());
-      if (status) params.set("status", status);
-      if (priority) params.set("priority", priority);
-      if (category) params.set("category", category);
-      const res = await fetch(`/api/admin/tickets?${params}`, { credentials: "include" });
-      const json = (await res.json()) as {
-        success?: boolean;
-        error?: string;
-        total?: number;
-        tickets?: TicketRow[];
-      };
-      if (!res.ok || json.success === false) {
-        setErr(json.error || "Could not load tickets.");
-        setTickets([]);
-        setTotal(0);
-        return;
-      }
-      setTickets(json.tickets ?? []);
-      setTotal(json.total ?? 0);
-    } catch {
-      setErr("Network error.");
-      setTickets([]);
-      setTotal(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [q, status, priority, category, page]);
+  const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
 
   useEffect(() => {
     setPage(1);
-  }, [q, status, priority, category]);
+  }, [deferredQ, status, priority, category]);
 
-  useEffect(() => {
-    const t = setTimeout(() => void load(), 260);
-    return () => clearTimeout(t);
-  }, [load]);
+  const { data, isPending, isError, error, isFetching, isPlaceholderData, refetch } = useQuery({
+    queryKey: adminQk.tickets(page, ADMIN_PAGE_SIZE, deferredQ, status, priority, category),
+    queryFn: () => fetchAdminTickets(page, ADMIN_PAGE_SIZE, deferredQ, status, priority, category),
+    staleTime: ADMIN_STALE_MS,
+    placeholderData: keepPreviousData,
+  });
 
-  const lastPage = Math.max(1, Math.ceil(total / pageSize));
+  const tickets = data?.tickets ?? [];
+  const total = data?.total ?? 0;
+  const lastPage = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
   const canPrev = page > 1;
   const canNext = page < lastPage;
 
-  const openDetail = async (id: string) => {
-    setLoadingDetail(true);
+  const {
+    data: detailData,
+    isPending: loadingDetail,
+    refetch: refetchDetail,
+  } = useQuery({
+    queryKey: adminQk.ticketDetail(activeTicketId ?? ""),
+    queryFn: () => fetchAdminTicketDetail(activeTicketId ?? ""),
+    enabled: view === "detail" && Boolean(activeTicketId),
+    staleTime: ADMIN_STALE_MS,
+  });
+
+  const openDetail = (id: string) => {
+    setActiveTicketId(id);
     setView("detail");
-    try {
-      const res = await fetch(`/api/tickets/${id}`, { credentials: "include" });
-      const json = (await res.json()) as { ticket?: TicketDetail; error?: string };
-      if (!res.ok || !json.ticket) {
-        toast.error(json.error || "Could not load ticket.");
-        setView("list");
-        return;
-      }
-      setActiveTicket(json.ticket);
-    } catch {
-      toast.error("Network error.");
-      setView("list");
-    } finally {
-      setLoadingDetail(false);
-    }
   };
 
   return (
@@ -183,13 +125,18 @@ export function AdminTicketsPage() {
               </div>
             </div>
 
-            {err ? (
+            {isError ? (
               <div className="rounded-3xl border border-destructive/30 bg-destructive/5 p-6 text-sm font-medium text-destructive">
-                {err}
+                {error instanceof Error ? error.message : "Could not load tickets."}
               </div>
             ) : null}
 
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+            <div
+              className={cn(
+                "overflow-hidden rounded-2xl border border-border bg-card shadow-soft",
+                isFetching && isPlaceholderData && "opacity-80",
+              )}
+            >
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[900px] text-left text-sm">
                   <thead className="border-b border-border bg-muted/50 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -204,7 +151,7 @@ export function AdminTicketsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {loading && tickets.length === 0 ? (
+                    {isPending && tickets.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="px-4 py-14 text-center text-muted-foreground">
                           <Loader2 className="mx-auto h-7 w-7 animate-spin" />
@@ -285,14 +232,15 @@ export function AdminTicketsPage() {
             </div>
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs text-muted-foreground">
-                Showing {(total === 0 ? 0 : (page - 1) * pageSize + 1).toLocaleString()}-
-                {Math.min(page * pageSize, total).toLocaleString()} of {total.toLocaleString()}
+                Showing {(total === 0 ? 0 : (page - 1) * ADMIN_PAGE_SIZE + 1).toLocaleString()}-
+                {Math.min(page * ADMIN_PAGE_SIZE, total).toLocaleString()} of{" "}
+                {total.toLocaleString()}
               </p>
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={!canPrev || loading}
+                  disabled={!canPrev || isFetching}
                   onClick={() => setPage((p) => p - 1)}
                 >
                   Previous
@@ -303,7 +251,7 @@ export function AdminTicketsPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={!canNext || loading}
+                  disabled={!canNext || isFetching}
                   onClick={() => setPage((p) => p + 1)}
                 >
                   Next
@@ -314,14 +262,16 @@ export function AdminTicketsPage() {
         ) : (
           <motion.div key="detail" {...fadeUp}>
             <AdminTicketDetail
-              ticket={activeTicket}
+              ticket={detailData?.ticket ?? null}
               loading={loadingDetail}
               onBack={() => {
                 setView("list");
-                void load();
+                setActiveTicketId(null);
+                void refetch();
               }}
               onRefresh={async () => {
-                if (activeTicket) await openDetail(activeTicket.id);
+                await refetchDetail();
+                await queryClient.invalidateQueries({ queryKey: ["admin", "tickets"] });
               }}
             />
           </motion.div>
@@ -369,86 +319,53 @@ function AdminTicketDetail({
   onBack: () => void;
   onRefresh: () => Promise<void>;
 }) {
+  const queryClient = useQueryClient();
   const [reply, setReply] = useState("");
-  const [sending, setSending] = useState(false);
-  const [statusChanging, setStatusChanging] = useState(false);
-  const [priorityChanging, setPriorityChanging] = useState(false);
   const [ticketInfoOpen, setTicketInfoOpen] = useState(false);
   const [replyErr, setReplyErr] = useState<string | null>(null);
 
-  const sendReply = async () => {
-    if (!ticket || !reply.trim()) return;
-    setSending(true);
-    setReplyErr(null);
-    try {
-      const res = await fetch(`/api/tickets/${ticket.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ message: reply }),
-      });
-      const json = (await res.json()) as { ok?: boolean; error?: string };
-      if (!res.ok) {
-        setReplyErr(json.error || "Could not send reply.");
-        return;
-      }
+  const replyMutation = useMutation({
+    mutationFn: () =>
+      postAdmin<{ ok: true }>(`/api/tickets/${ticket?.id ?? ""}`, { message: reply.trim() }),
+    onSuccess: async () => {
       setReply("");
       toast.success("Reply sent to user.");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "ticket"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "tickets"] });
       await onRefresh();
-    } catch {
-      setReplyErr("Network error.");
-    } finally {
-      setSending(false);
-    }
-  };
+    },
+    onError: (error: Error) => {
+      setReplyErr(error.message || "Could not send reply.");
+    },
+  });
 
-  const changeStatus = async (newStatus: string) => {
-    if (!ticket) return;
-    setStatusChanging(true);
-    try {
-      const res = await fetch(`/api/tickets/${ticket.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ status: newStatus }),
-      });
-      const json = (await res.json()) as { ok?: boolean; error?: string };
-      if (!res.ok) {
-        toast.error(json.error || "Could not update status.");
-        return;
-      }
+  const statusMutation = useMutation({
+    mutationFn: (newStatus: string) =>
+      patchAdmin<{ ok: true }>(`/api/tickets/${ticket?.id ?? ""}`, { status: newStatus }),
+    onSuccess: async () => {
       toast.success("Status updated.");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "ticket"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "tickets"] });
       await onRefresh();
-    } catch {
-      toast.error("Network error.");
-    } finally {
-      setStatusChanging(false);
-    }
-  };
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Could not update status.");
+    },
+  });
 
-  const changePriority = async (newPriority: string) => {
-    if (!ticket) return;
-    setPriorityChanging(true);
-    try {
-      const res = await fetch(`/api/tickets/${ticket.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ priority: newPriority }),
-      });
-      const json = (await res.json()) as { ok?: boolean; error?: string };
-      if (!res.ok) {
-        toast.error(json.error || "Could not update priority.");
-        return;
-      }
+  const priorityMutation = useMutation({
+    mutationFn: (newPriority: string) =>
+      patchAdmin<{ ok: true }>(`/api/tickets/${ticket?.id ?? ""}`, { priority: newPriority }),
+    onSuccess: async () => {
       toast.success("Priority updated.");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "ticket"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "tickets"] });
       await onRefresh();
-    } catch {
-      toast.error("Network error.");
-    } finally {
-      setPriorityChanging(false);
-    }
-  };
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Could not update priority.");
+    },
+  });
 
   if (loading) {
     return (
@@ -457,7 +374,16 @@ function AdminTicketDetail({
       </div>
     );
   }
-  if (!ticket) return null;
+  if (!ticket) {
+    return (
+      <div className="rounded-3xl border border-border bg-card p-8 text-center">
+        <p className="text-sm text-muted-foreground">Ticket details could not be loaded.</p>
+        <Button variant="outline" className="mt-4 rounded-full" onClick={onBack}>
+          Back to tickets
+        </Button>
+      </div>
+    );
+  }
 
   const isClosed = ticket.status === "closed" || ticket.status === "resolved";
 
@@ -565,11 +491,14 @@ function AdminTicketDetail({
               />
               <div className="mt-3 flex justify-end">
                 <Button
-                  disabled={sending || !reply.trim()}
-                  onClick={() => void sendReply()}
+                  disabled={replyMutation.isPending || !reply.trim()}
+                  onClick={() => {
+                    setReplyErr(null);
+                    replyMutation.mutate();
+                  }}
                   className="h-10 rounded-full bg-gradient-primary text-primary-foreground shadow-glow"
                 >
-                  {sending ? (
+                  {replyMutation.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <Send className="mr-2 h-4 w-4" />
@@ -596,8 +525,8 @@ function AdminTicketDetail({
                 <button
                   key={k}
                   type="button"
-                  disabled={statusChanging || ticket.status === k}
-                  onClick={() => void changeStatus(k)}
+                  disabled={statusMutation.isPending || ticket.status === k}
+                  onClick={() => statusMutation.mutate(k)}
                   className={cn(
                     "rounded-full px-3 py-1.5 text-xs font-semibold transition",
                     ticket.status === k
@@ -620,8 +549,8 @@ function AdminTicketDetail({
                 <button
                   key={k}
                   type="button"
-                  disabled={priorityChanging || ticket.priority === k}
-                  onClick={() => void changePriority(k)}
+                  disabled={priorityMutation.isPending || ticket.priority === k}
+                  onClick={() => priorityMutation.mutate(k)}
                   className={cn(
                     "rounded-full px-3 py-1.5 text-xs font-semibold transition",
                     ticket.priority === k

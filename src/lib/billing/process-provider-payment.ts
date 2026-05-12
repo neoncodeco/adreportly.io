@@ -1,8 +1,11 @@
+import mongoose from "mongoose";
 import type { BillingCycle, BillingPlanId } from "@/lib/billing/plans";
 import { getBillingPlanById } from "@/lib/billing/plans";
+import { getPlanCycleForStorage } from "@/lib/billing/subscription-state";
 import { normalizeProviderStatus } from "@/lib/billing/uddoktapay";
 import { sendPaymentPaidInvoiceEmail } from "@/lib/email/mailer";
 import { invalidateCacheKey } from "@/lib/server-cache";
+import { CouponModel } from "@/models/coupon";
 import { PaymentTransactionModel } from "@/models/payment-transaction";
 import { SubscriptionModel } from "@/models/subscription";
 import { UserModel } from "@/models/user";
@@ -53,6 +56,23 @@ function addSubscriptionPeriod(start: Date, cycle: BillingCycle): Date {
     d.setMonth(d.getMonth() + 1);
   }
   return d;
+}
+
+function resolveSubscriptionPeriodEnd(
+  start: Date,
+  cycle: BillingCycle,
+  providerPeriodEnd: Date | null,
+): Date {
+  const computedPeriodEnd = addSubscriptionPeriod(start, cycle);
+  if (!providerPeriodEnd) return computedPeriodEnd;
+
+  const elapsedDays = (providerPeriodEnd.getTime() - start.getTime()) / 86_400_000;
+  const isReasonableWindow =
+    cycle === "yearly"
+      ? elapsedDays >= 330 && elapsedDays <= 400
+      : elapsedDays >= 20 && elapsedDays <= 45;
+
+  return isReasonableWindow ? providerPeriodEnd : computedPeriodEnd;
 }
 
 function resolveSubscriptionBillingCycle(sub: {
@@ -213,10 +233,9 @@ export async function applyUddoktaPayPayloadToSubscriptions(
   const periodAnchor =
     paidAtForPeriod ?? (normalized.subscriptionStatus === "active" ? new Date() : null);
   const computedPeriodEnd =
-    providerPeriodEnd ||
-    (normalized.subscriptionStatus === "active" && periodAnchor
-      ? addSubscriptionPeriod(periodAnchor, cycle)
-      : null);
+    normalized.subscriptionStatus === "active" && periodAnchor
+      ? resolveSubscriptionPeriodEnd(periodAnchor, cycle, providerPeriodEnd)
+      : providerPeriodEnd;
 
   const priorMeta =
     sub.metadata && typeof sub.metadata === "object" && !Array.isArray(sub.metadata)
@@ -267,6 +286,22 @@ export async function applyUddoktaPayPayloadToSubscriptions(
   const refreshed = await SubscriptionModel.findById(sub._id).exec();
   if (!refreshed) {
     throw new Error("Subscription disappeared after update.");
+  }
+
+  if (normalized.subscriptionStatus === "active") {
+    await SubscriptionModel.updateMany(
+      {
+        userId,
+        _id: { $ne: refreshed._id },
+        status: { $in: ["pending", "active", "past_due", "incomplete"] },
+      },
+      {
+        $set: {
+          status: "canceled",
+          canceledAt: paidAtForPeriod ?? new Date(),
+        },
+      },
+    ).exec();
   }
 
   const invoiceId = typeof flat.invoice_id === "string" ? flat.invoice_id : null;
@@ -335,6 +370,19 @@ export async function applyUddoktaPayPayloadToSubscriptions(
   const invoiceMongoId = txRow?._id?.toString() ?? null;
 
   if (normalized.paymentStatus === "paid" && !wasPaid) {
+    const couponId =
+      typeof priorMeta.couponMongoId === "string" ? priorMeta.couponMongoId.trim() : "";
+    const alreadyRedeemed = priorMeta.couponRedeemed === true;
+    if (couponId && !alreadyRedeemed && mongoose.isValidObjectId(couponId)) {
+      const marked = await SubscriptionModel.updateOne(
+        { _id: sub._id, "metadata.couponRedeemed": { $ne: true } },
+        { $set: { "metadata.couponRedeemed": true } },
+      ).exec();
+      if (marked.modifiedCount > 0) {
+        await CouponModel.updateOne({ _id: couponId }, { $inc: { redemptionCount: 1 } }).exec();
+      }
+    }
+
     const u = await UserModel.findById(userId).select("email fullName").lean().exec();
     if (u?.email) {
       const planMeta = getBillingPlanById(planId);
@@ -360,8 +408,13 @@ export async function applyUddoktaPayPayloadToSubscriptions(
       $set: {
         billingPlanId: planId,
         billingStatus: normalized.subscriptionStatus,
-        billingCycle: cycle,
+        billingCycle: getPlanCycleForStorage(planId, cycle),
         ...(userPeriodEnd ? { billingCurrentPeriodEnd: userPeriodEnd } : {}),
+      },
+      $unset: {
+        billingScheduledPlanId: 1,
+        billingScheduledCycle: 1,
+        billingScheduledChangeAt: 1,
       },
     },
   );

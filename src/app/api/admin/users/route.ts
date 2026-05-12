@@ -1,23 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
+import { z } from "zod";
+import {
+  clampPageSize,
+  clampSkip,
+  escapeRegex,
+  sanitizeSearchQuery,
+} from "@/lib/admin-route-utils";
 import { requireAdmin } from "@/lib/require-admin";
 import { ADMIN_CACHE_HEADERS, getOrSetCache, invalidateCacheByPrefix } from "@/lib/server-cache";
 import { UserModel } from "@/models/user";
+
+const patchSchema = z.object({
+  userId: z.string().trim().min(1).max(100),
+  action: z.enum(["banUser", "unbanUser", "unlinkAgency", "resetBilling", "deleteUser"]),
+});
 
 export async function GET(request: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
   const { searchParams } = new URL(request.url);
-  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50", 10) || 50));
-  const skip = Math.max(0, parseInt(searchParams.get("skip") ?? "0", 10) || 0);
-  const q = searchParams.get("q")?.trim() ?? "";
+  const limit = clampPageSize(searchParams.get("limit"), 50, 100);
+  const skip = clampSkip(searchParams.get("skip"));
+  const q = sanitizeSearchQuery(searchParams.get("q"));
+  const safeQ = escapeRegex(q);
 
   const filter =
     q.length > 0
       ? {
           $or: [
-            { email: { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } },
-            { fullName: { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } },
+            { email: { $regex: safeQ, $options: "i" } },
+            { fullName: { $regex: safeQ, $options: "i" } },
           ],
         }
       : {};
@@ -79,15 +93,17 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: false, error: "Invalid JSON" }, { status: 400 });
   }
 
-  const payload = body as {
-    userId?: string;
-    action?: "banUser" | "unbanUser" | "unlinkAgency" | "resetBilling" | "deleteUser";
-  };
-  if (!payload.userId || !payload.action) {
+  const parsed = patchSchema.safeParse(body);
+  if (!parsed.success) {
     return NextResponse.json(
-      { success: false, error: "userId and action are required." },
+      { success: false, error: "Invalid input.", fields: parsed.error.flatten().fieldErrors },
       { status: 400 },
     );
+  }
+  const payload = parsed.data;
+
+  if (!mongoose.isValidObjectId(payload.userId)) {
+    return NextResponse.json({ success: false, error: "Invalid user id." }, { status: 400 });
   }
 
   if (
@@ -98,6 +114,11 @@ export async function PATCH(request: NextRequest) {
       { success: false, error: "You cannot apply this action on your own account." },
       { status: 400 },
     );
+  }
+
+  const targetUser = await UserModel.findById(payload.userId).select("role isBanned").lean().exec();
+  if (!targetUser) {
+    return NextResponse.json({ success: false, error: "User not found." }, { status: 404 });
   }
 
   if (payload.action === "banUser") {
@@ -120,6 +141,12 @@ export async function PATCH(request: NextRequest) {
           billingPlanId: "free",
           billingStatus: "inactive",
           billingCurrentPeriodEnd: null,
+        },
+        $unset: {
+          billingCycle: 1,
+          billingScheduledPlanId: 1,
+          billingScheduledCycle: 1,
+          billingScheduledChangeAt: 1,
         },
       },
     );

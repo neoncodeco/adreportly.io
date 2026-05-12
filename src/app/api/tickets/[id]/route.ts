@@ -1,12 +1,18 @@
+import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { requireMongo } from "@/lib/db";
+import { invalidateCacheByPrefix } from "@/lib/server-cache";
 import { TicketModel } from "@/models/ticket";
 import { UserModel } from "@/models/user";
 
 const replySchema = z.object({
   message: z.string().trim().min(2).max(4000),
+});
+const patchSchema = z.object({
+  status: z.enum(["open", "in_progress", "waiting_user", "resolved", "closed"]).optional(),
+  priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
 });
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -22,6 +28,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       { error: e instanceof Error ? e.message : "Database unavailable" },
       { status: 503 },
     );
+  }
+
+  if (!mongoose.isValidObjectId(id)) {
+    return NextResponse.json({ error: "Invalid ticket id." }, { status: 400 });
   }
 
   const userRow = (await UserModel.findById(session.user.id).select("role").lean().exec()) as {
@@ -81,6 +91,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     );
   }
 
+  if (!mongoose.isValidObjectId(id)) {
+    return NextResponse.json({ error: "Invalid ticket id." }, { status: 400 });
+  }
+
   const userRow = (await UserModel.findById(session.user.id)
     .select("role fullName")
     .lean()
@@ -114,6 +128,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   await ticket.save();
+  invalidateCacheByPrefix("admin:tickets:");
 
   return NextResponse.json({ ok: true });
 }
@@ -132,6 +147,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  const parsed = patchSchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+  }
+
   try {
     await requireMongo();
   } catch (e) {
@@ -141,12 +161,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     );
   }
 
+  if (!mongoose.isValidObjectId(id)) {
+    return NextResponse.json({ error: "Invalid ticket id." }, { status: 400 });
+  }
+
   const userRow = (await UserModel.findById(session.user.id).select("role").lean().exec()) as {
     role?: string;
   } | null;
   const isAdmin = userRow?.role === "admin";
 
-  const body = json as { status?: string; priority?: string };
+  const body = parsed.data;
 
   const update: Record<string, unknown> = {};
   if (body.status) {
@@ -172,6 +196,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!ticket) {
     return NextResponse.json({ error: "Ticket not found." }, { status: 404 });
   }
+
+  invalidateCacheByPrefix("admin:tickets:");
 
   return NextResponse.json({ ok: true });
 }

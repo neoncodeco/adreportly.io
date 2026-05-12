@@ -30,6 +30,15 @@ type BillingDetails = {
   country?: string | null;
 };
 
+export type CheckoutCouponMetadata = {
+  couponMongoId: string;
+  couponCode: string;
+  couponPercentOff: number;
+  originalChargeAmount: number;
+  discountAmount: number;
+  finalChargeAmount: number;
+};
+
 type CreateSessionInput = {
   plan: BillingPlan;
   billingCycle: BillingCycle;
@@ -40,6 +49,7 @@ type CreateSessionInput = {
   agencyId?: string | null;
   existingSubscriptionId?: string | null;
   billingDetails?: BillingDetails | null;
+  coupon?: CheckoutCouponMetadata | null;
 };
 
 type UddoktaPayCreateSessionResponse = {
@@ -98,6 +108,16 @@ export async function createUddoktaPayCheckoutSession(
       billingCycle: input.billingCycle,
       agencyId: input.agencyId ?? null,
       existingSubscriptionId: input.existingSubscriptionId ?? null,
+      ...(input.coupon
+        ? {
+            couponMongoId: input.coupon.couponMongoId,
+            couponCode: input.coupon.couponCode,
+            couponPercentOff: input.coupon.couponPercentOff,
+            originalChargeAmount: input.coupon.originalChargeAmount,
+            couponDiscountAmount: input.coupon.discountAmount,
+            finalChargeAmount: input.coupon.finalChargeAmount,
+          }
+        : {}),
       ...(input.billingDetails?.phone ? { phone: input.billingDetails.phone } : {}),
       ...(input.billingDetails?.company ? { company: input.billingDetails.company } : {}),
       ...(input.billingDetails?.addressLine
