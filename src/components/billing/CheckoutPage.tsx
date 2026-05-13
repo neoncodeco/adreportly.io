@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Loader2,
@@ -177,61 +177,64 @@ export function CheckoutPage() {
     return created;
   };
 
-  const applyCoupon = async (rawOverride?: string) => {
-    const raw = (rawOverride ?? couponInput).trim();
-    if (raw.length < 4) {
-      setCouponError("Enter a coupon code (at least 4 characters).");
-      return;
-    }
-    if (!plan.isPaid) return;
-    setCouponApplying(true);
-    setCouponError(null);
-    try {
-      const res = await fetch("/api/billing/coupon-preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          planId: plan.id,
-          billingCycle,
-          couponCode: raw,
-        }),
-      });
-      const json = (await res.json().catch(() => ({}))) as {
-        success?: boolean;
-        error?: string;
-        coupon?: { code: string; percentOff: number };
-        originalChargeAmount?: number;
-        discountedChargeAmount?: number;
-        discountAmount?: number;
-      };
-      if (!res.ok || json.success === false) {
-        setAppliedCoupon(null);
-        setCouponError(typeof json.error === "string" ? json.error : "Invalid coupon.");
+  const applyCoupon = useCallback(
+    async (rawOverride?: string) => {
+      const raw = (rawOverride ?? couponInput).trim();
+      if (raw.length < 4) {
+        setCouponError("Enter a coupon code (at least 4 characters).");
         return;
       }
-      if (
-        json.coupon &&
-        typeof json.originalChargeAmount === "number" &&
-        typeof json.discountedChargeAmount === "number" &&
-        typeof json.discountAmount === "number"
-      ) {
-        setCouponError(null);
-        setAppliedCoupon({
-          code: json.coupon.code,
-          percentOff: json.coupon.percentOff,
-          originalChargeAmount: json.originalChargeAmount,
-          discountedChargeAmount: json.discountedChargeAmount,
-          discountAmount: json.discountAmount,
+      if (!plan.isPaid) return;
+      setCouponApplying(true);
+      setCouponError(null);
+      try {
+        const res = await fetch("/api/billing/coupon-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            planId: plan.id,
+            billingCycle,
+            couponCode: raw,
+          }),
         });
+        const json = (await res.json().catch(() => ({}))) as {
+          success?: boolean;
+          error?: string;
+          coupon?: { code: string; percentOff: number };
+          originalChargeAmount?: number;
+          discountedChargeAmount?: number;
+          discountAmount?: number;
+        };
+        if (!res.ok || json.success === false) {
+          setAppliedCoupon(null);
+          setCouponError(typeof json.error === "string" ? json.error : "Invalid coupon.");
+          return;
+        }
+        if (
+          json.coupon &&
+          typeof json.originalChargeAmount === "number" &&
+          typeof json.discountedChargeAmount === "number" &&
+          typeof json.discountAmount === "number"
+        ) {
+          setCouponError(null);
+          setAppliedCoupon({
+            code: json.coupon.code,
+            percentOff: json.coupon.percentOff,
+            originalChargeAmount: json.originalChargeAmount,
+            discountedChargeAmount: json.discountedChargeAmount,
+            discountAmount: json.discountAmount,
+          });
+        }
+      } catch {
+        setAppliedCoupon(null);
+        setCouponError("Could not validate coupon.");
+      } finally {
+        setCouponApplying(false);
       }
-    } catch {
-      setAppliedCoupon(null);
-      setCouponError("Could not validate coupon.");
-    } finally {
-      setCouponApplying(false);
-    }
-  };
+    },
+    [billingCycle, couponInput, plan.id, plan.isPaid],
+  );
 
   useEffect(() => {
     setAppliedCoupon(null);
@@ -249,7 +252,7 @@ export function CheckoutPage() {
     if (autoApplyKeyRef.current === key) return;
     autoApplyKeyRef.current = key;
     void applyCoupon(couponParam);
-  }, [billingCycle, couponParam, plan.id, plan.isPaid]);
+  }, [applyCoupon, billingCycle, couponParam, plan.id, plan.isPaid]);
 
   const startCheckout = async () => {
     if (!plan.isPaid) {

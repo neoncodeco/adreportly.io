@@ -147,8 +147,8 @@ export function OfferPageClient({
                 transition={{ duration: 0.55, delay: 0.16 }}
                 className="mt-6 max-w-4xl text-base leading-8 text-muted-foreground sm:text-lg"
               >
-                Facebook Ads data, insight, secure share link এবং client-ready report এক জায়গায়
-                পেয়ে আপনার daily reporting আরও সহজ হবে। এখান থেকে package, coupon code এবং offer
+                Facebook Ads data, insight, secure share link এবং client-ready report এক জায়গায় পেয়ে
+                আপনার daily reporting আরও সহজ হবে। এখান থেকে package, coupon code এবং offer
                 eligibility দেখে নিতে পারবেন।
               </motion.p>
             </div>
