@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import {
+  canUseZeroChargeCheckout,
   computeDiscountedCharge,
   couponBlockReason,
   normalizeCouponCode,
@@ -82,7 +83,9 @@ export async function POST(request: Request) {
 
   const chargeAmount = getCheckoutChargeAmount(plan, parsed.data.billingCycle);
   const pricing = getCheckoutPricing(plan, parsed.data.billingCycle);
-  const { finalAmount, discountAmount } = computeDiscountedCharge(chargeAmount, doc.percentOff);
+  const { finalAmount, discountAmount } = computeDiscountedCharge(chargeAmount, doc.percentOff, {
+    allowZeroTotal: canUseZeroChargeCheckout(plan.id, doc.percentOff),
+  });
 
   return NextResponse.json({
     success: true,

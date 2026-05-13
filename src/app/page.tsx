@@ -7,17 +7,39 @@ import { Pricing } from "@/components/landing/Pricing";
 import { Testimonials } from "@/components/landing/Testimonials";
 import { FAQ } from "@/components/landing/FAQ";
 import { Footer } from "@/components/landing/Footer";
+import { STANDARD_OFFER_PATH } from "@/lib/billing/offer-config";
+import { getLatestStandardOfferCouponSafe } from "@/lib/billing/offer-server";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const offerCoupon = await getLatestStandardOfferCouponSafe();
+
   return (
     <div id="top" className="min-h-screen overflow-x-hidden bg-background">
       <Navbar />
       <main>
-        <Hero />
+        <Hero
+          offer={
+            offerCoupon
+              ? {
+                  code: offerCoupon.code,
+                  href: STANDARD_OFFER_PATH,
+                }
+              : null
+          }
+        />
         <HowItWorks />
         <Stats />
         <Features />
-        <Pricing />
+        <Pricing
+          offer={
+            offerCoupon
+              ? {
+                  code: offerCoupon.code,
+                  href: STANDARD_OFFER_PATH,
+                }
+              : null
+          }
+        />
         <Testimonials />
         <FAQ />
       </main>

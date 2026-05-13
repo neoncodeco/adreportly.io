@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
@@ -7,6 +8,7 @@ import {
   type CheckoutCouponMetadata,
 } from "@/lib/billing/uddoktapay";
 import {
+  canUseZeroChargeCheckout,
   computeDiscountedCharge,
   couponBlockReason,
   normalizeCouponCode,
@@ -18,11 +20,14 @@ import {
 } from "@/lib/billing/plans";
 import {
   getBillingChangeKind,
+  getPlanCycleForStorage,
   normalizeBillingCycle,
   syncUserScheduledBillingChangeIfDue,
 } from "@/lib/billing/subscription-state";
 import { requireMongo } from "@/lib/db";
+import { invalidateCacheKey } from "@/lib/server-cache";
 import { CouponModel } from "@/models/coupon";
+import { OfferRedemptionModel } from "@/models/offer-redemption";
 import { PaymentTransactionModel } from "@/models/payment-transaction";
 import { SubscriptionModel } from "@/models/subscription";
 import { UserModel } from "@/models/user";
@@ -44,7 +49,22 @@ const bodySchema = z.object({
   billingCycle: z.enum(["monthly", "yearly"]).default("monthly"),
   billing: billingSchema,
   couponCode: z.string().max(40).optional(),
+  deviceId: z.string().min(16).max(200).optional(),
 });
+
+function addBillingPeriod(start: Date, cycle: "monthly" | "yearly"): Date {
+  const result = new Date(start.getTime());
+  if (cycle === "yearly") {
+    result.setFullYear(result.getFullYear() + 1);
+  } else {
+    result.setMonth(result.getMonth() + 1);
+  }
+  return result;
+}
+
+function hashDeviceId(value: string) {
+  return createHash("sha256").update(value).digest("hex");
+}
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -124,6 +144,7 @@ export async function POST(request: Request) {
   const normalizedCoupon = rawCoupon ? normalizeCouponCode(rawCoupon) : "";
   let chargeAmount = baseChargeAmount;
   let couponPayload: CheckoutCouponMetadata | null = null;
+  let zeroChargeCheckout = false;
 
   if (normalizedCoupon.length >= 4) {
     const couponDoc = await CouponModel.findOne({ code: normalizedCoupon }).exec();
@@ -134,9 +155,13 @@ export async function POST(request: Request) {
     if (block) {
       return NextResponse.json({ error: block }, { status: 400 });
     }
+    zeroChargeCheckout = canUseZeroChargeCheckout(plan.id, couponDoc.percentOff);
     const { finalAmount, discountAmount } = computeDiscountedCharge(
       baseChargeAmount,
       couponDoc.percentOff,
+      {
+        allowZeroTotal: zeroChargeCheckout,
+      },
     );
     chargeAmount = finalAmount;
     couponPayload = {
@@ -152,6 +177,193 @@ export async function POST(request: Request) {
   const billingInfo = parsed.data.billing;
   const resolvedName = billingInfo?.fullName ?? userRow?.fullName ?? session.user.name ?? null;
   const resolvedEmail = billingInfo?.email ?? session.user.email;
+
+  if (chargeAmount === 0 && couponPayload && zeroChargeCheckout) {
+    const rawDeviceId = parsed.data.deviceId?.trim();
+    if (!rawDeviceId) {
+      return NextResponse.json(
+        { error: "Offer checkout requires a valid device session." },
+        { status: 400 },
+      );
+    }
+
+    const deviceHash = hashDeviceId(rawDeviceId);
+    const [existingUserClaim, existingDeviceClaim] = await Promise.all([
+      OfferRedemptionModel.findOne({ userId: session.user.id }).select("_id").lean().exec(),
+      OfferRedemptionModel.findOne({ deviceHash }).select("_id").lean().exec(),
+    ]);
+
+    if (existingUserClaim) {
+      return NextResponse.json(
+        { error: "This account has already used the Standard offer once." },
+        { status: 409 },
+      );
+    }
+
+    if (existingDeviceClaim) {
+      return NextResponse.json(
+        { error: "This device has already used the Standard offer once." },
+        { status: 409 },
+      );
+    }
+
+    const now = new Date();
+    const periodEnd = addBillingPeriod(now, parsed.data.billingCycle);
+
+    let claimId: string | null = null;
+
+    try {
+      const claim = await OfferRedemptionModel.create({
+        userId: session.user.id,
+        deviceHash,
+        couponId: couponPayload.couponMongoId,
+        couponCode: couponPayload.couponCode,
+        offerSlug: "standard",
+        planId: plan.id,
+        billingCycle: parsed.data.billingCycle,
+        subscriptionId: null,
+        transactionId: null,
+        metadata: {
+          source: "checkout_offer_claim",
+          status: "initiated",
+          billingInfo: billingInfo ?? null,
+        },
+        claimedAt: now,
+      });
+      claimId = claim._id.toString();
+
+      await SubscriptionModel.updateMany(
+        {
+          userId: session.user.id,
+          status: { $in: ["pending", "active", "past_due", "incomplete"] },
+        },
+        {
+          $set: {
+            status: "canceled",
+            canceledAt: now,
+          },
+        },
+      ).exec();
+
+      const sub = await SubscriptionModel.create({
+        userId: session.user.id,
+        agencyId: userRow?.agencyId ?? null,
+        planId: plan.id,
+        billingCycle: parsed.data.billingCycle,
+        status: "active",
+        amount: 0,
+        currency: plan.currency,
+        provider: "offer_claim",
+        providerCustomerId: null,
+        providerSubscriptionId: null,
+        providerReference: `offer:${couponPayload.couponCode}:${claimId}`,
+        periodStartAt: now,
+        periodEndAt: periodEnd,
+        nextBillingAt: periodEnd,
+        canceledAt: null,
+        metadata: {
+          source: "checkout_offer_claim",
+          billingCycle: parsed.data.billingCycle,
+          checkoutPricing: pricing,
+          billingInfo: billingInfo ?? null,
+          baseChargeAmount,
+          couponMongoId: couponPayload.couponMongoId,
+          couponCode: couponPayload.couponCode,
+          couponPercentOff: couponPayload.couponPercentOff,
+          originalChargeAmount: couponPayload.originalChargeAmount,
+          couponDiscountAmount: couponPayload.discountAmount,
+          couponRedeemed: true,
+          deviceHash,
+        },
+      });
+
+      const payment = await PaymentTransactionModel.create({
+        userId: session.user.id,
+        subscriptionId: sub._id.toString(),
+        planId: plan.id,
+        provider: "offer_claim",
+        providerPaymentId: `offer_${sub._id.toString()}`,
+        providerSubscriptionId: null,
+        providerReference: sub.providerReference,
+        amount: 0,
+        currency: plan.currency,
+        status: "paid",
+        paidAt: now,
+        raw: {
+          source: "checkout_offer_claim",
+          billingInfo: billingInfo ?? null,
+          couponCode: couponPayload.couponCode,
+          originalChargeAmount: couponPayload.originalChargeAmount,
+        },
+      });
+
+      await Promise.all([
+        UserModel.updateOne(
+          { _id: session.user.id },
+          {
+            $set: {
+              billingPlanId: plan.id,
+              billingStatus: "active",
+              billingCycle: getPlanCycleForStorage(plan.id, parsed.data.billingCycle),
+              billingCurrentPeriodEnd: periodEnd,
+              billingScheduledPlanId: "free",
+              billingScheduledCycle: null,
+              billingScheduledChangeAt: periodEnd,
+            },
+          },
+        ).exec(),
+        CouponModel.updateOne(
+          { _id: couponPayload.couponMongoId },
+          { $inc: { redemptionCount: 1 } },
+        ).exec(),
+        OfferRedemptionModel.updateOne(
+          { _id: claim._id },
+          {
+            $set: {
+              subscriptionId: sub._id.toString(),
+              transactionId: payment._id.toString(),
+              metadata: {
+                source: "checkout_offer_claim",
+                status: "completed",
+                grantedAt: now.toISOString(),
+              },
+            },
+          },
+        ).exec(),
+      ]);
+
+      invalidateCacheKey(`user:billing-me:${session.user.id}`);
+
+      return NextResponse.json({
+        redirectTo: "/dashboard/billing",
+        directActivation: true,
+        subscriptionId: sub._id.toString(),
+      });
+    } catch (e) {
+      const maybeMongo = e as { code?: number; keyPattern?: Record<string, number> };
+      if (claimId) {
+        await OfferRedemptionModel.deleteOne({ _id: claimId, subscriptionId: null }).catch(
+          () => null,
+        );
+      }
+      if (maybeMongo?.code === 11000) {
+        if (maybeMongo.keyPattern?.userId) {
+          return NextResponse.json(
+            { error: "This account has already used the Standard offer once." },
+            { status: 409 },
+          );
+        }
+        if (maybeMongo.keyPattern?.deviceHash) {
+          return NextResponse.json(
+            { error: "This device has already used the Standard offer once." },
+            { status: 409 },
+          );
+        }
+      }
+      const msg = e instanceof Error ? e.message : "Could not activate your offer.";
+      return NextResponse.json({ error: msg }, { status: 500 });
+    }
+  }
 
   let checkout: Awaited<ReturnType<typeof createUddoktaPayCheckoutSession>>;
   try {

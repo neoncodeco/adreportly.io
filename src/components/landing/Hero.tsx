@@ -6,10 +6,18 @@ import { ArrowRight, PlayCircle, Sparkles, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Bar, BarChart, ResponsiveContainer, XAxis, Cell } from "recharts";
 import { mockSpendTrend } from "@/lib/mock-data";
+import { OfferPromoBanner } from "@/components/landing/OfferPromoBanner";
 
 const headline = ["Turn", "ad", "spend", "into"];
 
-export function Hero() {
+export function Hero({
+  offer,
+}: {
+  offer?: {
+    code: string;
+    href: string;
+  } | null;
+}) {
   return (
     <section className="relative overflow-hidden bg-gradient-hero">
       {/* Decorative animated blobs */}
@@ -218,6 +226,8 @@ export function Hero() {
           </motion.div>
         </motion.div>
       </div>
+
+      {offer ? <OfferPromoBanner couponCode={offer.code} href={offer.href} /> : null}
 
       {/* Logo strip */}
       <div className="relative border-t border-border/60 bg-background/40 backdrop-blur">

@@ -12,9 +12,17 @@ import {
   getCheckoutPricing,
   type BillingCycle,
 } from "@/lib/billing/plans";
+import { STANDARD_OFFER_PLAN_ID } from "@/lib/billing/offer-config";
 import { cn } from "@/lib/utils";
 
-export function Pricing() {
+export function Pricing({
+  offer,
+}: {
+  offer?: {
+    code: string;
+    href: string;
+  } | null;
+}) {
   const { user } = useAuth();
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   return (
@@ -57,6 +65,7 @@ export function Pricing() {
             const selectedPrice = getBillingCyclePrice(plan, billingCycle);
             const yearlyP =
               plan.isPaid && billingCycle === "yearly" ? getCheckoutPricing(plan, "yearly") : null;
+            const isOfferPlan = plan.id === STANDARD_OFFER_PLAN_ID && Boolean(offer);
             return (
               <motion.div
                 key={plan.name}
@@ -71,6 +80,12 @@ export function Pricing() {
                     : "card-brutal bg-card",
                 )}
               >
+                {isOfferPlan ? (
+                  <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-brand px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-brand-foreground">
+                    <Sparkles className="h-3 w-3" />
+                    {offer?.code}
+                  </span>
+                ) : null}
                 {plan.highlight && (
                   <span className="absolute -top-3.5 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-foreground shadow-glow">
                     <Sparkles className="h-3 w-3" />
@@ -179,18 +194,24 @@ export function Pricing() {
                 >
                   <Link
                     href={
-                      plan.id === "enterprise"
-                        ? user
-                          ? "/dashboard/billing/custom"
-                          : `/signup?next=${encodeURIComponent("/dashboard/billing/custom")}`
-                        : plan.isPaid
-                          ? `/checkout?plan=${plan.id}&cycle=${billingCycle}`
-                          : user
-                            ? "/dashboard"
-                            : "/signup"
+                      isOfferPlan
+                        ? (offer?.href ?? `/checkout?plan=${plan.id}&cycle=${billingCycle}`)
+                        : plan.id === "enterprise"
+                          ? user
+                            ? "/dashboard/billing/custom"
+                            : `/signup?next=${encodeURIComponent("/dashboard/billing/custom")}`
+                          : plan.isPaid
+                            ? `/checkout?plan=${plan.id}&cycle=${billingCycle}`
+                            : user
+                              ? "/dashboard"
+                              : "/signup"
                     }
                   >
-                    {plan.isPaid && user ? `Choose ${plan.name}` : plan.cta}
+                    {isOfferPlan
+                      ? "View Offer"
+                      : plan.isPaid && user
+                        ? `Choose ${plan.name}`
+                        : plan.cta}
                   </Link>
                 </Button>
               </motion.div>

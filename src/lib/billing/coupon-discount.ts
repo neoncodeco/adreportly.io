@@ -14,6 +14,7 @@ export function normalizeCouponCode(raw: string): string {
 export function computeDiscountedCharge(
   chargeAmount: number,
   percentOff: number,
+  options?: { allowZeroTotal?: boolean },
 ): { finalAmount: number; discountAmount: number } {
   const amount = Math.max(0, Math.floor(chargeAmount));
   const pct = Math.min(100, Math.max(0, Math.round(percentOff)));
@@ -21,9 +22,16 @@ export function computeDiscountedCharge(
     return { finalAmount: 0, discountAmount: 0 };
   }
   const rawDiscount = Math.round((amount * pct) / 100);
+  if (options?.allowZeroTotal && pct >= 100) {
+    return { finalAmount: 0, discountAmount: amount };
+  }
   const discountAmount = Math.min(amount - 1, rawDiscount);
   const finalAmount = Math.max(1, amount - discountAmount);
   return { finalAmount, discountAmount: amount - finalAmount };
+}
+
+export function canUseZeroChargeCheckout(planId: string, percentOff: number): boolean {
+  return planId === "starter" && Math.round(percentOff) >= 100;
 }
 
 export type CouponDocLike = {

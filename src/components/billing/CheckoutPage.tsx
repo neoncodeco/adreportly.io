@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Loader2,
@@ -111,6 +111,8 @@ export function CheckoutPage() {
   const router = useRouter();
   const planId = params.get("plan");
   const cycleParam = params.get("cycle");
+  const couponParam = params.get("coupon")?.trim() ?? "";
+  const offerParam = params.get("offer");
   const plan = useMemo(() => getBillingPlanById(planId) ?? BILLING_PLANS[1], [planId]);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>(
     cycleParam === "yearly" ? "yearly" : "monthly",
@@ -137,6 +139,7 @@ export function CheckoutPage() {
     discountedChargeAmount: number;
     discountAmount: number;
   } | null>(null);
+  const autoApplyKeyRef = useRef<string | null>(null);
 
   const invoiceNumber = useMemo(() => {
     const d = new Date();
@@ -162,8 +165,20 @@ export function CheckoutPage() {
       ? appliedCoupon.discountedChargeAmount
       : pricing.totalDue;
 
-  const applyCoupon = async () => {
-    const raw = couponInput.trim();
+  const isOfferCheckout = offerParam === "standard";
+
+  const getOfferDeviceId = () => {
+    if (typeof window === "undefined") return "";
+    const storageKey = "adreportly-offer-device-id";
+    const existing = window.localStorage.getItem(storageKey);
+    if (existing && existing.length >= 16) return existing;
+    const created = crypto.randomUUID();
+    window.localStorage.setItem(storageKey, created);
+    return created;
+  };
+
+  const applyCoupon = async (rawOverride?: string) => {
+    const raw = (rawOverride ?? couponInput).trim();
     if (raw.length < 4) {
       setCouponError("Enter a coupon code (at least 4 characters).");
       return;
@@ -223,6 +238,19 @@ export function CheckoutPage() {
     setCouponError(null);
   }, [plan.id, billingCycle]);
 
+  useEffect(() => {
+    if (!couponParam) return;
+    setCouponInput(couponParam);
+  }, [couponParam]);
+
+  useEffect(() => {
+    if (!couponParam || !plan.isPaid) return;
+    const key = `${plan.id}:${billingCycle}:${couponParam}`;
+    if (autoApplyKeyRef.current === key) return;
+    autoApplyKeyRef.current = key;
+    void applyCoupon(couponParam);
+  }, [billingCycle, couponParam, plan.id, plan.isPaid]);
+
   const startCheckout = async () => {
     if (!plan.isPaid) {
       router.push("/signup");
@@ -248,20 +276,34 @@ export function CheckoutPage() {
             country: billing.country || null,
           },
           ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
+          ...(isOfferCheckout ? { deviceId: getOfferDeviceId() } : {}),
         }),
       });
-      let json: { error?: string; checkout_url?: string } = {};
+      let json: { error?: string; checkout_url?: string; redirectTo?: string } = {};
       try {
         json = (await res.json()) as { error?: string; checkout_url?: string };
       } catch {
         // Non-JSON response (e.g. provider/network upstream errors)
       }
       if (res.status === 401) {
-        router.push(`/login?next=${encodeURIComponent(`/checkout?plan=${plan.id}`)}`);
+        router.push(
+          `/login?next=${encodeURIComponent(
+            `/checkout?plan=${plan.id}&cycle=${billingCycle}${couponParam ? `&coupon=${encodeURIComponent(couponParam)}` : ""}${offerParam ? `&offer=${encodeURIComponent(offerParam)}` : ""}`,
+          )}`,
+        );
         return;
       }
-      if (!res.ok || !json.checkout_url) {
+      if (!res.ok) {
         setError(json.error ?? "Could not start checkout.");
+        return;
+      }
+      if (json.redirectTo) {
+        router.push(json.redirectTo);
+        router.refresh();
+        return;
+      }
+      if (!json.checkout_url) {
+        setError("Could not start checkout.");
         return;
       }
       window.location.assign(json.checkout_url);
@@ -278,11 +320,11 @@ export function CheckoutPage() {
         {/* Back */}
         <button
           type="button"
-          onClick={() => router.push("/#pricing")}
+          onClick={() => router.push(isOfferCheckout ? "/offer/standard" : "/#pricing")}
           className="mb-6 flex items-center gap-1.5 text-sm text-foreground/80 transition hover:text-foreground"
         >
           <ChevronLeft className="h-4 w-4" />
-          Back to pricing
+          {isOfferCheckout ? "Back to offer" : "Back to pricing"}
         </button>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
@@ -462,17 +504,20 @@ export function CheckoutPage() {
             <div className="rounded-3xl border border-border bg-card p-5 shadow-soft sm:p-6">
               <h2 className="mb-4 flex items-center gap-2 text-base font-bold">
                 <CreditCard className="h-4 w-4 text-emerald-700" />
-                Payment Method
+                {displayTotal === 0 ? "Activation Method" : "Payment Method"}
               </h2>
               <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 p-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
                   <Lock className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold">UddoktaPay Secure Gateway</p>
+                  <p className="text-sm font-semibold">
+                    {displayTotal === 0 ? "Direct plan activation" : "UddoktaPay Secure Gateway"}
+                  </p>
                   <p className="text-xs text-foreground/75">
-                    You will be redirected to complete payment securely. Card, mobile banking &amp;
-                    more accepted.
+                    {displayTotal === 0
+                      ? "This 100% Standard offer activates instantly after checkout. No payment gateway, transaction number, or phone entry is required."
+                      : "You will be redirected to complete payment securely. Card, mobile banking & more accepted."}
                   </p>
                 </div>
               </div>
@@ -495,8 +540,12 @@ export function CheckoutPage() {
                 <Lock className="mr-2 h-4 w-4" />
               )}
               {loading
-                ? "Redirecting to payment…"
-                : `Pay ${sym}${displayTotal.toLocaleString()} securely`}
+                ? displayTotal === 0
+                  ? "Activating plan…"
+                  : "Redirecting to payment…"
+                : displayTotal === 0
+                  ? "Activate Standard Package"
+                  : `Pay ${sym}${displayTotal.toLocaleString()} securely`}
               {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
 
