@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
     secret,
     secureCookie: request.nextUrl.protocol === "https:",
   });
-  const loggedIn = !!token;
+  const loggedIn = !!token?.sub;
   const hasAgencySession = !!request.cookies.get("ar_agency")?.value;
   const path = request.nextUrl.pathname;
   const isAdmin = token?.role === "admin";

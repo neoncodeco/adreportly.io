@@ -27,6 +27,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { deliveryDotClass, deliveryLabel, deliveryPillClass } from "@/lib/meta-delivery";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -39,20 +40,22 @@ import {
 } from "@/components/ui/select";
 import {
   DASHBOARD_OVERVIEW_STALE_MS,
+  REPORT_DATE_PRESET_OPTIONS,
   dashboardQk,
   fetchDashboardOverview,
   type DashboardOverview,
+  type ReportDatePreset,
 } from "@/lib/dashboard-queries";
 
 type CampaignRow = NonNullable<DashboardOverview["campaigns"]>[number];
 type StatusFilter = "all" | CampaignRow["status"];
-type SortKey = "spend" | "results" | "roas" | "name";
+type SortKey = "spend" | "results" | "costPerResult" | "roas" | "name";
 
 const DASHBOARD_CAMPAIGN_LIST_LIMIT = 5;
 
 const statMeta = [
-  { key: "overview" as const, label: "Live overview · 30d", icon: Sparkles, highlight: true },
-  { key: "total" as const, label: "Total Spend", icon: DollarSign, highlight: false },
+  { key: "overview" as const, label: "Live overview", icon: Sparkles, highlight: true },
+  { key: "total" as const, label: "Amount spent", icon: DollarSign, highlight: false },
   { key: "conversions" as const, label: "Conversions", icon: Target, highlight: false },
   { key: "roas" as const, label: "Avg ROAS", icon: Activity, highlight: false },
   { key: "cpc" as const, label: "Avg CPC", icon: MousePointerClick, highlight: false },
@@ -81,22 +84,37 @@ const accentByKey = {
   },
 } as const;
 
+function costPerResult(row: CampaignRow) {
+  return row.costPerResult ?? (row.results > 0 ? row.spend / row.results : null);
+}
+
+function money(sym: string, value: number, digits = 2) {
+  return `${sym}${value.toLocaleString(undefined, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  })}`;
+}
+
 export function DashboardHome() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortKey>("spend");
+  const [datePreset, setDatePreset] = useState<ReportDatePreset>("last_30d");
   /** Collapsed by default on small screens to save vertical space */
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const { data, isPending, isError, error, refetch, isRefetching } = useQuery({
-    queryKey: dashboardQk.overview(),
-    queryFn: fetchDashboardOverview,
+    queryKey: dashboardQk.overview(datePreset),
+    queryFn: () => fetchDashboardOverview({ datePreset }),
     staleTime: DASHBOARD_OVERVIEW_STALE_MS,
   });
 
   const sym = data?.currencySymbol ?? "৳";
   const spendTrend = data?.spendTrend ?? [];
   const kpis = data?.kpis;
+  const dateLabel =
+    REPORT_DATE_PRESET_OPTIONS.find((option) => option.value === datePreset)?.label ??
+    "Last 30 days";
 
   const baseCampaignRows = useMemo((): CampaignRow[] => {
     if (!data) return [];
@@ -134,6 +152,12 @@ export function DashboardHome() {
     rows.sort((a, b) => {
       if (sortBy === "spend") return b.spend - a.spend;
       if (sortBy === "results") return b.results - a.results;
+      if (sortBy === "costPerResult") {
+        return (
+          (costPerResult(a) ?? Number.MAX_SAFE_INTEGER) -
+          (costPerResult(b) ?? Number.MAX_SAFE_INTEGER)
+        );
+      }
       if (sortBy === "roas") return b.roas - a.roas;
       return a.name.localeCompare(b.name);
     });
@@ -164,9 +188,16 @@ export function DashboardHome() {
       } else if (s.key === "cpc") {
         value = kpis?.avgCpc ?? "—";
       }
-      return { ...s, ...accentByKey[s.key], value, delta, up };
+      return {
+        ...s,
+        ...accentByKey[s.key],
+        label: s.key === "overview" ? `Live overview · ${dateLabel}` : s.label,
+        value,
+        delta,
+        up,
+      };
     });
-  }, [kpis, sym]);
+  }, [dateLabel, kpis, sym]);
 
   if (isPending) {
     return (
@@ -253,22 +284,42 @@ export function DashboardHome() {
                       className="h-11 rounded-xl"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid gap-3 min-[420px]:grid-cols-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="dash-date-m" className="text-xs">
+                        Date range
+                      </Label>
+                      <Select
+                        value={datePreset}
+                        onValueChange={(v) => setDatePreset(v as ReportDatePreset)}
+                      >
+                        <SelectTrigger id="dash-date-m" className="h-11 rounded-xl">
+                          <SelectValue placeholder="Date range" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {REPORT_DATE_PRESET_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="space-y-1.5">
                       <Label htmlFor="dash-status-m" className="text-xs">
-                        Status
+                        Delivery
                       </Label>
                       <Select
                         value={statusFilter}
                         onValueChange={(v) => setStatusFilter(v as StatusFilter)}
                       >
                         <SelectTrigger id="dash-status-m" className="h-11 rounded-xl">
-                          <SelectValue placeholder="Status" />
+                          <SelectValue placeholder="Delivery" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All</SelectItem>
                           <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="paused">Paused</SelectItem>
+                          <SelectItem value="paused">Off</SelectItem>
                           <SelectItem value="completed">Completed</SelectItem>
                           <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
@@ -283,8 +334,9 @@ export function DashboardHome() {
                           <SelectValue placeholder="Sort" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="spend">Spend</SelectItem>
+                          <SelectItem value="spend">Amount spent</SelectItem>
                           <SelectItem value="results">Results</SelectItem>
+                          <SelectItem value="costPerResult">Cost / result</SelectItem>
                           <SelectItem value="roas">ROAS</SelectItem>
                           <SelectItem value="name">Name</SelectItem>
                         </SelectContent>
@@ -292,7 +344,7 @@ export function DashboardHome() {
                     </div>
                   </div>
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    KPIs and chart use all accounts (30d). Lists use filters —{" "}
+                    KPIs and chart use all accounts ({dateLabel}). Lists use filters —{" "}
                     <Link
                       href="/dashboard/campaigns"
                       className="font-medium text-primary underline"
@@ -322,7 +374,7 @@ export function DashboardHome() {
               <div>
                 <h2 className="text-sm font-bold sm:text-base">Filter campaigns</h2>
                 <p className="text-[11px] text-muted-foreground sm:text-xs">
-                  Chart and KPI cards use all enabled accounts (last 30 days). The campaigns block
+                  Chart and KPI cards use all enabled accounts ({dateLabel}). The campaigns block
                   shows up to five rows from your filters — open{" "}
                   <Link
                     href="/dashboard/campaigns"
@@ -334,7 +386,7 @@ export function DashboardHome() {
                 </p>
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="dash-campaign-search" className="text-xs">
                   Search
@@ -348,20 +400,40 @@ export function DashboardHome() {
                 />
               </div>
               <div className="space-y-1.5">
+                <Label htmlFor="dash-date" className="text-xs">
+                  Date range
+                </Label>
+                <Select
+                  value={datePreset}
+                  onValueChange={(v) => setDatePreset(v as ReportDatePreset)}
+                >
+                  <SelectTrigger id="dash-date" className="h-10 rounded-xl">
+                    <SelectValue placeholder="Date range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REPORT_DATE_PRESET_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
                 <Label htmlFor="dash-status" className="text-xs">
-                  Status
+                  Delivery
                 </Label>
                 <Select
                   value={statusFilter}
                   onValueChange={(v) => setStatusFilter(v as StatusFilter)}
                 >
                   <SelectTrigger id="dash-status" className="h-10 rounded-xl">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder="Delivery" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All statuses</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="paused">Paused</SelectItem>
+                    <SelectItem value="paused">Off</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
@@ -376,8 +448,9 @@ export function DashboardHome() {
                     <SelectValue placeholder="Sort" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="spend">Spend (high → low)</SelectItem>
+                    <SelectItem value="spend">Amount spent (high → low)</SelectItem>
                     <SelectItem value="results">Results (high → low)</SelectItem>
+                    <SelectItem value="costPerResult">Cost / result (low → high)</SelectItem>
                     <SelectItem value="roas">ROAS (high → low)</SelectItem>
                     <SelectItem value="name">Name (A–Z)</SelectItem>
                   </SelectContent>
@@ -446,11 +519,11 @@ export function DashboardHome() {
         <div className="min-w-0 rounded-3xl border border-border bg-card p-3 shadow-soft sm:p-6 lg:col-span-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-3">
             <div className="min-w-0">
-              <h3 className="text-base font-bold sm:text-lg">Ad Spend Trend</h3>
-              <p className="text-xs text-muted-foreground">Daily spend vs. clicks (last 30 days)</p>
+              <h3 className="text-base font-bold sm:text-lg">Amount Spent Trend</h3>
+              <p className="text-xs text-muted-foreground">Daily spend vs. clicks ({dateLabel})</p>
             </div>
             <span className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[10px] font-medium text-muted-foreground sm:px-3 sm:py-1.5 sm:text-xs">
-              Last 30 days <span className="hidden opacity-80 sm:inline">(account total)</span>
+              {dateLabel} <span className="hidden opacity-80 sm:inline">(account total)</span>
             </span>
           </div>
 
@@ -620,20 +693,17 @@ export function DashboardHome() {
                   </div>
                   <span
                     className={cn(
-                      "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
-                      c.status === "active" && "bg-success/15 text-success",
-                      c.status === "paused" && "bg-amber-500/15 text-amber-700 dark:text-amber-400",
-                      (c.status === "completed" || c.status === "other") &&
-                        "bg-muted text-muted-foreground",
+                      "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                      deliveryPillClass(c.status),
                     )}
                   >
-                    {c.status}
+                    {deliveryLabel(c.status)}
                   </span>
                 </div>
-                <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/60 pt-3 text-center">
+                <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border/60 pt-3 text-center sm:grid-cols-4">
                   <div>
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Spend
+                      Amount spent
                     </div>
                     <div className="mt-0.5 text-sm font-bold tabular-nums">
                       {sym}
@@ -647,6 +717,14 @@ export function DashboardHome() {
                       Results
                     </div>
                     <div className="mt-0.5 text-sm font-bold tabular-nums">{c.results}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Cost / result
+                    </div>
+                    <div className="mt-0.5 text-sm font-bold tabular-nums">
+                      {costPerResult(c) != null ? money(sym, costPerResult(c) as number) : "—"}
+                    </div>
                   </div>
                   <div>
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -669,15 +747,17 @@ export function DashboardHome() {
                 <tr className="text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   <th className="pb-3 pr-4">No</th>
                   <th className="pb-3 pr-4">Campaign Name</th>
-                  <th className="pb-3 pr-4 text-right">Spend</th>
+                  <th className="pb-3 pr-4">Delivery</th>
+                  <th className="pb-3 pr-4 text-right">Amount spent</th>
                   <th className="pb-3 pr-4 text-right">Results</th>
+                  <th className="pb-3 pr-4 text-right">Cost / result</th>
                   <th className="pb-3 text-right">ROAS</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedTableCampaigns.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                    <td colSpan={7} className="py-8 text-center text-muted-foreground">
                       {totalCampaignCount === 0
                         ? "No campaigns to show."
                         : "No campaigns match your filters."}
@@ -700,11 +780,26 @@ export function DashboardHome() {
                           </div>
                         </div>
                       </td>
+                      <td className="py-4 pr-4">
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                            deliveryPillClass(c.status),
+                          )}
+                        >
+                          <span
+                            className={cn("h-1.5 w-1.5 rounded-full", deliveryDotClass(c.status))}
+                          />
+                          {deliveryLabel(c.status)}
+                        </span>
+                      </td>
                       <td className="py-4 pr-4 text-right font-medium tabular-nums">
-                        {sym}
-                        {c.spend.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {money(sym, c.spend)}
                       </td>
                       <td className="py-4 pr-4 text-right tabular-nums">{c.results}</td>
+                      <td className="py-4 pr-4 text-right tabular-nums">
+                        {costPerResult(c) != null ? money(sym, costPerResult(c) as number) : "—"}
+                      </td>
                       <td className="py-4 text-right font-semibold tabular-nums">
                         {c.roas > 0 ? `${c.roas.toFixed(2)}×` : "—"}
                       </td>

@@ -13,6 +13,8 @@ export const CAMPAIGN_INSIGHTS_STALE_MS = 60_000;
 
 /** Meta `date_preset` values for campaign insights (reports / exports). */
 export const REPORT_DATE_PRESET_OPTIONS = [
+  { value: "today", label: "Today" },
+  { value: "last_2d", label: "Last 2 days" },
   { value: "last_7d", label: "Last 7 days" },
   { value: "last_14d", label: "Last 14 days" },
   { value: "last_28d", label: "Last 28 days" },
@@ -28,10 +30,20 @@ export const REPORT_DATE_PRESET_OPTIONS = [
 export type ReportDatePreset = (typeof REPORT_DATE_PRESET_OPTIONS)[number]["value"];
 
 export type DashboardCampaignsStatusFilter = "all" | "active" | "paused" | "completed" | "other";
-export type DashboardCampaignsSort = "spend" | "results" | "roas" | "name" | "ctr" | "cpc";
+export type DashboardCampaignsSort =
+  | "spend"
+  | "results"
+  | "costPerResult"
+  | "roas"
+  | "name"
+  | "ctr"
+  | "cpc";
+export type DashboardMetaStatus = "active" | "paused" | "completed" | "other";
+export type DashboardMetaStatusFilter = "all" | DashboardMetaStatus;
+export type DashboardMetaSort = DashboardCampaignsSort;
 
 export const dashboardQk = {
-  overview: () => ["dashboard", "overview"] as const,
+  overview: (datePreset = "last_30d") => ["dashboard", "overview", datePreset] as const,
   clients: () => ["dashboard", "clients"] as const,
   campaignInsights: (campaignId: string, datePreset: string) =>
     ["dashboard", "campaign-insights", campaignId, datePreset] as const,
@@ -41,10 +53,28 @@ export const dashboardQk = {
     q: string,
     status: DashboardCampaignsStatusFilter,
     sort: DashboardCampaignsSort,
-  ) => ["dashboard", "campaigns", "paged", { page, limit, q, status, sort }] as const,
+    datePreset: string,
+  ) => ["dashboard", "campaigns", "paged", { page, limit, q, status, sort, datePreset }] as const,
+  adsetsPage: (
+    page: number,
+    limit: number,
+    q: string,
+    status: DashboardMetaStatusFilter,
+    sort: DashboardMetaSort,
+    datePreset: string,
+  ) => ["dashboard", "adsets", "paged", { page, limit, q, status, sort, datePreset }] as const,
+  adsPage: (
+    page: number,
+    limit: number,
+    q: string,
+    status: DashboardMetaStatusFilter,
+    sort: DashboardMetaSort,
+    datePreset: string,
+  ) => ["dashboard", "ads", "paged", { page, limit, q, status, sort, datePreset }] as const,
 };
 
 export const DASHBOARD_CAMPAIGNS_PAGE_SIZE = 20;
+export const DASHBOARD_META_PAGE_SIZE = 20;
 
 export const shellQk = {
   profile: () => ["user", "profile"] as const,
@@ -76,6 +106,7 @@ export type DashboardOverview = {
     accounts: number;
     spend: number;
     results: number;
+    costPerResult?: number | null;
     roas: number;
     status: "active" | "paused" | "completed" | "other";
     ctr?: number;
@@ -89,6 +120,7 @@ export type DashboardOverview = {
     accounts: number;
     spend: number;
     results: number;
+    costPerResult: number | null;
     roas: number;
     status: "active" | "paused" | "completed" | "other";
     ctr: number;
@@ -104,8 +136,12 @@ export type DashboardOverview = {
 
 export type DashboardCampaignRow = NonNullable<DashboardOverview["campaigns"]>[number];
 
-export async function fetchDashboardOverview(): Promise<DashboardOverview> {
-  const res = await fetch("/api/dashboard/overview", creds);
+export async function fetchDashboardOverview(options?: {
+  datePreset?: ReportDatePreset;
+}): Promise<DashboardOverview> {
+  const datePreset = options?.datePreset ?? "last_30d";
+  const params = new URLSearchParams({ datePreset });
+  const res = await fetch(`/api/dashboard/overview?${params}`, creds);
   const json = (await res.json()) as DashboardOverview & { success?: boolean; error?: string };
   if (!res.ok || json.success === false) {
     throw new Error(typeof json.error === "string" ? json.error : "Could not load dashboard");
@@ -129,6 +165,7 @@ export async function fetchDashboardCampaignsPage(opts: {
   q?: string;
   status?: DashboardCampaignsStatusFilter;
   sort?: DashboardCampaignsSort;
+  datePreset?: ReportDatePreset;
 }): Promise<DashboardCampaignsPageResponse> {
   const limit = opts.limit ?? DASHBOARD_CAMPAIGNS_PAGE_SIZE;
   const status = opts.status ?? "all";
@@ -138,6 +175,7 @@ export async function fetchDashboardCampaignsPage(opts: {
     limit: String(limit),
     status,
     sort,
+    datePreset: opts.datePreset ?? "last_30d",
   });
   const q = opts.q?.trim() ?? "";
   if (q) params.set("q", q);
@@ -154,10 +192,156 @@ export async function fetchDashboardCampaignsPage(opts: {
     ...r,
     ctr: r.ctr ?? 0,
     cpc: r.cpc ?? 0,
+    costPerResult:
+      r.costPerResult != null ? r.costPerResult : r.results > 0 ? r.spend / r.results : null,
   }));
   return {
     ...json,
     campaigns,
+    pagination: json.pagination ?? {
+      page: 1,
+      limit,
+      total: 0,
+      totalPages: 1,
+    },
+    summary: json.summary ?? { activeCount: 0 },
+  };
+}
+
+export type DashboardAdSetRow = {
+  id: string;
+  code: string;
+  name: string;
+  campaignId: string | null;
+  campaignName: string;
+  accountName: string;
+  status: DashboardMetaStatus;
+  budget: number | null;
+  budgetType: "daily" | "lifetime" | null;
+  spend: number;
+  results: number;
+  costPerResult: number | null;
+  roas: number;
+  ctr: number;
+  cpc: number;
+  impressions: number;
+  clicks: number;
+};
+
+export type DashboardAdRow = {
+  id: string;
+  code: string;
+  name: string;
+  adsetId: string | null;
+  adsetName: string;
+  campaignId: string | null;
+  campaignName: string;
+  accountName: string;
+  previewUrl: string | null;
+  status: DashboardMetaStatus;
+  spend: number;
+  results: number;
+  costPerResult: number | null;
+  roas: number;
+  ctr: number;
+  cpc: number;
+  impressions: number;
+  clicks: number;
+};
+
+export type DashboardAdSetsPageResponse = {
+  success: boolean;
+  error?: string;
+  currencySymbol?: string;
+  connected?: boolean;
+  adsets: DashboardAdSetRow[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+  summary: { activeCount: number };
+};
+
+export type DashboardAdsPageResponse = {
+  success: boolean;
+  error?: string;
+  currencySymbol?: string;
+  connected?: boolean;
+  ads: DashboardAdRow[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+  summary: { activeCount: number };
+};
+
+function buildMetaPageParams(opts: {
+  page: number;
+  limit?: number;
+  q?: string;
+  status?: DashboardMetaStatusFilter;
+  sort?: DashboardMetaSort;
+  datePreset?: ReportDatePreset;
+}) {
+  const limit = opts.limit ?? DASHBOARD_META_PAGE_SIZE;
+  const params = new URLSearchParams({
+    page: String(opts.page),
+    limit: String(limit),
+    status: opts.status ?? "all",
+    sort: opts.sort ?? "spend",
+    datePreset: opts.datePreset ?? "last_30d",
+  });
+  const q = opts.q?.trim() ?? "";
+  if (q) params.set("q", q);
+  return { params, limit };
+}
+
+export async function fetchDashboardAdSetsPage(opts: {
+  page: number;
+  limit?: number;
+  q?: string;
+  status?: DashboardMetaStatusFilter;
+  sort?: DashboardMetaSort;
+  datePreset?: ReportDatePreset;
+}): Promise<DashboardAdSetsPageResponse> {
+  const { params, limit } = buildMetaPageParams(opts);
+  const res = await fetch(`/api/dashboard/adsets?${params}`, creds);
+  const json = (await res.json()) as DashboardAdSetsPageResponse & {
+    success?: boolean;
+    error?: string;
+    adsets?: DashboardAdSetRow[];
+  };
+  if (!res.ok || json.success === false) {
+    throw new Error(typeof json.error === "string" ? json.error : "Could not load ad sets");
+  }
+  return {
+    ...json,
+    adsets: json.adsets ?? [],
+    pagination: json.pagination ?? {
+      page: 1,
+      limit,
+      total: 0,
+      totalPages: 1,
+    },
+    summary: json.summary ?? { activeCount: 0 },
+  };
+}
+
+export async function fetchDashboardAdsPage(opts: {
+  page: number;
+  limit?: number;
+  q?: string;
+  status?: DashboardMetaStatusFilter;
+  sort?: DashboardMetaSort;
+  datePreset?: ReportDatePreset;
+}): Promise<DashboardAdsPageResponse> {
+  const { params, limit } = buildMetaPageParams(opts);
+  const res = await fetch(`/api/dashboard/ads?${params}`, creds);
+  const json = (await res.json()) as DashboardAdsPageResponse & {
+    success?: boolean;
+    error?: string;
+    ads?: DashboardAdRow[];
+  };
+  if (!res.ok || json.success === false) {
+    throw new Error(typeof json.error === "string" ? json.error : "Could not load ads");
+  }
+  return {
+    ...json,
+    ads: json.ads ?? [],
     pagination: json.pagination ?? {
       page: 1,
       limit,

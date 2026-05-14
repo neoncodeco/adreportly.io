@@ -4,6 +4,7 @@ import { upsertAgencyFromFacebook } from "@/lib/agency-service";
 import { signAgencyJwt, COOKIE_NAME } from "@/lib/jwt";
 import { connectDb } from "@/lib/db";
 import { decryptSecret } from "@/lib/encryption";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { UserModel } from "@/models/user";
 
 async function getUserFbCredentials(
@@ -22,6 +23,21 @@ async function getUserFbCredentials(
 }
 
 export async function GET(request: NextRequest) {
+  const rate = checkRateLimit({
+    key: `auth:facebook:callback:ip:${getClientIp(request)}`,
+    limit: 30,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (!rate.allowed) {
+    return NextResponse.redirect(
+      new URL(
+        "/dashboard/meta-connect?error=rate_limited",
+        process.env.NEXT_PUBLIC_SITE_URL ??
+          (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : request.nextUrl.origin),
+      ),
+    );
+  }
+
   const site =
     process.env.NEXT_PUBLIC_SITE_URL ??
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");

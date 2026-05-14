@@ -1,9 +1,11 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import type { JWT } from "next-auth/jwt";
 import bcrypt from "bcryptjs";
+import { isValidObjectId } from "mongoose";
 import { getAuthSecret } from "@/lib/auth-secret";
 import { requireMongo } from "@/lib/db";
-import { checkRateLimit } from "@/lib/security/rate-limit";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { UserModel } from "@/models/user";
 
 const authSecret = getAuthSecret();
@@ -26,6 +28,17 @@ type LeanAuthUser = {
   isEmailVerified?: boolean | null;
 };
 
+function clearStaleUserToken(token: JWT) {
+  delete token.sub;
+  delete token.email;
+  delete token.name;
+  delete token.role;
+  delete token.isBanned;
+  token.full_name = null;
+  token.organization = null;
+  return token;
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   secret: authSecret,
@@ -43,9 +56,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const password = credentials?.password as string | undefined;
         if (!email?.trim() || !password) return null;
         const normalizedEmail = email.trim().toLowerCase();
-        const ipHeader =
-          request?.headers?.get("x-forwarded-for") || request?.headers?.get("x-real-ip");
-        const ip = ipHeader?.split(",")[0]?.trim() || "unknown";
+        const ip = request ? getClientIp(request) : "unknown";
         const limiter = checkRateLimit({
           key: `auth:login:${ip}:${normalizedEmail}`,
           limit: 8,
@@ -87,15 +98,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = (user as { role?: string }).role === "admin" ? "admin" : "user";
       }
       if (token.sub) {
+        if (!isValidObjectId(token.sub)) {
+          return clearStaleUserToken(token);
+        }
         await requireMongo();
         const doc = (await UserModel.findById(token.sub).select("role isBanned").lean().exec()) as {
           role?: string | null;
           isBanned?: boolean | null;
         } | null;
-        if (doc) {
-          token.role = doc.role === "admin" ? "admin" : "user";
-          token.isBanned = Boolean(doc.isBanned);
+        if (!doc) {
+          return clearStaleUserToken(token);
         }
+        token.role = doc.role === "admin" ? "admin" : "user";
+        token.isBanned = Boolean(doc.isBanned);
       }
       return token;
     },

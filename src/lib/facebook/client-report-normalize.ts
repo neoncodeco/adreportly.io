@@ -7,6 +7,28 @@ const PURCHASE_ACTIONS = new Set([
   "onsite_conversion.purchase",
 ]);
 
+const MESSAGE_ACTIONS = new Set([
+  "messaging_conversation_started_7d",
+  "onsite_conversion.messaging_conversation_started_7d",
+  "onsite_conversion.messaging_first_reply",
+  "onsite_conversion.messaging_conversation_replied_7d",
+]);
+
+const LEAD_ACTIONS = new Set([
+  "lead",
+  "leadgen_grouped",
+  "onsite_conversion.lead",
+  "onsite_conversion.lead_grouped",
+  "onsite_conversion.leadgen_grouped",
+  "offsite_conversion.fb_pixel_lead",
+  "complete_registration",
+  "offsite_conversion.fb_pixel_complete_registration",
+  "contact_total",
+  "onsite_conversion.contact",
+]);
+
+const RESULT_ACTION_PRIORITY = [PURCHASE_ACTIONS, MESSAGE_ACTIONS, LEAD_ACTIONS];
+
 function num(s: string | undefined): number {
   return parseFloat(s ?? "0") || 0;
 }
@@ -23,12 +45,14 @@ export function minorToMajor(value: string | undefined): number {
 
 export function countResultsFromInsight(row: CampaignAdInsightRow | undefined): number {
   if (!row) return 0;
-  const purchases = (row.actions ?? []).reduce((sum, a) => {
-    if (!PURCHASE_ACTIONS.has(a.action_type)) return sum;
-    return sum + (parseInt(a.value, 10) || 0);
-  }, 0);
-  if (purchases > 0) return purchases;
-  return int(row.inline_link_clicks);
+  for (const actionTypes of RESULT_ACTION_PRIORITY) {
+    const total = (row.actions ?? []).reduce((sum, a) => {
+      if (!actionTypes.has(a.action_type)) return sum;
+      return sum + (parseInt(a.value, 10) || 0);
+    }, 0);
+    if (total > 0) return total;
+  }
+  return int(row.inline_link_clicks) || int(row.clicks);
 }
 
 export function purchaseValueFromInsight(row: CampaignAdInsightRow | undefined): number {
@@ -54,8 +78,9 @@ export function roasFromInsight(row: CampaignAdInsightRow | undefined): number |
 export function costPerResultFromInsight(row: CampaignAdInsightRow | undefined): number | null {
   const cpa = row?.cost_per_action_type ?? [];
   const best =
-    cpa.find((x) => PURCHASE_ACTIONS.has(x.action_type)) ??
-    cpa.find((x) => x.action_type === "link_click");
+    RESULT_ACTION_PRIORITY.flatMap((types) => cpa.filter((x) => types.has(x.action_type))).find(
+      Boolean,
+    ) ?? cpa.find((x) => x.action_type === "link_click");
   if (best?.value) {
     const v = parseFloat(best.value);
     if (!Number.isNaN(v) && v > 0) return v;

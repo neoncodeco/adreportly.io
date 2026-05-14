@@ -19,6 +19,8 @@ import {
 } from "@/services/facebook";
 
 const ALLOWED_DATE_PRESETS = new Set([
+  "today",
+  "last_2d",
   "last_7d",
   "last_14d",
   "last_28d",

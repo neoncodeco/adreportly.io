@@ -10,7 +10,7 @@ const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 
 const STATUS_FILTERS = new Set(["all", "active", "paused", "completed", "other"]);
-const SORT_KEYS = new Set(["spend", "results", "roas", "name", "ctr", "cpc"]);
+const SORT_KEYS = new Set(["spend", "results", "costPerResult", "roas", "name", "ctr", "cpc"]);
 
 type CampaignRow = {
   name?: string;
@@ -19,6 +19,7 @@ type CampaignRow = {
   status?: string;
   spend?: number;
   results?: number;
+  costPerResult?: number | null;
   roas?: number;
   ctr?: number;
   cpc?: number;
@@ -94,6 +95,7 @@ export async function GET(req: NextRequest) {
   const statusFilter = STATUS_FILTERS.has(statusRaw) ? statusRaw : "all";
   const sortRaw = (url.searchParams.get("sort") ?? "spend").toLowerCase();
   const sortKey = SORT_KEYS.has(sortRaw) ? sortRaw : "spend";
+  const datePreset = url.searchParams.get("datePreset") ?? "last_30d";
 
   if (!agencyId) {
     return NextResponse.json(
@@ -110,7 +112,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const payload = (await getCachedDashboardOverviewPayload(agencyId)) as Record<string, unknown>;
+    const payload = (await getCachedDashboardOverviewPayload(agencyId, datePreset)) as Record<
+      string,
+      unknown
+    >;
     const fullList = asCampaignList(payload);
     const filtered = fullList.filter((row) => {
       const r = row as CampaignRow;
@@ -135,11 +140,15 @@ export async function GET(req: NextRequest) {
       const ctrB = rb.ctr ?? 0;
       const cpcA = ra.cpc ?? 0;
       const cpcB = rb.cpc ?? 0;
+      const costA = ra.costPerResult ?? Number.MAX_SAFE_INTEGER;
+      const costB = rb.costPerResult ?? Number.MAX_SAFE_INTEGER;
       const nameA = ra.name ?? "";
       const nameB = rb.name ?? "";
       switch (sortKey) {
         case "results":
           return resB - resA;
+        case "costPerResult":
+          return costA - costB;
         case "roas":
           return roasB - roasA;
         case "name":

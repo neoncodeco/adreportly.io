@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectDb } from "@/lib/db";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { UserModel } from "@/models/user";
 
 async function getUserFbAppId(userId: string): Promise<string | null> {
@@ -15,7 +16,19 @@ async function getUserFbAppId(userId: string): Promise<string | null> {
   }
 }
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
+  const rate = checkRateLimit({
+    key: `auth:facebook:start:ip:${getClientIp(request)}`,
+    limit: 20,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again later." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } },
+    );
+  }
+
   const session = await auth();
 
   const site =
@@ -51,6 +64,7 @@ export async function GET(_request: NextRequest) {
   res.cookies.set("fb_oauth_state", state, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
     path: "/",
     maxAge: 600,
   });
@@ -66,6 +80,7 @@ export async function GET(_request: NextRequest) {
     res.cookies.set("fb_oauth_app_user", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       path: "/",
       maxAge: 0,
     });

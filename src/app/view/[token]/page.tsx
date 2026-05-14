@@ -46,6 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { deliveryLabel, deliveryPillClass } from "@/lib/meta-delivery";
 
 type ActionRow = { action_type: string; value: string };
 
@@ -109,6 +110,8 @@ type ApiPayload = {
 };
 
 const DATE_PRESET_LABELS: Record<string, string> = {
+  today: "Today",
+  last_2d: "Last 2 days",
   last_7d: "Last 7 days",
   last_14d: "Last 14 days",
   last_28d: "Last 28 days",
@@ -157,7 +160,7 @@ const DEFAULT_CARD_VISIBILITY: CardVisibility = {
 
 const BILLING_CARD_LABELS: Record<BillingCardKey, string> = {
   deposit: "Account cap",
-  spend: "Total spend",
+  spend: "Amount spent",
   balance: "Wallet balance",
   noBalance: "Wallet status",
   impressions: "Impressions",
@@ -278,13 +281,6 @@ function aggregateToChart(rows: InsightRow[]) {
       reach: Math.round(int(r.reach) / 1000),
     },
   ];
-}
-
-function statusColor(status: string) {
-  const s = status.toUpperCase();
-  if (s === "ACTIVE") return "bg-emerald-500/15 text-emerald-600";
-  if (s === "PAUSED") return "bg-amber-500/15 text-amber-600";
-  return "bg-muted text-muted-foreground";
 }
 
 /** Meta objectives like OUTCOME_ENGAGEMENT → readable label */
@@ -563,9 +559,12 @@ export default function SharedCampaignPage() {
                         ) : null}
                         {payload?.campaign?.status ? (
                           <span
-                            className={`inline-flex items-center justify-center rounded-full px-3.5 py-2 text-xs font-bold uppercase tracking-wide shadow-sm ring-1 ring-black/5 ${statusColor(payload.campaign.status)}`}
+                            className={cn(
+                              "inline-flex items-center justify-center rounded-full px-3.5 py-2 text-xs font-bold shadow-sm ring-1 ring-black/5",
+                              deliveryPillClass(payload.campaign.status),
+                            )}
                           >
-                            {payload.campaign.status}
+                            {deliveryLabel(payload.campaign.status)}
                           </span>
                         ) : null}
                         <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-background/85 px-3.5 py-2 text-xs font-semibold text-muted-foreground shadow-sm backdrop-blur-sm">
@@ -651,6 +650,8 @@ export default function SharedCampaignPage() {
                   <SelectContent>
                     {(
                       [
+                        "today",
+                        "last_2d",
                         "last_7d",
                         "last_14d",
                         "last_28d",
@@ -798,7 +799,7 @@ export default function SharedCampaignPage() {
                   <KpiCard
                     delay={0.04}
                     icon={<DollarSign className="h-4 w-4 text-violet-600" />}
-                    label="Total spend"
+                    label="Amount spent"
                     value={fmtMoneyCurrency(fin.totalSpend, finCurrency)}
                     sub="Campaign · selected range"
                     color="bg-violet-500"
@@ -977,7 +978,7 @@ export default function SharedCampaignPage() {
           </motion.div>
         )}
 
-        {/* ── Spend Chart ── */}
+        {/* ── Amount Spent Chart ── */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -986,7 +987,7 @@ export default function SharedCampaignPage() {
         >
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-bold sm:text-lg">Spend Over Time</h2>
+              <h2 className="text-base font-bold sm:text-lg">Amount Spent Over Time</h2>
               <p className="text-xs text-muted-foreground">Daily spend · {rangeLabel}</p>
             </div>
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500/10">
@@ -1026,7 +1027,7 @@ export default function SharedCampaignPage() {
                       borderRadius: 12,
                       fontSize: 12,
                     }}
-                    formatter={(v: number) => [`${fmtMoney(v)}`, "Spend"]}
+                    formatter={(v: number) => [`${fmtMoney(v)}`, "Amount spent"]}
                   />
                   <Area
                     type="monotone"
@@ -1207,15 +1208,18 @@ export default function SharedCampaignPage() {
                       {row.name}
                     </h3>
                     <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${statusColor(row.status)}`}
+                      className={cn(
+                        "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                        deliveryPillClass(row.status),
+                      )}
                     >
-                      {row.status}
+                      {deliveryLabel(row.status)}
                     </span>
                   </header>
                   <dl className="grid grid-cols-2 gap-x-3 gap-y-3 text-xs sm:grid-cols-3">
                     <div className="min-w-0">
                       <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                        Spend
+                        Amount spent
                       </dt>
                       <dd className="mt-0.5 font-semibold tabular-nums text-foreground">
                         {fmtMoneyCurrency(row.spend, finCurrency)}
@@ -1325,10 +1329,10 @@ export default function SharedCampaignPage() {
                     <tr className="border-b border-border bg-muted/40">
                       {[
                         "Ad name",
-                        "Status",
+                        "Delivery",
                         "Daily budget",
                         "End date",
-                        "Spend",
+                        "Amount spent",
                         "Impressions",
                         "Reach",
                         "CTR",
@@ -1358,7 +1362,14 @@ export default function SharedCampaignPage() {
                           {row.name}
                         </td>
                         <td className="whitespace-nowrap px-3 py-2.5 text-xs sm:px-4">
-                          {row.status}
+                          <span
+                            className={cn(
+                              "inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                              deliveryPillClass(row.status),
+                            )}
+                          >
+                            {deliveryLabel(row.status)}
+                          </span>
                         </td>
                         <td className="whitespace-nowrap px-3 py-2.5 text-xs text-muted-foreground sm:px-4">
                           {row.dailyBudget != null
@@ -1439,7 +1450,7 @@ export default function SharedCampaignPage() {
                       Date
                     </th>
                     <th className="px-2 py-2.5 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:px-4 sm:py-3 sm:text-xs">
-                      Spend
+                      Amount spent
                     </th>
                     <th className="px-2 py-2.5 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:px-4 sm:py-3 sm:text-xs">
                       Impr.

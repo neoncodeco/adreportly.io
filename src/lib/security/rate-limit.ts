@@ -29,6 +29,10 @@ export function checkRateLimit(params: { key: string; limit: number; windowMs: n
 }
 
 export function getClientIp(request: Request) {
+  const cf = request.headers.get("cf-connecting-ip");
+  if (cf) return cf.trim();
+  const vercel = request.headers.get("x-vercel-forwarded-for");
+  if (vercel) return vercel.split(",")[0]?.trim() || "unknown";
   const xff = request.headers.get("x-forwarded-for");
   if (xff) return xff.split(",")[0]?.trim() || "unknown";
   return request.headers.get("x-real-ip") || "unknown";

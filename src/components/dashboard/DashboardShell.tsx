@@ -26,6 +26,8 @@ import {
   BookOpen,
   Megaphone,
   Tag,
+  Layers3,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
@@ -64,6 +66,8 @@ const userNav: Array<{ to: string; label: string; icon: typeof LayoutDashboard; 
   [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
     { to: "/dashboard/campaigns", label: "Campaigns", icon: PieChart },
+    { to: "/dashboard/adsets", label: "Ad Sets", icon: Layers3 },
+    { to: "/dashboard/ads", label: "Ads", icon: ImageIcon },
     { to: "/dashboard/clients", label: "Clients", icon: Users },
     { to: "/dashboard/reports", label: "Reports", icon: FileText },
     { to: "/dashboard/billing", label: "Billing", icon: CreditCard },
@@ -193,7 +197,7 @@ export function DashboardShell({
     if (!user || variant !== "user") return;
     void queryClient.prefetchQuery({
       queryKey: dashboardQk.overview(),
-      queryFn: fetchDashboardOverview,
+      queryFn: () => fetchDashboardOverview(),
       staleTime: DASHBOARD_OVERVIEW_STALE_MS,
     });
   }, [user, variant, queryClient]);

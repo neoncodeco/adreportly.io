@@ -72,7 +72,7 @@ const t = {
   offerActive: "Offer active with 100% coupon",
   whatItDoes: "এটা আসলে কী কাজ করে?",
   whatItDoesLead:
-    "AdReportly হলো Meta advertisers দের জন্য একটি centralized dashboard, যেখানে campaign, client এবং report management এক জায়গা থেকে সহজে করা যায়।",
+    "প্রতিদিন campaign performance দেখা, client update দেওয়া আর report বানানোর কাজগুলো AdReportly এক জায়গায় এনে দেয়, যাতে media buyer বা agency team কম ঝামেলায় আরও organized ভাবে কাজ করতে পারে।",
   whatItDoesItems: [
     "Meta ad account connect করতে পারবেন",
     "সব campaign এক জায়গা থেকে monitor করতে পারবেন",
@@ -460,8 +460,8 @@ export function OfferPageClient({
                 {t.whatItDoes}
               </span>
               <h2 className="mt-5 font-display text-3xl font-bold leading-tight tracking-tight text-ink sm:text-5xl">
-                Meta advertisers দের জন্য একটি গোছানো{" "}
-                <span className="bg-emerald-200 px-1.5 text-ink">centralized dashboard</span>
+                Campaign, client, report{" "}
+                <span className="bg-emerald-200 px-1.5 text-ink">এক জায়গায় clean</span>
               </h2>
               <p className="mt-5 text-base leading-8 text-muted-foreground">{t.whatItDoesLead}</p>
 

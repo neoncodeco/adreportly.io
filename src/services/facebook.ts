@@ -7,17 +7,64 @@ export function normalizeActId(adAccountId: string): string {
 
 type Paged<T> = { data?: T[]; paging?: { next?: string } };
 
-async function fetchGraphPagedJson<T>(firstUrl: string): Promise<T[]> {
+type InsightsTimeRange = { since: string; until: string };
+
+async function fetchGraphPagedJson<T>(firstUrl: string, maxRows?: number): Promise<T[]> {
   const all: T[] = [];
   let next: string | null = firstUrl;
   while (next) {
     const res = await fetch(next, { cache: "no-store" });
     if (!res.ok) throw new Error(await res.text());
     const body = (await res.json()) as Paged<T>;
-    if (body.data?.length) all.push(...body.data);
+    if (body.data?.length) {
+      const room = maxRows ? Math.max(0, maxRows - all.length) : body.data.length;
+      all.push(...body.data.slice(0, room));
+      if (maxRows && all.length >= maxRows) break;
+    }
     next = body.paging?.next ?? null;
   }
   return all;
+}
+
+function localDateString(offsetDays = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function timeRangeForDatePreset(datePreset: string): InsightsTimeRange | null {
+  if (datePreset === "last_2d") {
+    return { since: localDateString(-1), until: localDateString(0) };
+  }
+  return null;
+}
+
+function normalizeDatePreset(datePreset: string) {
+  return /^today$|^last_7d$|^last_14d$|^last_28d$|^last_30d$|^last_90d$|^this_month$|^lifetime$/i.test(
+    datePreset,
+  )
+    ? datePreset === "lifetime"
+      ? "maximum"
+      : datePreset
+    : "last_30d";
+}
+
+function setInsightsDateParams(url: URL, datePreset: string) {
+  const timeRange = timeRangeForDatePreset(datePreset);
+  if (timeRange) {
+    url.searchParams.set("time_range", JSON.stringify(timeRange));
+    return;
+  }
+  url.searchParams.set("date_preset", normalizeDatePreset(datePreset));
+}
+
+function insightsFieldDateModifier(datePreset: string) {
+  const timeRange = timeRangeForDatePreset(datePreset);
+  if (timeRange) return `.time_range(${JSON.stringify(timeRange)})`;
+  return `.date_preset(${normalizeDatePreset(datePreset)})`;
 }
 
 export async function exchangeCodeForToken(params: {
@@ -69,8 +116,7 @@ export async function fetchCampaignInsights(
     url.searchParams.set("time_range", JSON.stringify(options.timeRange));
   } else {
     const datePreset = options?.datePreset ?? "last_30d";
-    // Meta removed date_preset=lifetime; "maximum" is the closest supported preset.
-    url.searchParams.set("date_preset", datePreset === "lifetime" ? "maximum" : datePreset);
+    setInsightsDateParams(url, datePreset);
   }
   if (options?.timeIncrement) {
     url.searchParams.set("time_increment", options.timeIncrement);
@@ -120,6 +166,12 @@ export async function fetchAdAccountBilling(accessToken: string, adAccountId: st
 export type CampaignAdInsightRow = {
   date_start?: string;
   date_stop?: string;
+  campaign_id?: string;
+  campaign_name?: string;
+  adset_id?: string;
+  adset_name?: string;
+  ad_id?: string;
+  ad_name?: string;
   spend?: string;
   impressions?: string;
   reach?: string;
@@ -179,14 +231,6 @@ export async function fetchAdsForCampaign(
     "filtering",
     JSON.stringify([{ field: "campaign.id", operator: "EQUAL", value: campaignId }]),
   );
-  const preset =
-    /^last_7d$|^last_14d$|^last_28d$|^last_30d$|^last_90d$|^this_month$|^lifetime$/i.test(
-      datePreset,
-    )
-      ? datePreset === "lifetime"
-        ? "maximum"
-        : datePreset
-      : "last_30d";
   const fields = [
     "id",
     "name",
@@ -194,7 +238,7 @@ export async function fetchAdsForCampaign(
     "effective_status",
     "creative{thumbnail_url,image_url,object_story_spec{page_id,instagram_actor_id,link_data{picture,child_attachments{picture}}}}",
     "adset{id,daily_budget,lifetime_budget,end_time,effective_status}",
-    `insights.date_preset(${preset}){spend,impressions,reach,clicks,ctr,cpc,frequency,actions,action_values,cost_per_action_type,inline_link_clicks,purchase_roas}`,
+    `insights${insightsFieldDateModifier(datePreset)}{spend,impressions,reach,clicks,ctr,cpc,frequency,actions,action_values,cost_per_action_type,inline_link_clicks,purchase_roas}`,
   ].join(",");
   url.searchParams.set("fields", fields);
   try {
@@ -202,6 +246,96 @@ export async function fetchAdsForCampaign(
   } catch {
     return [];
   }
+}
+
+export type FacebookAdSetStatusRow = {
+  id: string;
+  name?: string;
+  campaign_id?: string;
+  status?: string;
+  effective_status?: string;
+  daily_budget?: string;
+  lifetime_budget?: string;
+  campaign?: {
+    id?: string;
+    name?: string;
+  };
+};
+
+export async function fetchAdSetLevelInsights(
+  accessToken: string,
+  adAccountId: string,
+  datePreset = "last_30d",
+) {
+  const id = normalizeActId(adAccountId);
+  const url = new URL(`${GRAPH_BASE}/${id}/insights`);
+  url.searchParams.set("access_token", accessToken);
+  setInsightsDateParams(url, datePreset);
+  url.searchParams.set("level", "adset");
+  url.searchParams.set(
+    "fields",
+    "campaign_id,campaign_name,adset_id,adset_name,spend,reach,impressions,clicks,actions,action_values,cost_per_action_type,cpc,cpm,ctr,frequency,inline_link_clicks,purchase_roas",
+  );
+  url.searchParams.set("limit", "200");
+  return fetchGraphPagedJson<CampaignAdInsightRow>(url.toString(), 500);
+}
+
+export async function fetchAdSetStatuses(accessToken: string, adAccountId: string) {
+  const id = normalizeActId(adAccountId);
+  const url = new URL(`${GRAPH_BASE}/${id}/adsets`);
+  url.searchParams.set("access_token", accessToken);
+  url.searchParams.set(
+    "fields",
+    "id,name,campaign_id,status,effective_status,daily_budget,lifetime_budget,campaign{id,name}",
+  );
+  url.searchParams.set("limit", "500");
+  return fetchGraphPagedJson<FacebookAdSetStatusRow>(url.toString(), 500);
+}
+
+export type FacebookAdStatusRow = {
+  id: string;
+  name?: string;
+  status?: string;
+  effective_status?: string;
+  adset?: {
+    id?: string;
+    name?: string;
+  };
+  campaign?: {
+    id?: string;
+    name?: string;
+  };
+  creative?: CampaignAdRow["creative"];
+};
+
+export async function fetchAdLevelInsights(
+  accessToken: string,
+  adAccountId: string,
+  datePreset = "last_30d",
+) {
+  const id = normalizeActId(adAccountId);
+  const url = new URL(`${GRAPH_BASE}/${id}/insights`);
+  url.searchParams.set("access_token", accessToken);
+  setInsightsDateParams(url, datePreset);
+  url.searchParams.set("level", "ad");
+  url.searchParams.set(
+    "fields",
+    "campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,spend,reach,impressions,clicks,actions,action_values,cost_per_action_type,cpc,cpm,ctr,frequency,inline_link_clicks,purchase_roas",
+  );
+  url.searchParams.set("limit", "200");
+  return fetchGraphPagedJson<CampaignAdInsightRow>(url.toString(), 500);
+}
+
+export async function fetchAdStatuses(accessToken: string, adAccountId: string) {
+  const id = normalizeActId(adAccountId);
+  const url = new URL(`${GRAPH_BASE}/${id}/ads`);
+  url.searchParams.set("access_token", accessToken);
+  url.searchParams.set(
+    "fields",
+    "id,name,status,effective_status,adset{id,name},campaign{id,name},creative{thumbnail_url,image_url,object_story_spec{page_id,instagram_actor_id,link_data{picture,child_attachments{picture}}}}",
+  );
+  url.searchParams.set("limit", "500");
+  return fetchGraphPagedJson<FacebookAdStatusRow>(url.toString(), 500);
 }
 
 export async function fetchPageProfilePicture(accessToken: string, pageId: string) {
@@ -229,12 +363,16 @@ export async function fetchCampaignsForAdAccount(accessToken: string, accountId:
   }>(url.toString());
 }
 
-/** Daily rows for chart (last_30d, account level). */
-export async function fetchAdAccountDailyInsights(accessToken: string, adAccountId: string) {
+/** Daily rows for chart, account level. */
+export async function fetchAdAccountDailyInsights(
+  accessToken: string,
+  adAccountId: string,
+  datePreset = "last_30d",
+) {
   const id = normalizeActId(adAccountId);
   const url = new URL(`${GRAPH_BASE}/${id}/insights`);
   url.searchParams.set("access_token", accessToken);
-  url.searchParams.set("date_preset", "last_30d");
+  setInsightsDateParams(url, datePreset);
   url.searchParams.set("time_increment", "1");
   url.searchParams.set("fields", "spend,clicks,impressions,date_start");
   return fetchGraphPagedJson<{ date_start: string; spend?: string; clicks?: string }>(
@@ -242,12 +380,16 @@ export async function fetchAdAccountDailyInsights(accessToken: string, adAccount
   );
 }
 
-/** Single rolled-up row for the account in last_30d (no time_increment). */
-export async function fetchAdAccountAggregateInsights(accessToken: string, adAccountId: string) {
+/** Single rolled-up row for the account (no time_increment). */
+export async function fetchAdAccountAggregateInsights(
+  accessToken: string,
+  adAccountId: string,
+  datePreset = "last_30d",
+) {
   const id = normalizeActId(adAccountId);
   const url = new URL(`${GRAPH_BASE}/${id}/insights`);
   url.searchParams.set("access_token", accessToken);
-  url.searchParams.set("date_preset", "last_30d");
+  setInsightsDateParams(url, datePreset);
   url.searchParams.set("fields", "spend,clicks,impressions,cpc,actions,action_values");
   const rows = await fetchGraphPagedJson<{
     spend?: string;
@@ -260,27 +402,22 @@ export async function fetchAdAccountAggregateInsights(accessToken: string, adAcc
   return rows[0] ?? null;
 }
 
-export async function fetchCampaignLevelInsights(accessToken: string, adAccountId: string) {
+export async function fetchCampaignLevelInsights(
+  accessToken: string,
+  adAccountId: string,
+  datePreset = "last_30d",
+) {
   const id = normalizeActId(adAccountId);
   const url = new URL(`${GRAPH_BASE}/${id}/insights`);
   url.searchParams.set("access_token", accessToken);
-  url.searchParams.set("date_preset", "last_30d");
+  setInsightsDateParams(url, datePreset);
   url.searchParams.set("level", "campaign");
   url.searchParams.set(
     "fields",
-    "campaign_id,campaign_name,spend,clicks,impressions,actions,action_values,cpc",
+    "campaign_id,campaign_name,spend,reach,clicks,impressions,actions,action_values,cost_per_action_type,cpc,inline_link_clicks,purchase_roas",
   );
   url.searchParams.set("limit", "200");
-  return fetchGraphPagedJson<{
-    campaign_id?: string;
-    campaign_name?: string;
-    spend?: string;
-    clicks?: string;
-    impressions?: string;
-    actions?: Array<{ action_type: string; value: string }>;
-    action_values?: Array<{ action_type: string; value: string }>;
-    cpc?: string;
-  }>(url.toString());
+  return fetchGraphPagedJson<CampaignAdInsightRow>(url.toString());
 }
 
 export async function fetchCampaignStatuses(accessToken: string, adAccountId: string) {

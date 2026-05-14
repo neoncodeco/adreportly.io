@@ -56,7 +56,7 @@ export function ReportsPage() {
 
   const { data: overview } = useQuery({
     queryKey: dashboardQk.overview(),
-    queryFn: fetchDashboardOverview,
+    queryFn: () => fetchDashboardOverview(),
     staleTime: DASHBOARD_OVERVIEW_STALE_MS,
   });
 
@@ -101,7 +101,7 @@ export function ReportsPage() {
         "Campaign Name",
         "Date Start",
         "Date Stop",
-        "Spend",
+        "Amount Spent",
         "Impressions",
         "Reach",
         "Clicks",

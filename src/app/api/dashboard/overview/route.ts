@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const payload = await getCachedDashboardOverviewPayload(agencyId);
+    const datePreset = request.nextUrl.searchParams.get("datePreset") ?? "last_30d";
+    const payload = await getCachedDashboardOverviewPayload(agencyId, datePreset);
 
     return NextResponse.json(payload, { headers: USER_CACHE_HEADERS });
   } catch (e) {

@@ -26,22 +26,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { deliveryDotClass, deliveryLabel, deliveryPillClass } from "@/lib/meta-delivery";
 import {
   DASHBOARD_CAMPAIGNS_PAGE_SIZE,
   DASHBOARD_OVERVIEW_STALE_MS,
+  REPORT_DATE_PRESET_OPTIONS,
   dashboardQk,
   fetchDashboardCampaignsPage,
   type DashboardCampaignRow,
   type DashboardCampaignsSort,
   type DashboardCampaignsStatusFilter,
+  type ReportDatePreset,
 } from "@/lib/dashboard-queries";
 
-const statusStyle: Record<string, string> = {
-  active: "bg-success/15 text-success",
-  paused: "bg-warning/15 text-warning-foreground",
-  completed: "bg-muted text-muted-foreground",
-  other: "bg-muted text-muted-foreground",
-};
+function costPerResult(row: DashboardCampaignRow) {
+  return row.costPerResult ?? (row.results > 0 ? row.spend / row.results : null);
+}
+
+function money(sym: string, value: number, digits = 2) {
+  return `${sym}${value.toLocaleString(undefined, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  })}`;
+}
 
 export function CampaignsPage() {
   const [page, setPage] = useState(1);
@@ -49,11 +56,12 @@ export function CampaignsPage() {
   const deferredQ = useDeferredValue(q);
   const [statusFilter, setStatusFilter] = useState<DashboardCampaignsStatusFilter>("all");
   const [sortBy, setSortBy] = useState<DashboardCampaignsSort>("spend");
+  const [datePreset, setDatePreset] = useState<ReportDatePreset>("last_30d");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
     setPage(1);
-  }, [deferredQ, statusFilter, sortBy]);
+  }, [deferredQ, statusFilter, sortBy, datePreset]);
 
   const { data, isPending, isError, error, isFetching, isPlaceholderData } = useQuery({
     queryKey: dashboardQk.campaignsPage(
@@ -62,6 +70,7 @@ export function CampaignsPage() {
       deferredQ,
       statusFilter,
       sortBy,
+      datePreset,
     ),
     queryFn: () =>
       fetchDashboardCampaignsPage({
@@ -70,6 +79,7 @@ export function CampaignsPage() {
         q: deferredQ,
         status: statusFilter,
         sort: sortBy,
+        datePreset,
       }),
     staleTime: DASHBOARD_OVERVIEW_STALE_MS,
     placeholderData: keepPreviousData,
@@ -80,6 +90,9 @@ export function CampaignsPage() {
   const pagination = data?.pagination;
   const activeCount = data?.summary.activeCount ?? 0;
   const total = pagination?.total ?? 0;
+  const dateLabel =
+    REPORT_DATE_PRESET_OPTIONS.find((option) => option.value === datePreset)?.label ??
+    "Last 30 days";
 
   if (isPending && !isPlaceholderData) {
     return (
@@ -128,7 +141,7 @@ export function CampaignsPage() {
         <div>
           <h1 className="text-xl font-bold sm:text-2xl">Campaigns</h1>
           <p className="text-xs text-muted-foreground sm:text-sm">
-            Facebook campaigns (last 30 days) from your connected Meta accounts
+            Facebook campaigns ({dateLabel}) from your connected Meta accounts
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -183,22 +196,42 @@ export function CampaignsPage() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-3 min-[420px]:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="camp-date-m" className="text-xs">
+                      Date range
+                    </Label>
+                    <Select
+                      value={datePreset}
+                      onValueChange={(v) => setDatePreset(v as ReportDatePreset)}
+                    >
+                      <SelectTrigger id="camp-date-m" className="h-11 rounded-xl">
+                        <SelectValue placeholder="Date range" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {REPORT_DATE_PRESET_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="camp-status-m" className="text-xs">
-                      Status
+                      Delivery
                     </Label>
                     <Select
                       value={statusFilter}
                       onValueChange={(v) => setStatusFilter(v as DashboardCampaignsStatusFilter)}
                     >
                       <SelectTrigger id="camp-status-m" className="h-11 rounded-xl">
-                        <SelectValue placeholder="Status" />
+                        <SelectValue placeholder="Delivery" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All</SelectItem>
                         <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="paused">Paused</SelectItem>
+                        <SelectItem value="paused">Off</SelectItem>
                         <SelectItem value="completed">Completed</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
@@ -216,11 +249,11 @@ export function CampaignsPage() {
                         <SelectValue placeholder="Sort" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="spend">Spend (high → low)</SelectItem>
+                        <SelectItem value="spend">Amount spent (high → low)</SelectItem>
                         <SelectItem value="results">Results (high → low)</SelectItem>
+                        <SelectItem value="costPerResult">Cost / result (low → high)</SelectItem>
                         <SelectItem value="roas">ROAS (high → low)</SelectItem>
                         <SelectItem value="ctr">CTR (high → low)</SelectItem>
-                        <SelectItem value="cpc">CPC (low → high)</SelectItem>
                         <SelectItem value="name">Name (A–Z)</SelectItem>
                       </SelectContent>
                     </Select>
@@ -239,11 +272,11 @@ export function CampaignsPage() {
             <div>
               <h2 className="text-sm font-bold sm:text-base">Filter campaigns</h2>
               <p className="text-[11px] text-muted-foreground sm:text-xs">
-                Search, status, and sort apply to the full list (last 30 days).
+                Search, delivery, date range, and sort apply to the full list.
               </p>
             </div>
           </div>
-          <div className="grid gap-4 lg:grid-cols-4">
+          <div className="grid gap-4 lg:grid-cols-5">
             <div className="space-y-1.5 lg:col-span-2">
               <Label htmlFor="camp-search" className="text-xs">
                 Search
@@ -260,20 +293,40 @@ export function CampaignsPage() {
               </div>
             </div>
             <div className="space-y-1.5">
+              <Label htmlFor="camp-date" className="text-xs">
+                Date range
+              </Label>
+              <Select
+                value={datePreset}
+                onValueChange={(v) => setDatePreset(v as ReportDatePreset)}
+              >
+                <SelectTrigger id="camp-date" className="h-10 rounded-xl">
+                  <SelectValue placeholder="Date range" />
+                </SelectTrigger>
+                <SelectContent>
+                  {REPORT_DATE_PRESET_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
               <Label htmlFor="camp-status" className="text-xs">
-                Status
+                Delivery
               </Label>
               <Select
                 value={statusFilter}
                 onValueChange={(v) => setStatusFilter(v as DashboardCampaignsStatusFilter)}
               >
                 <SelectTrigger id="camp-status" className="h-10 rounded-xl">
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder="Delivery" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="paused">Paused</SelectItem>
+                  <SelectItem value="paused">Off</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
@@ -288,11 +341,11 @@ export function CampaignsPage() {
                   <SelectValue placeholder="Sort" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="spend">Spend (high → low)</SelectItem>
+                  <SelectItem value="spend">Amount spent (high → low)</SelectItem>
                   <SelectItem value="results">Results (high → low)</SelectItem>
+                  <SelectItem value="costPerResult">Cost / result (low → high)</SelectItem>
                   <SelectItem value="roas">ROAS (high → low)</SelectItem>
                   <SelectItem value="ctr">CTR (high → low)</SelectItem>
-                  <SelectItem value="cpc">CPC (low → high)</SelectItem>
                   <SelectItem value="name">Name (A–Z)</SelectItem>
                 </SelectContent>
               </Select>
@@ -346,11 +399,11 @@ export function CampaignsPage() {
                 <div className="mt-1 flex flex-wrap items-center gap-1.5">
                   <span
                     className={cn(
-                      "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
-                      statusStyle[c.status] ?? statusStyle.other,
+                      "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                      deliveryPillClass(c.status),
                     )}
                   >
-                    {c.status}
+                    {deliveryLabel(c.status)}
                   </span>
                   <span className="text-xs text-muted-foreground">· {c.accounts} ad accounts</span>
                 </div>
@@ -360,7 +413,7 @@ export function CampaignsPage() {
             <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-background/50 p-3">
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Spend
+                  Amount spent
                 </div>
                 <div className="text-sm font-bold tabular-nums">
                   {sym}
@@ -375,11 +428,10 @@ export function CampaignsPage() {
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  CTR · CPC
+                  Cost / result
                 </div>
                 <div className="text-sm font-bold tabular-nums">
-                  {c.ctr.toFixed(2)}% · {sym}
-                  {c.cpc.toFixed(2)}
+                  {costPerResult(c) != null ? money(sym, costPerResult(c) as number) : "—"}
                 </div>
               </div>
               <div>
@@ -407,11 +459,11 @@ export function CampaignsPage() {
             <thead>
               <tr className="text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <th className="pb-3 pr-4">Campaign</th>
-                <th className="pb-3 pr-4">Status</th>
-                <th className="pb-3 pr-4 text-right">Spend</th>
+                <th className="pb-3 pr-4">Delivery</th>
+                <th className="pb-3 pr-4 text-right">Amount spent</th>
                 <th className="pb-3 pr-4 text-right">Results</th>
+                <th className="pb-3 pr-4 text-right">Cost / result</th>
                 <th className="pb-3 pr-4 text-right">CTR</th>
-                <th className="pb-3 pr-4 text-right">CPC</th>
                 <th className="pb-3 pr-4 text-right">ROAS</th>
                 <th className="pb-3 text-right">Actions</th>
               </tr>
@@ -445,23 +497,24 @@ export function CampaignsPage() {
                   <td className="py-4 pr-4">
                     <span
                       className={cn(
-                        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize",
-                        statusStyle[c.status] ?? statusStyle.other,
+                        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                        deliveryPillClass(c.status),
                       )}
                     >
-                      {c.status}
+                      <span
+                        className={cn("h-1.5 w-1.5 rounded-full", deliveryDotClass(c.status))}
+                      />
+                      {deliveryLabel(c.status)}
                     </span>
                   </td>
                   <td className="py-4 pr-4 text-right font-medium tabular-nums">
-                    {sym}
-                    {c.spend.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    {money(sym, c.spend)}
                   </td>
                   <td className="py-4 pr-4 text-right tabular-nums">{c.results}</td>
-                  <td className="py-4 pr-4 text-right tabular-nums">{c.ctr.toFixed(2)}%</td>
                   <td className="py-4 pr-4 text-right tabular-nums">
-                    {sym}
-                    {c.cpc.toFixed(2)}
+                    {costPerResult(c) != null ? money(sym, costPerResult(c) as number) : "—"}
                   </td>
+                  <td className="py-4 pr-4 text-right tabular-nums">{c.ctr.toFixed(2)}%</td>
                   <td className="py-4 pr-4 text-right font-semibold tabular-nums">
                     {c.roas > 0 ? `${c.roas.toFixed(2)}×` : "—"}
                   </td>

@@ -6,6 +6,11 @@ import {
   fetchCampaignStatuses,
   normalizeActId,
 } from "@/services/facebook";
+import {
+  costPerResultFromInsight,
+  countResultsFromInsight,
+} from "@/lib/facebook/client-report-normalize";
+import type { CampaignAdInsightRow } from "@/services/facebook";
 
 const PURCHASE_ACTION_TYPES = new Set([
   "omni_purchase",
@@ -115,6 +120,7 @@ export function emptyOverviewPayload(connected: boolean, currency = "BDT", curre
       status: "active" | "paused" | "completed" | "other";
       ctr: number;
       cpc: number;
+      costPerResult: number | null;
       impressions: number;
       clicks: number;
     }>,
@@ -129,6 +135,7 @@ export function emptyOverviewPayload(connected: boolean, currency = "BDT", curre
       status: "active" | "paused" | "completed" | "other";
       ctr: number;
       cpc: number;
+      costPerResult: number | null;
       impressions: number;
       clicks: number;
     }>,
@@ -144,7 +151,7 @@ export function emptyOverviewPayload(connected: boolean, currency = "BDT", curre
 export async function buildOverviewPayloadFromFacebook(
   token: string,
   limits: PlanLimits,
-  options?: { disabledAdAccountIds?: Set<string> },
+  options?: { disabledAdAccountIds?: Set<string>; datePreset?: string },
 ) {
   let adAccounts: Array<{ id: string; name: string; currency: string; account_status: number }> =
     [];
@@ -163,6 +170,7 @@ export async function buildOverviewPayloadFromFacebook(
   }
 
   const dailyChunks: Array<Array<{ date_start: string; spend?: string; clicks?: string }>> = [];
+  const datePreset = options?.datePreset ?? "last_30d";
   let totalSpend = 0;
   let totalConversions = 0;
   let totalPurchaseValue = 0;
@@ -175,6 +183,8 @@ export async function buildOverviewPayloadFromFacebook(
     clicks: number;
     impressions: number;
     conv: number;
+    results: number;
+    costPerResultHint: number | null;
     purchaseValue: number;
     effectiveStatus: string;
   };
@@ -183,9 +193,9 @@ export async function buildOverviewPayloadFromFacebook(
   for (const act of adAccounts) {
     try {
       const [daily, aggregate, campInsights, statusMap] = await Promise.all([
-        fetchAdAccountDailyInsights(token, act.id),
-        fetchAdAccountAggregateInsights(token, act.id),
-        fetchCampaignLevelInsights(token, act.id),
+        fetchAdAccountDailyInsights(token, act.id, datePreset),
+        fetchAdAccountAggregateInsights(token, act.id, datePreset),
+        fetchCampaignLevelInsights(token, act.id, datePreset),
         fetchCampaignStatuses(token, act.id),
       ]);
       if (daily.length) dailyChunks.push(daily);
@@ -202,6 +212,8 @@ export async function buildOverviewPayloadFromFacebook(
         const clicks = parseInt(row.clicks ?? "0", 10) || 0;
         const impressions = parseInt(row.impressions ?? "0", 10) || 0;
         const conv = conversionsFromActions(row.actions);
+        const results = countResultsFromInsight(row);
+        const costPerResultHint = costPerResultFromInsight(row);
         const pval = purchaseValueFromActionValues(row.action_values);
         const eff = statusMap.get(cid) ?? "";
         const prev = campaignById.get(cid);
@@ -210,6 +222,10 @@ export async function buildOverviewPayloadFromFacebook(
           prev.clicks += clicks;
           prev.impressions += impressions;
           prev.conv += conv;
+          prev.results += results;
+          if (prev.costPerResultHint == null && costPerResultHint != null) {
+            prev.costPerResultHint = costPerResultHint;
+          }
           prev.purchaseValue += pval;
           if (!prev.effectiveStatus && eff) prev.effectiveStatus = eff;
         } else {
@@ -220,6 +236,8 @@ export async function buildOverviewPayloadFromFacebook(
             clicks,
             impressions,
             conv,
+            results,
+            costPerResultHint,
             purchaseValue: pval,
             effectiveStatus: eff,
           });
@@ -251,17 +269,19 @@ export async function buildOverviewPayloadFromFacebook(
         : ("paused" as const);
     const ctr = c.impressions > 0 ? (c.clicks / c.impressions) * 100 : 0;
     const cpc = c.clicks > 0 ? c.spend / c.clicks : 0;
+    const costPerResult = c.results > 0 && c.spend > 0 ? c.spend / c.results : c.costPerResultHint;
     return {
       id: c.id,
       code: initialsFromName(c.name),
       name: c.name,
       accounts: adAccountCount,
       spend: c.spend,
-      results: c.conv > 0 ? c.conv : c.clicks,
+      results: c.results,
       roas,
       status,
       ctr,
       cpc,
+      costPerResult,
       impressions: c.impressions,
       clicks: c.clicks,
     };

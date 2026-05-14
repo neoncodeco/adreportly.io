@@ -22,5 +22,6 @@ declare module "next-auth/jwt" {
     full_name?: string | null;
     organization?: string | null;
     role?: "user" | "admin";
+    isBanned?: boolean;
   }
 }

@@ -225,7 +225,7 @@ export function buildPerformanceReportHtml(params: {
   const roasStr = a.roas != null && !Number.isNaN(a.roas) ? `${a.roas.toFixed(2)}x` : "0.00x";
 
   const summaryHtml =
-    m("Total Spend", escapeHtml(fmtMoneyCurrency(a.totalSpend, currency))) +
+    m("Amount Spent", escapeHtml(fmtMoneyCurrency(a.totalSpend, currency))) +
     m("Impressions", escapeHtml(a.totalImpressions.toLocaleString())) +
     m("Clicks", escapeHtml(a.totalClicks.toLocaleString())) +
     m("Results", escapeHtml(a.totalResults.toLocaleString())) +
@@ -409,7 +409,7 @@ export function buildPerformanceReportHtml(params: {
           <thead>
             <tr>
               <th>Date</th>
-              <th class="num">Spend</th>
+              <th class="num">Amount spent</th>
               <th class="num">Impr.</th>
               <th class="num">Reach</th>
               <th class="num">Clicks</th>
