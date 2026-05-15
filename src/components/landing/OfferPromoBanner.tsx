@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import Link from "next/link";
 import { ArrowRight, BadgePercent, Copy, Ticket } from "lucide-react";
 import { toast } from "sonner";
 import { STANDARD_OFFER_PROMO_TEXT } from "@/lib/billing/offer-config";
+import { DotLottieReact } from "@/lib/dotlottie";
 import { Button } from "@/components/ui/button";
 
 export function OfferPromoBanner({ couponCode, href }: { couponCode: string; href: string }) {

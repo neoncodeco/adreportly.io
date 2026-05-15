@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import Link from "next/link";
 import { Hind_Siliguri } from "next/font/google";
 import { useRouter } from "next/navigation";
@@ -33,6 +32,7 @@ import {
   STANDARD_OFFER_PATH,
   STANDARD_OFFER_PLAN_ID,
 } from "@/lib/billing/offer-config";
+import { DotLottieReact } from "@/lib/dotlottie";
 import { cn } from "@/lib/utils";
 
 type OfferPageClientProps = {

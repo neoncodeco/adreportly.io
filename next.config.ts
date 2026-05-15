@@ -5,9 +5,28 @@ const isProduction = process.env.NODE_ENV === "production";
 const scriptSources = [
   "'self'",
   "'unsafe-inline'",
+  "'wasm-unsafe-eval'",
   "blob:",
   "https://connect.facebook.net",
+  "https://tawk.to",
+  "https://*.tawk.to",
   ...(isProduction ? [] : ["'unsafe-eval'"]),
+];
+
+const styleSources = [
+  "'self'",
+  "'unsafe-inline'",
+  "https://fonts.googleapis.com",
+  "https://tawk.to",
+  "https://*.tawk.to",
+];
+
+const fontSources = [
+  "'self'",
+  "data:",
+  "https://fonts.gstatic.com",
+  "https://tawk.to",
+  "https://*.tawk.to",
 ];
 
 const connectSources = [
@@ -17,18 +36,25 @@ const connectSources = [
   "https://*.facebook.com",
   "https://lottie.host",
   "https://*.lottie.host",
+  "https://cdn.jsdelivr.net",
+  "https://unpkg.com",
+  "https://tawk.to",
+  "https://*.tawk.to",
+  "wss://*.tawk.to",
   ...(isProduction ? [] : ["ws:", "http://localhost:*", "http://127.0.0.1:*"]),
 ];
 
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src ${scriptSources.join(" ")}`,
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  `script-src-elem ${scriptSources.join(" ")}`,
+  `style-src ${styleSources.join(" ")}`,
+  `style-src-elem ${styleSources.join(" ")}`,
   "img-src 'self' data: blob: https:",
-  "font-src 'self' data: https://fonts.gstatic.com",
+  `font-src ${fontSources.join(" ")}`,
   `connect-src ${connectSources.join(" ")}`,
   "media-src 'self' data: blob: https:",
-  "frame-src 'self' https://www.facebook.com https://*.facebook.com",
+  "frame-src 'self' https://www.facebook.com https://*.facebook.com https://tawk.to https://*.tawk.to",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
   "object-src 'none'",

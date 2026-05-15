@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
@@ -107,6 +108,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <AuthProvider>
               {children}
               <Toaster />
+              <Script
+                id="tawk-to-live-chat"
+                strategy="afterInteractive"
+                dangerouslySetInnerHTML={{
+                  __html: `
+var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
+(function() {
+  var s1 = document.createElement("script"), s0 = document.getElementsByTagName("script")[0];
+  s1.async = true;
+  s1.src = "https://embed.tawk.to/6a0625d51358261c34fe7d6f/1jok07jdf";
+  s1.charset = "UTF-8";
+  s1.setAttribute("crossorigin", "*");
+  s0.parentNode.insertBefore(s1, s0);
+})();
+`,
+                }}
+              />
             </AuthProvider>
           </ThemeProvider>
         </Providers>
