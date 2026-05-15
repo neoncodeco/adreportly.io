@@ -4,6 +4,7 @@ import { ADMIN_CACHE_HEADERS, getOrSetCache } from "@/lib/server-cache";
 import type { PipelineStage } from "mongoose";
 import { UserModel } from "@/models/user";
 import { AgencyModel } from "@/models/agency";
+import { FeedbackModel } from "@/models/feedback";
 import { SharedLinkModel } from "@/models/shared-link";
 import { PaymentTransactionModel } from "@/models/payment-transaction";
 import { BILLING_PLANS } from "@/lib/billing/plans";
@@ -78,6 +79,8 @@ export async function GET(request: Request) {
       usersWithAgency,
       totalAgencies,
       totalShareLinks,
+      totalFeedbacks,
+      newFeedbacks,
       totalsAgg,
       packageAgg,
       monthlyAgg,
@@ -90,6 +93,8 @@ export async function GET(request: Request) {
       }),
       AgencyModel.countDocuments({}),
       SharedLinkModel.countDocuments({}),
+      FeedbackModel.countDocuments({}),
+      FeedbackModel.countDocuments({ status: "new" }),
       PaymentTransactionModel.aggregate<{
         totalIncome: number;
         totalPackageSales: number;
@@ -204,6 +209,8 @@ export async function GET(request: Request) {
         usersWithAgency,
         totalAgencies,
         totalShareLinks,
+        totalFeedbacks,
+        newFeedbacks,
         totalIncome: totalsRow.totalIncome,
         totalPackageSales: totalsRow.totalPackageSales,
         totalPaidTransactions: statusRow.paid,

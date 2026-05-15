@@ -1,3 +1,5 @@
+import type { FeedbackArea, FeedbackStatus, FeedbackType } from "@/lib/feedback";
+
 export const ADMIN_STALE_MS = 20_000;
 export const ADMIN_PAGE_SIZE = 20;
 export const ADMIN_COUPONS_PAGE_SIZE = 25;
@@ -62,6 +64,8 @@ export type AdminOverviewTotals = {
   usersWithAgency: number;
   totalAgencies: number;
   totalShareLinks: number;
+  totalFeedbacks: number;
+  newFeedbacks: number;
   totalIncome: number;
   totalPackageSales: number;
   totalPaidTransactions: number;
@@ -124,6 +128,24 @@ export type AdminTicketDetail = AdminTicketRow & {
   replies: AdminTicketReply[];
 };
 
+export type AdminFeedbackRow = {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  organization: string;
+  type: FeedbackType;
+  area: FeedbackArea;
+  rating: number;
+  message: string;
+  pageUrl: string | null;
+  status: FeedbackStatus;
+  adminNote: string;
+  reviewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 type ApiEnvelope = {
   success?: boolean;
   error?: string;
@@ -167,6 +189,15 @@ export const adminQk = {
     category: string,
   ) => ["admin", "tickets", page, limit, q, status, priority, category] as const,
   ticketDetail: (id: string) => ["admin", "ticket", id] as const,
+  feedback: (
+    page: number,
+    limit: number,
+    q: string,
+    status: string,
+    type: string,
+    area: string,
+    rating: string,
+  ) => ["admin", "feedback", page, limit, q, status, type, area, rating] as const,
 };
 
 export function fetchAdminOverview(from: string, to: string) {
@@ -237,6 +268,27 @@ export function fetchAdminTickets(
 
 export function fetchAdminTicketDetail(id: string) {
   return adminFetch<{ ticket: AdminTicketDetail }>(`/api/tickets/${encodeURIComponent(id)}`);
+}
+
+export function fetchAdminFeedback(
+  page: number,
+  limit: number,
+  q: string,
+  status: string,
+  type: string,
+  area: string,
+  rating: string,
+) {
+  const params = new URLSearchParams();
+  withPaging(params, page, limit);
+  if (q.trim()) params.set("q", q.trim());
+  if (status) params.set("status", status);
+  if (type) params.set("type", type);
+  if (area) params.set("area", area);
+  if (rating) params.set("rating", rating);
+  return adminFetch<{ feedback: AdminFeedbackRow[] } & AdminPagedResponse>(
+    `/api/admin/feedback?${params}`,
+  );
 }
 
 export function postAdmin<T>(input: string, body: Record<string, unknown>) {

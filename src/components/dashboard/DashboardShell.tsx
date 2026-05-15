@@ -28,6 +28,7 @@ import {
   Tag,
   Layers3,
   Image as ImageIcon,
+  MessageSquareHeart,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
@@ -73,6 +74,7 @@ const userNav: Array<{ to: string; label: string; icon: typeof LayoutDashboard; 
     { to: "/dashboard/billing", label: "Billing", icon: CreditCard },
     { to: "/dashboard/meta-connect", label: "Meta Connect", icon: Link2 },
     { to: "/dashboard/docs", label: "Docs", icon: BookOpen },
+    { to: "/dashboard/feedback", label: "Feedback", icon: MessageSquareHeart },
     { to: "/dashboard/support", label: "Support", icon: LifeBuoy },
     { to: "/dashboard/settings", label: "Settings", icon: Settings },
   ];
@@ -89,6 +91,7 @@ const adminNav: Array<{
   { to: "/admin/billing", label: "Billing", icon: CreditCard },
   { to: "/admin/coupons", label: "Coupons", icon: Tag },
   { to: "/admin/notice", label: "Notice", icon: Megaphone },
+  { to: "/admin/feedback", label: "Feedback", icon: MessageSquareHeart },
   { to: "/admin/tickets", label: "Support Tickets", icon: LifeBuoy },
 ];
 
@@ -509,6 +512,11 @@ export function DashboardShell({
                 <DropdownMenuItem asChild>
                   <Link href={variant === "admin" ? "/admin/tickets" : "/dashboard/support"}>
                     Support
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={variant === "admin" ? "/admin/feedback" : "/dashboard/feedback"}>
+                    Feedback
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

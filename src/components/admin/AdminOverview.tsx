@@ -34,6 +34,8 @@ import {
   XCircle,
   Ban,
   RotateCcw,
+  MessageSquareHeart,
+  Inbox,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -121,6 +123,20 @@ const cards = [
     icon: Share2,
     accent: "from-primary/25 to-primary/5",
     iconBg: "bg-primary/15 text-primary",
+  },
+  {
+    key: "totalFeedbacks" as const,
+    label: "Customer feedback",
+    icon: MessageSquareHeart,
+    accent: "from-fuchsia-500/20 to-pink-500/10",
+    iconBg: "bg-fuchsia-500/15 text-fuchsia-600",
+  },
+  {
+    key: "newFeedbacks" as const,
+    label: "New feedback",
+    icon: Inbox,
+    accent: "from-cyan-500/20 to-blue-500/10",
+    iconBg: "bg-cyan-500/15 text-cyan-600",
   },
 ];
 
