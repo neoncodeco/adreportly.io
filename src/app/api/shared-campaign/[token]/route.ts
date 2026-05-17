@@ -8,6 +8,7 @@ import {
   type FinancialSummaryPayload,
 } from "@/lib/facebook/client-report-normalize";
 import { getShareByToken } from "@/lib/share-service";
+import { normalizeDollarRateBdt, positiveFiniteNumber } from "@/lib/share-financial";
 import { getDecryptedTokenForAgency } from "@/lib/agency-service";
 import {
   fetchAdAccountBilling,
@@ -78,6 +79,8 @@ export async function GET(request: Request, ctx: { params: Promise<{ token: stri
     return NextResponse.json({ success: false, error: "Invalid or expired link" }, { status: 404 });
   }
 
+  const shareTotalDeposit = positiveFiniteNumber(share.totalDeposit);
+  const dollarRateBdt = normalizeDollarRateBdt(share.dollarRateBdt);
   const access = await getDecryptedTokenForAgency(share.agencyId);
   if (!access) {
     return NextResponse.json({
@@ -91,7 +94,21 @@ export async function GET(request: Request, ctx: { params: Promise<{ token: stri
       },
       pageLogoUrl: null,
       insights: [] as unknown[],
-      financial: null,
+      financial:
+        shareTotalDeposit != null
+          ? ({
+              currency: "USD",
+              totalDeposit: shareTotalDeposit,
+              dollarRateBdt,
+              totalSpend: 0,
+              remainingBalance: shareTotalDeposit,
+              noBalance: false,
+              impressions: 0,
+              reach: 0,
+              results: 0,
+              costPerResult: null,
+            } satisfies FinancialSummaryPayload)
+          : null,
       ads: [],
       clientEmail: share.clientEmail,
       clientName: share.clientName,
@@ -129,19 +146,23 @@ export async function GET(request: Request, ctx: { params: Promise<{ token: stri
       billing = await fetchAdAccountBilling(access, accountId);
     }
 
-    const currency = billing?.currency ?? "USD";
+    const currency = shareTotalDeposit != null ? "USD" : (billing?.currency ?? "USD");
     const spendCapMajor =
       billing?.spend_cap && parseFloat(billing.spend_cap) > 0
         ? minorToMajor(billing.spend_cap)
         : null;
     const balanceMajor = billing?.balance != null ? minorToMajor(billing.balance) : null;
+    const totalDeposit =
+      shareTotalDeposit ?? (spendCapMajor && spendCapMajor > 0 ? spendCapMajor : null);
+    const remainingBalance = totalDeposit != null ? totalDeposit - finTotals.spend : balanceMajor;
 
     const financial: FinancialSummaryPayload = {
       currency,
-      totalDeposit: spendCapMajor && spendCapMajor > 0 ? spendCapMajor : null,
+      totalDeposit,
+      dollarRateBdt,
       totalSpend: finTotals.spend,
-      remainingBalance: balanceMajor,
-      noBalance: balanceMajor !== null && balanceMajor <= 0,
+      remainingBalance,
+      noBalance: remainingBalance !== null && remainingBalance <= 0,
       impressions: finTotals.impressions,
       reach: finTotals.reach,
       results: finTotals.results,

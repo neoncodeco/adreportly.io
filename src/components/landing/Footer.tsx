@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Zap, Twitter, Github, Linkedin, Mail, ArrowUpRight, Send } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -13,41 +12,46 @@ const cols = [
     links: [
       { label: "Features", href: "#features" },
       { label: "Pricing", href: "#pricing" },
-      { label: "Changelog", href: "#" },
-      { label: "Roadmap", href: "#" },
+      { label: "Changelog", href: "#faq" },
+      { label: "Roadmap", href: "#how-it-works" },
     ],
   },
   {
     title: "Company",
     links: [
-      { label: "About", href: "#" },
-      { label: "Careers", href: "#" },
-      { label: "Press", href: "#" },
+      { label: "About", href: "#top" },
+      { label: "Careers", href: "#contact" },
+      { label: "Press", href: "#contact" },
       { label: "Contact", href: "#contact" },
     ],
   },
   {
     title: "Resources",
     links: [
-      { label: "Documentation", href: "#" },
-      { label: "API reference", href: "#" },
-      { label: "Help center", href: "#" },
-      { label: "Status", href: "#" },
+      { label: "Documentation", href: "/dashboard/docs" },
+      { label: "API reference", href: "#faq" },
+      { label: "Help center", href: "#faq" },
+      { label: "Status", href: "#faq" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { label: "Privacy", href: "#" },
-      { label: "Terms", href: "#" },
-      { label: "Security", href: "#" },
-      { label: "DPA", href: "#" },
+      { label: "Privacy", href: "#contact" },
+      { label: "Terms", href: "#contact" },
+      { label: "Security", href: "#contact" },
+      { label: "DPA", href: "#contact" },
     ],
   },
 ];
 
 export function Footer() {
   const [email, setEmail] = useState("");
+  const socialLinks = [
+    { label: "Contact on X", href: "#contact", icon: Twitter },
+    { label: "Contact on GitHub", href: "#contact", icon: Github },
+    { label: "Contact on LinkedIn", href: "#contact", icon: Linkedin },
+  ];
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,23 +114,23 @@ export function Footer() {
       <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-16 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-10 lg:grid-cols-6">
           <div className="col-span-2 lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2">
+            <a href="/" className="flex items-center gap-2">
               <span className="flex h-10 w-10 items-center justify-center rounded card-brutal bg-brand text-ink">
                 <Zap className="h-5 w-5 fill-ink" />
               </span>
               <span className="text-base font-bold tracking-tight">AdReportly</span>
-            </Link>
+            </a>
             <p className="mt-5 max-w-xs text-sm text-ink-foreground/70">
               The all-in-one platform for tracking Facebook ad campaigns and sharing beautiful
               reports with clients.
             </p>
             <div className="mt-6 flex gap-3">
-              {[Twitter, Github, Linkedin].map((Icon, i) => (
+              {socialLinks.map(({ label, href, icon: Icon }) => (
                 <a
-                  key={i}
-                  href="#"
+                  key={label}
+                  href={href}
                   className="group flex h-10 w-10 items-center justify-center rounded border-2 border-ink-foreground/15 bg-ink-foreground/5 text-ink-foreground transition hover:-translate-y-0.5 hover:border-brand hover:bg-brand hover:text-ink"
-                  aria-label="Social"
+                  aria-label={label}
                 >
                   <Icon className="h-4 w-4" />
                 </a>

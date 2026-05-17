@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { getAgencyIdForAppUser } from "@/lib/agency-service";
 import { createAgencyClient } from "@/lib/agency-client-service";
 import { verifyAgencyJwt, COOKIE_NAME } from "@/lib/jwt";
+import { normalizeDollarRateBdt, positiveFiniteNumber } from "@/lib/share-financial";
 import { buildShareUrl, newShareToken, persistShareLink } from "@/lib/share-service";
 
 export type CreateShareResult =
@@ -15,6 +16,8 @@ export async function createShareLinkAction(input: {
   campaignId: string;
   clientEmail: string;
   clientName?: string;
+  totalDeposit?: number | null;
+  dollarRateBdt?: number | null;
   expiryDays: number;
 }): Promise<CreateShareResult> {
   let agencyId: string | null = null;
@@ -52,6 +55,8 @@ export async function createShareLinkAction(input: {
   const shareToken = newShareToken();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + input.expiryDays * 86400000);
+  const totalDeposit = positiveFiniteNumber(input.totalDeposit);
+  const dollarRateBdt = normalizeDollarRateBdt(input.dollarRateBdt);
 
   await persistShareLink({
     shareToken,
@@ -60,6 +65,8 @@ export async function createShareLinkAction(input: {
     clientId: createdClient.client.id,
     clientEmail: input.clientEmail.trim(),
     clientName: (input.clientName ?? "").trim(),
+    totalDeposit,
+    dollarRateBdt,
     expiresAt,
     createdAt: now,
   });

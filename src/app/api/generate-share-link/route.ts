@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { agencyClientExists } from "@/lib/agency-client-service";
 import { metaAccessContext } from "@/lib/agency-from-request";
 import { invalidateCacheByPrefix } from "@/lib/server-cache";
+import { normalizeDollarRateBdt, positiveFiniteNumber } from "@/lib/share-financial";
 import { buildShareUrl, newShareToken, persistShareLink } from "@/lib/share-service";
 
 export async function POST(request: NextRequest) {
@@ -20,7 +21,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: { campaignId?: string; clientEmail?: string; clientName?: string; expiryDays?: number };
+  let body: {
+    campaignId?: string;
+    clientEmail?: string;
+    clientName?: string;
+    totalDeposit?: number | null;
+    dollarRateBdt?: number | null;
+    expiryDays?: number;
+  };
   try {
     body = await request.json();
   } catch {
@@ -30,6 +38,8 @@ export async function POST(request: NextRequest) {
   const campaignId = body.campaignId;
   const clientEmail = body.clientEmail;
   const clientName = typeof body.clientName === "string" ? body.clientName.trim() : "";
+  const totalDeposit = positiveFiniteNumber(body.totalDeposit);
+  const dollarRateBdt = normalizeDollarRateBdt(body.dollarRateBdt);
   const expiryDays = body.expiryDays ?? 30;
   if (!campaignId || !clientEmail) {
     return NextResponse.json(
@@ -61,6 +71,8 @@ export async function POST(request: NextRequest) {
     agencyId,
     clientEmail: clientEmail.trim(),
     clientName,
+    totalDeposit,
+    dollarRateBdt,
     expiresAt,
     createdAt: now,
   });

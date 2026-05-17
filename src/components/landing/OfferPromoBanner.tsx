@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { ArrowRight, BadgePercent, Copy, Ticket } from "lucide-react";
 import { toast } from "sonner";
 import { STANDARD_OFFER_PROMO_TEXT } from "@/lib/billing/offer-config";
@@ -92,10 +91,10 @@ export function OfferPromoBanner({ couponCode, href }: { couponCode: string; hre
               asChild
               className="h-11 rounded bg-brand px-4 text-sm font-bold text-brand-foreground btn-brutal hover:bg-brand sm:px-5"
             >
-              <Link href={href}>
+              <a href={href}>
                 <span className="whitespace-nowrap">See Offer</span>
                 <ArrowRight className="ml-2 h-4 w-4 shrink-0" />
-              </Link>
+              </a>
             </Button>
           </motion.div>
         </div>

@@ -12,7 +12,6 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 
@@ -193,16 +192,8 @@ export function Stats() {
 }
 
 function GetStartedCTA() {
-  const router = useRouter();
   const { user } = useAuth();
-
-  const handleClick = () => {
-    if (user) {
-      router.push("/dashboard");
-    } else {
-      router.push("/login");
-    }
-  };
+  const href = user ? "/dashboard" : "/signup";
 
   return (
     <motion.div
@@ -226,11 +217,13 @@ function GetStartedCTA() {
         </p>
 
         <Button
+          asChild
           size="lg"
           className="mt-6 gap-2 rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand"
-          onClick={handleClick}
         >
-          Get Started <ArrowRight className="h-4 w-4" />
+          <a href={href}>
+            Get Started <ArrowRight className="h-4 w-4" />
+          </a>
         </Button>
       </div>
     </motion.div>

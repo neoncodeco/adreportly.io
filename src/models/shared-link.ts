@@ -10,6 +10,10 @@ const SharedLinkSchema = new Schema(
     clientEmail: { type: String, required: true },
     /** Display name for the client; shown on the public /view/[token] page. */
     clientName: { type: String, default: "" },
+    /** Agency-entered client deposit amount for this shared campaign report. */
+    totalDeposit: { type: Number, default: null },
+    /** BDT conversion rate for 1 USD on this shared report. */
+    dollarRateBdt: { type: Number, default: 126 },
     expiresAt: { type: Date, required: true },
     createdAt: { type: Date, required: true },
   },

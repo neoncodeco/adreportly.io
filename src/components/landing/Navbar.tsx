@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Menu, Moon, Sun, Zap, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
@@ -58,7 +57,7 @@ export function Navbar() {
           )}
         >
           {/* Logo */}
-          <Link href="/" className="group flex items-center gap-2 shrink-0 pl-1">
+          <a href="/" className="group flex items-center gap-2 shrink-0 pl-1">
             <span className="relative flex h-9 w-9 items-center justify-center rounded bg-brand text-ink border-2 border-ink transition-transform duration-300 group-hover:rotate-12">
               <Zap className="h-4 w-4 fill-ink" />
             </span>
@@ -66,7 +65,7 @@ export function Navbar() {
               <span className="hidden sm:inline">AdReportly</span>
               <span className="sm:hidden">AdReportly</span>
             </span>
-          </Link>
+          </a>
 
           {/* Desktop links */}
           <div className="hidden items-center gap-0.5 lg:flex">
@@ -99,23 +98,23 @@ export function Navbar() {
                 size="sm"
                 className="hidden rounded bg-brand text-brand-foreground btn-brutal h-9 px-4 hover:bg-brand lg:inline-flex"
               >
-                <Link href="/dashboard">
+                <a href="/dashboard">
                   Dashboard <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                </Link>
+                </a>
               </Button>
             ) : (
               <>
                 <Button asChild variant="ghost" size="sm" className="hidden rounded lg:inline-flex">
-                  <Link href="/login">Sign in</Link>
+                  <a href="/login">Sign in</a>
                 </Button>
                 <Button
                   asChild
                   size="sm"
                   className="hidden rounded bg-brand text-brand-foreground btn-brutal h-9 px-4 hover:bg-brand lg:inline-flex"
                 >
-                  <Link href="/signup">
+                  <a href="/signup">
                     Get Started <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                  </Link>
+                  </a>
                 </Button>
               </>
             )}
@@ -138,7 +137,7 @@ export function Navbar() {
               >
                 <SheetHeader className="border-b-2 border-ink/10 p-5">
                   <SheetTitle asChild>
-                    <Link
+                    <a
                       href="/"
                       onClick={() => setOpen(false)}
                       className="flex items-center gap-2.5"
@@ -147,7 +146,7 @@ export function Navbar() {
                         <Zap className="h-4 w-4 fill-ink" />
                       </span>
                       <span className="text-base font-bold tracking-tight">AdReportly</span>
-                    </Link>
+                    </a>
                   </SheetTitle>
                 </SheetHeader>
 
@@ -177,7 +176,7 @@ export function Navbar() {
                         asChild
                         className="w-full rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand"
                       >
-                        <Link href="/dashboard">Dashboard</Link>
+                        <a href="/dashboard">Dashboard</a>
                       </Button>
                     </SheetClose>
                   ) : (
@@ -188,7 +187,7 @@ export function Navbar() {
                           variant="outline"
                           className="w-full rounded bg-card btn-brutal h-auto py-3 hover:bg-card"
                         >
-                          <Link href="/login">Sign in</Link>
+                          <a href="/login">Sign in</a>
                         </Button>
                       </SheetClose>
                       <SheetClose asChild>
@@ -196,7 +195,7 @@ export function Navbar() {
                           asChild
                           className="w-full rounded bg-brand text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand"
                         >
-                          <Link href="/signup">Get Started</Link>
+                          <a href="/signup">Get Started</a>
                         </Button>
                       </SheetClose>
                     </>

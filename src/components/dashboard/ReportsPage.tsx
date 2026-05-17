@@ -37,6 +37,7 @@ import {
   downloadPerformanceReportPdf,
   periodLabelFromDaily,
 } from "@/lib/performance-report";
+import { DEFAULT_DOLLAR_RATE_BDT, positiveFiniteNumber } from "@/lib/share-financial";
 
 type CampOpt = { id: string; name: string };
 
@@ -46,8 +47,12 @@ export function ReportsPage() {
   const [reportClientName, setReportClientName] = useState("");
   const [reportClientEmail, setReportClientEmail] = useState("");
   const [reportDatePreset, setReportDatePreset] = useState<ReportDatePreset>("last_30d");
+  const [reportTotalDeposit, setReportTotalDeposit] = useState("");
+  const [reportDollarRateBdt, setReportDollarRateBdt] = useState(String(DEFAULT_DOLLAR_RATE_BDT));
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
+  const [totalDeposit, setTotalDeposit] = useState("");
+  const [dollarRateBdt, setDollarRateBdt] = useState(String(DEFAULT_DOLLAR_RATE_BDT));
   const [expiryDays, setExpiryDays] = useState(30);
   const [shareBusy, setShareBusy] = useState(false);
   const [lastShareUrl, setLastShareUrl] = useState<string | null>(null);
@@ -78,6 +83,17 @@ export function ReportsPage() {
   }, [campaignId, campaigns]);
 
   const selectedCampaign = campaigns.find((c) => c.id === campaignId);
+  const formatBdt = (n: number) => `BDT ${Math.round(n).toLocaleString()}`;
+  const reportDeposit = positiveFiniteNumber(reportTotalDeposit);
+  const reportRateBdt = positiveFiniteNumber(reportDollarRateBdt) ?? DEFAULT_DOLLAR_RATE_BDT;
+  const reportDepositBdt = reportDeposit != null ? reportDeposit * reportRateBdt : null;
+  const reportDepositBdtLabel = reportDepositBdt != null ? formatBdt(reportDepositBdt) : "BDT 0";
+  const shareTotalDeposit = positiveFiniteNumber(totalDeposit);
+  const shareDollarRateBdt = positiveFiniteNumber(dollarRateBdt) ?? DEFAULT_DOLLAR_RATE_BDT;
+  const shareTotalDepositBdt =
+    shareTotalDeposit != null ? shareTotalDeposit * shareDollarRateBdt : null;
+  const shareTotalDepositBdtLabel =
+    shareTotalDepositBdt != null ? formatBdt(shareTotalDepositBdt) : "BDT 0";
 
   const exportCsv = async () => {
     setExportBusy("csv");
@@ -94,9 +110,21 @@ export function ReportsPage() {
       }
       const cn = reportClientName.trim();
       const ce = reportClientEmail.trim();
+      const totalSpend = insights.reduce((s, row) => s + (parseFloat(row.spend ?? "0") || 0), 0);
+      const remainingBalance = reportDeposit != null ? reportDeposit - totalSpend : null;
+      const totalSpendBdt = totalSpend * reportRateBdt;
+      const remainingBalanceBdt =
+        remainingBalance != null ? remainingBalance * reportRateBdt : null;
       const headers = [
         "Client Name",
         "Client Email",
+        "Total Deposit (USD)",
+        "Dollar Rate (BDT)",
+        "Total Deposit (BDT)",
+        "Total Spend (USD)",
+        "Total Spend (BDT)",
+        "Remaining Balance (USD)",
+        "Remaining Balance (BDT)",
         "Campaign ID",
         "Campaign Name",
         "Date Start",
@@ -116,6 +144,13 @@ export function ReportsPage() {
       const rows = insights.map((row) => [
         cn,
         ce,
+        reportDeposit ?? "",
+        reportRateBdt,
+        reportDepositBdt != null ? Math.round(reportDepositBdt) : "",
+        totalSpend.toFixed(2),
+        Math.round(totalSpendBdt),
+        remainingBalance != null ? remainingBalance.toFixed(2) : "",
+        remainingBalanceBdt != null ? Math.round(remainingBalanceBdt) : "",
         campaignId,
         selectedCampaign?.name ?? "Campaign",
         row.date_start ?? "",
@@ -165,7 +200,7 @@ export function ReportsPage() {
         return;
       }
 
-      const currency = overview?.currency ?? "USD";
+      const currency = reportDeposit != null ? "USD" : (overview?.currency ?? "USD");
       const aggregates = aggregatePerformanceReport(rowsForReport, rollup);
       const dailyRows = buildDailyReportRows(rowsForReport);
       const orgOrName = profile?.organization?.trim() || profile?.full_name?.trim() || "";
@@ -187,6 +222,10 @@ export function ReportsPage() {
         currency,
         aggregates,
         dailyRows,
+        financial: {
+          totalDeposit: reportDeposit,
+          dollarRateBdt: reportRateBdt,
+        },
       });
 
       const safeSlug = (selectedCampaign?.name ?? campaignId)
@@ -306,8 +345,47 @@ export function ReportsPage() {
                 />
               </div>
             </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="report-total-deposit">Total deposit (USD)</Label>
+                <Input
+                  id="report-total-deposit"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.01"
+                  placeholder="e.g. 500"
+                  value={reportTotalDeposit}
+                  onChange={(e) => setReportTotalDeposit(e.target.value)}
+                  className="h-11 rounded-xl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="report-dollar-rate">Dollar rate (BDT)</Label>
+                <Input
+                  id="report-dollar-rate"
+                  type="number"
+                  inputMode="decimal"
+                  min={1}
+                  step="0.01"
+                  value={reportDollarRateBdt}
+                  onChange={(e) => setReportDollarRateBdt(e.target.value)}
+                  className="h-11 rounded-xl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="report-deposit-bdt">Deposit in BDT</Label>
+                <Input
+                  id="report-deposit-bdt"
+                  readOnly
+                  value={reportDepositBdtLabel}
+                  className="h-11 rounded-xl bg-muted/30"
+                  tabIndex={-1}
+                />
+              </div>
+            </div>
             <p className="text-[11px] text-muted-foreground">
-              Included on PDF and every CSV row for this export.
+              Client and deposit details are included on PDF and every CSV row.
             </p>
             <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-2">
               <Button
@@ -396,6 +474,48 @@ export function ReportsPage() {
                 />
               </div>
             </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="share-total-deposit">Total deposit (USD)</Label>
+                <Input
+                  id="share-total-deposit"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.01"
+                  placeholder="e.g. 500"
+                  value={totalDeposit}
+                  onChange={(e) => setTotalDeposit(e.target.value)}
+                  className="h-11 rounded-xl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="share-dollar-rate">Dollar rate (BDT)</Label>
+                <Input
+                  id="share-dollar-rate"
+                  type="number"
+                  inputMode="decimal"
+                  min={1}
+                  step="0.01"
+                  value={dollarRateBdt}
+                  onChange={(e) => setDollarRateBdt(e.target.value)}
+                  className="h-11 rounded-xl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="share-deposit-bdt">Deposit in BDT</Label>
+                <Input
+                  id="share-deposit-bdt"
+                  readOnly
+                  value={shareTotalDepositBdtLabel}
+                  className="h-11 rounded-xl bg-muted/30"
+                  tabIndex={-1}
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Client view calculates remaining balance from total deposit minus total ad spend.
+            </p>
             <div className="space-y-1.5">
               <Label htmlFor="exp">Expires in (days)</Label>
               <Input
@@ -422,6 +542,8 @@ export function ReportsPage() {
                   campaignId,
                   clientEmail: clientEmail.trim(),
                   clientName: clientName.trim(),
+                  totalDeposit: shareTotalDeposit,
+                  dollarRateBdt: shareDollarRateBdt,
                   expiryDays,
                 });
                 setShareBusy(false);

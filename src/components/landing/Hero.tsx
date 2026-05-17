@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { ArrowRight, PlayCircle, Sparkles, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Bar, BarChart, ResponsiveContainer, XAxis, Cell } from "recharts";
@@ -94,19 +93,22 @@ export function Hero({
                 size="lg"
                 className="rounded bg-brand px-7 text-brand-foreground btn-brutal h-auto py-3 hover:bg-brand"
               >
-                <Link href="/signup">
+                <a href="/signup">
                   Get Started Free
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
+                </a>
               </Button>
             </div>
             <Button
+              asChild
               variant="outline"
               size="lg"
               className="rounded bg-card btn-brutal h-auto py-3 hover:bg-card"
             >
-              <PlayCircle className="mr-2 h-5 w-5" />
-              Watch Demo
+              <a href="#how-it-works">
+                <PlayCircle className="mr-2 h-5 w-5" />
+                Watch Demo
+              </a>
             </Button>
           </motion.div>
 

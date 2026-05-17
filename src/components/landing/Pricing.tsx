@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Check, Sparkles } from "lucide-react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import {
@@ -192,7 +191,7 @@ export function Pricing({
                       : "!bg-brand !text-brand-foreground hover:!bg-brand",
                   )}
                 >
-                  <Link
+                  <a
                     href={
                       isOfferPlan
                         ? (offer?.href ?? `/checkout?plan=${plan.id}&cycle=${billingCycle}`)
@@ -212,7 +211,7 @@ export function Pricing({
                       : plan.isPaid && user
                         ? `Choose ${plan.name}`
                         : plan.cta}
-                  </Link>
+                  </a>
                 </Button>
               </motion.div>
             );

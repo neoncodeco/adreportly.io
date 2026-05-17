@@ -172,6 +172,7 @@ export function normalizeAdPerformanceRows(ads: CampaignAdRow[]): AdPerformanceN
 export type FinancialSummaryPayload = {
   currency: string;
   totalDeposit: number | null;
+  dollarRateBdt: number | null;
   totalSpend: number;
   remainingBalance: number | null;
   noBalance: boolean;

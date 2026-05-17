@@ -66,6 +66,7 @@ const t = {
   offerText: "Coupon code ব্যবহার করে আমাদের standard package-এ 100% discount নিন",
   offerSubtext:
     "এই offer শুধু Standard package-এর জন্য। একটি account থেকে একবার এবং একটি device থেকে একবার claim করা যাবে।",
+  heroPriceCta: "Claim Offer",
   standardPrice: "Standard Package Price",
   standardPackage: "Standard package",
   regular: "Regular",
@@ -314,6 +315,24 @@ export function OfferPageClient({
               >
                 {t.heroBody}
               </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55, delay: 0.19 }}
+                className="mt-6 flex justify-center lg:justify-start"
+              >
+                <Button
+                  asChild
+                  size="lg"
+                  className="h-auto rounded bg-brand px-6 py-3 font-extrabold text-brand-foreground btn-brutal hover:bg-brand"
+                >
+                  <a href="#packages">
+                    {t.heroPriceCta}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </a>
+                </Button>
+              </motion.div>
 
               <motion.div
                 initial={{ opacity: 0, y: 18 }}

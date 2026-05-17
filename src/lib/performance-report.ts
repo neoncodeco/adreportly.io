@@ -141,6 +141,11 @@ export type DailyReportRow = {
   purchaseValue: number;
 };
 
+export type ReportFinancialDetails = {
+  totalDeposit: number | null;
+  dollarRateBdt: number | null;
+};
+
 export function buildDailyReportRows(daily: CampaignInsightApiRow[]): DailyReportRow[] {
   return daily
     .filter((r) => r.date_start)
@@ -188,6 +193,7 @@ export function buildPerformanceReportHtml(params: {
   currency: string;
   aggregates: PerformanceReportAggregates;
   dailyRows: DailyReportRow[];
+  financial?: ReportFinancialDetails;
 }): string {
   const {
     brandLetter,
@@ -199,10 +205,29 @@ export function buildPerformanceReportHtml(params: {
     currency,
     aggregates: a,
     dailyRows,
+    financial,
   } = params;
 
   const clientNameDisp = clientName.trim() || "—";
   const clientEmailDisp = clientEmail.trim() || "—";
+  const totalDeposit =
+    financial?.totalDeposit != null && financial.totalDeposit > 0 ? financial.totalDeposit : null;
+  const dollarRateBdt =
+    financial?.dollarRateBdt != null && financial.dollarRateBdt > 0
+      ? financial.dollarRateBdt
+      : null;
+  const totalDepositBdt =
+    totalDeposit != null && dollarRateBdt != null ? totalDeposit * dollarRateBdt : null;
+  const totalSpendBdt = dollarRateBdt != null ? a.totalSpend * dollarRateBdt : null;
+  const remainingBalance = totalDeposit != null ? totalDeposit - a.totalSpend : null;
+  const remainingBalanceBdt =
+    remainingBalance != null && dollarRateBdt != null ? remainingBalance * dollarRateBdt : null;
+  const fmtBdt = (n: number) => `BDT ${Math.round(n).toLocaleString()}`;
+  const fmtRate = (n: number) =>
+    `BDT ${n.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })}`;
 
   const genStr = generatedAt.toLocaleString("en-US", {
     month: "short",
@@ -224,7 +249,19 @@ export function buildPerformanceReportHtml(params: {
       : fmtMoneyCurrency(0, currency);
   const roasStr = a.roas != null && !Number.isNaN(a.roas) ? `${a.roas.toFixed(2)}x` : "0.00x";
 
+  const financialSummaryHtml =
+    totalDeposit != null
+      ? m("Total Deposit", escapeHtml(fmtMoneyCurrency(totalDeposit, currency))) +
+        m("Dollar Rate", escapeHtml(dollarRateBdt != null ? fmtRate(dollarRateBdt) : "—")) +
+        m(
+          "Remaining Balance",
+          escapeHtml(remainingBalance != null ? fmtMoneyCurrency(remainingBalance, currency) : "—"),
+        ) +
+        m("Deposit (BDT)", escapeHtml(totalDepositBdt != null ? fmtBdt(totalDepositBdt) : "—"))
+      : "";
+
   const summaryHtml =
+    financialSummaryHtml +
     m("Amount Spent", escapeHtml(fmtMoneyCurrency(a.totalSpend, currency))) +
     m("Impressions", escapeHtml(a.totalImpressions.toLocaleString())) +
     m("Clicks", escapeHtml(a.totalClicks.toLocaleString())) +
@@ -264,6 +301,17 @@ export function buildPerformanceReportHtml(params: {
           <tr><th>Client name</th><td>${escapeHtml(clientNameDisp)}</td></tr>
           <tr><th>Client email</th><td>${escapeHtml(clientEmailDisp)}</td></tr>
           <tr><th>Campaign</th><td>${escapeHtml(campaignName)}</td></tr>
+          ${
+            totalDeposit != null
+              ? `
+          <tr><th>Total deposit</th><td>${escapeHtml(fmtMoneyCurrency(totalDeposit, currency))}</td></tr>
+          <tr><th>Dollar rate</th><td>${escapeHtml(dollarRateBdt != null ? fmtRate(dollarRateBdt) : "—")}</td></tr>
+          <tr><th>Total deposit (BDT)</th><td>${escapeHtml(totalDepositBdt != null ? fmtBdt(totalDepositBdt) : "—")}</td></tr>
+          <tr><th>Total spend (BDT)</th><td>${escapeHtml(totalSpendBdt != null ? fmtBdt(totalSpendBdt) : "—")}</td></tr>
+          <tr><th>Remaining balance</th><td>${escapeHtml(remainingBalance != null ? fmtMoneyCurrency(remainingBalance, currency) : "—")}</td></tr>
+          <tr><th>Remaining balance (BDT)</th><td>${escapeHtml(remainingBalanceBdt != null ? fmtBdt(remainingBalanceBdt) : "—")}</td></tr>`
+              : ""
+          }
           <tr><th>Total reach (period)</th><td>${a.totalReach.toLocaleString()}</td></tr>
           <tr><th>Purchases (conversion)</th><td>${a.totalPurchases.toLocaleString()}</td></tr>
           <tr><th>Purchase value</th><td>${escapeHtml(fmtMoneyCurrency(a.totalPurchaseValue, currency))}</td></tr>

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { connectDb } from "@/lib/db";
+import { normalizeDollarRateBdt, positiveFiniteNumber } from "@/lib/share-financial";
 import { SharedLinkModel } from "@/models/shared-link";
 
 export type ShareRecord = {
@@ -9,6 +10,8 @@ export type ShareRecord = {
   clientId?: string | null;
   clientEmail: string;
   clientName: string;
+  totalDeposit?: number | null;
+  dollarRateBdt?: number | null;
   expiresAt: Date;
   createdAt: Date;
 };
@@ -23,17 +26,21 @@ export async function persistShareLink(record: ShareRecord) {
   const normalized: ShareRecord = {
     ...record,
     clientEmail: normEmail(record.clientEmail),
+    totalDeposit: positiveFiniteNumber(record.totalDeposit),
+    dollarRateBdt: normalizeDollarRateBdt(record.dollarRateBdt),
   };
   memoryShares.set(record.shareToken, normalized);
   if (!process.env.MONGODB_URI) return;
   await connectDb();
-  await SharedLinkModel.create({
+  await SharedLinkModel.collection.insertOne({
     token: normalized.shareToken,
     campaignId: normalized.campaignId,
     agencyId: normalized.agencyId,
     clientId: normalized.clientId ?? null,
     clientEmail: normalized.clientEmail,
     clientName: normalized.clientName || "",
+    totalDeposit: normalized.totalDeposit,
+    dollarRateBdt: normalized.dollarRateBdt,
     expiresAt: normalized.expiresAt,
     createdAt: normalized.createdAt,
   });
@@ -44,13 +51,15 @@ export async function getShareByToken(token: string): Promise<ShareRecord | null
   if (mem) return mem;
   if (!process.env.MONGODB_URI) return null;
   await connectDb();
-  const doc = (await SharedLinkModel.findOne({ token }).lean().exec()) as {
+  const doc = (await SharedLinkModel.collection.findOne({ token })) as {
     token: string;
     campaignId: string;
     agencyId: string;
     clientId?: string | null;
     clientEmail: string;
     clientName?: string;
+    totalDeposit?: number | null;
+    dollarRateBdt?: number | null;
     expiresAt: Date;
     createdAt: Date;
   } | null;
@@ -62,6 +71,8 @@ export async function getShareByToken(token: string): Promise<ShareRecord | null
     clientId: doc.clientId ?? null,
     clientEmail: doc.clientEmail,
     clientName: typeof doc.clientName === "string" ? doc.clientName : "",
+    totalDeposit: positiveFiniteNumber(doc.totalDeposit),
+    dollarRateBdt: normalizeDollarRateBdt(doc.dollarRateBdt),
     expiresAt: doc.expiresAt,
     createdAt: doc.createdAt,
   };

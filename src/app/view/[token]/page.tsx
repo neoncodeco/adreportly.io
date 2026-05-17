@@ -66,6 +66,7 @@ type InsightRow = {
 type FinancialPayload = {
   currency: string;
   totalDeposit: number | null;
+  dollarRateBdt: number | null;
   totalSpend: number;
   remainingBalance: number | null;
   noBalance: boolean;
@@ -123,6 +124,7 @@ const DATE_PRESET_LABELS: Record<string, string> = {
 
 type BillingCardKey =
   | "deposit"
+  | "dollarRate"
   | "spend"
   | "balance"
   | "noBalance"
@@ -140,9 +142,10 @@ type CardVisibility = {
 
 const DEFAULT_CARD_VISIBILITY: CardVisibility = {
   billing: {
-    deposit: false,
+    deposit: true,
+    dollarRate: true,
     spend: true,
-    balance: false,
+    balance: true,
     noBalance: false,
     impressions: true,
     reach: true,
@@ -159,10 +162,11 @@ const DEFAULT_CARD_VISIBILITY: CardVisibility = {
 };
 
 const BILLING_CARD_LABELS: Record<BillingCardKey, string> = {
-  deposit: "Account cap",
+  deposit: "Total deposit",
+  dollarRate: "Dollar rate (BDT)",
   spend: "Amount spent",
-  balance: "Wallet balance",
-  noBalance: "Wallet status",
+  balance: "Remaining balance",
+  noBalance: "Balance status",
   impressions: "Impressions",
   reach: "Reach",
   results: "Results",
@@ -251,6 +255,17 @@ function fmtMoneyCurrency(n: number, currency: string) {
   } catch {
     return `${currency} ${n.toFixed(2)}`;
   }
+}
+
+function fmtBdt(n: number) {
+  return `BDT ${Math.round(n).toLocaleString()}`;
+}
+
+function fmtDollarRate(n: number) {
+  return `BDT ${n.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}`;
 }
 
 function insightsToChart(rows: InsightRow[]) {
@@ -411,6 +426,14 @@ export default function SharedCampaignPage() {
     DATE_PRESET_LABELS[payload?.datePreset ?? datePreset] ?? DATE_PRESET_LABELS.lifetime;
   const fin = payload?.financial;
   const finCurrency = fin?.currency ?? "USD";
+  const dollarRateBdt = fin?.dollarRateBdt && fin.dollarRateBdt > 0 ? fin.dollarRateBdt : null;
+  const totalDepositBdt =
+    fin?.totalDeposit != null && dollarRateBdt != null ? fin.totalDeposit * dollarRateBdt : null;
+  const totalSpendBdt = fin && dollarRateBdt != null ? fin.totalSpend * dollarRateBdt : null;
+  const remainingBalanceBdt =
+    fin?.remainingBalance != null && dollarRateBdt != null
+      ? fin.remainingBalance * dollarRateBdt
+      : null;
   const campaignPreviewUrl = payload?.campaignPreviewUrl ?? null;
   const clientNameTrimmed = payload?.clientName?.trim() ?? "";
   const clientEmailRaw = payload?.clientEmail?.trim() ?? "";
@@ -775,7 +798,7 @@ export default function SharedCampaignPage() {
             <div>
               <h2 className="text-base font-bold sm:text-lg">Billing &amp; results summary</h2>
               <p className="text-xs text-muted-foreground">
-                Ad account cap/balance (when Meta returns it) plus campaign totals for{" "}
+                Deposit, dollar rate, remaining balance, and campaign totals for{" "}
                 <span className="font-medium text-foreground/80">{rangeLabel}</span>.
               </p>
             </div>
@@ -785,14 +808,24 @@ export default function SharedCampaignPage() {
                   <KpiCard
                     delay={0.02}
                     icon={<PiggyBank className="h-4 w-4 text-sky-600" />}
-                    label={`Account cap (${finCurrency})`}
+                    label={`Total deposit (${finCurrency})`}
                     value={
                       fin.totalDeposit != null && fin.totalDeposit > 0
                         ? fmtMoneyCurrency(fin.totalDeposit, finCurrency)
                         : "—"
                     }
-                    sub="Maximum Meta can spend when a cap is set"
+                    sub={totalDepositBdt != null ? fmtBdt(totalDepositBdt) : "Added from report"}
                     color="bg-sky-500"
+                  />
+                ) : null}
+                {cardVisibility.billing.dollarRate ? (
+                  <KpiCard
+                    delay={0.03}
+                    icon={<DollarSign className="h-4 w-4 text-lime-700" />}
+                    label="Dollar rate"
+                    value={dollarRateBdt != null ? fmtDollarRate(dollarRateBdt) : "—"}
+                    sub="1 USD conversion rate"
+                    color="bg-lime-500"
                   />
                 ) : null}
                 {cardVisibility.billing.spend ? (
@@ -801,7 +834,9 @@ export default function SharedCampaignPage() {
                     icon={<DollarSign className="h-4 w-4 text-violet-600" />}
                     label="Amount spent"
                     value={fmtMoneyCurrency(fin.totalSpend, finCurrency)}
-                    sub="Campaign · selected range"
+                    sub={
+                      totalSpendBdt != null ? fmtBdt(totalSpendBdt) : "Campaign · selected range"
+                    }
                     color="bg-violet-500"
                   />
                 ) : null}
@@ -809,13 +844,17 @@ export default function SharedCampaignPage() {
                   <KpiCard
                     delay={0.06}
                     icon={<Wallet className="h-4 w-4 text-emerald-600" />}
-                    label="Wallet balance"
+                    label="Remaining balance"
                     value={
                       fin.remainingBalance != null
                         ? fmtMoneyCurrency(fin.remainingBalance, finCurrency)
                         : "—"
                     }
-                    sub="Prepaid balance left in the ad account"
+                    sub={
+                      remainingBalanceBdt != null
+                        ? fmtBdt(remainingBalanceBdt)
+                        : "Total deposit minus amount spent"
+                    }
                     color="bg-emerald-500"
                   />
                 ) : null}
@@ -823,9 +862,9 @@ export default function SharedCampaignPage() {
                   <KpiCard
                     delay={0.08}
                     icon={<Activity className="h-4 w-4 text-amber-600" />}
-                    label="Wallet status"
+                    label="Balance status"
                     value={fin.noBalance ? "Empty" : "Available"}
-                    sub="Shows whether the prepaid ad balance is zero"
+                    sub="Shows whether the remaining balance is zero"
                     color="bg-amber-500"
                   />
                 ) : null}

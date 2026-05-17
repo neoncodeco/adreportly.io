@@ -259,12 +259,18 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
   }
 
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-feature-settings: "cv11", "ss01";
+  }
+
+  section[id],
+  div[id] {
+    scroll-margin-top: 104px;
   }
 
   ::selection {
