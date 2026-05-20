@@ -22,7 +22,7 @@ export async function GET() {
 
   const payload = await getOrSetCache(`user:fb-app:${session.user.id}`, 30_000, async () => {
     const user = await UserModel.findById(session.user.id)
-      .select("fbAppId encryptedFbAppSecret agencyId")
+      .select("fbAppId +encryptedFbAppSecret agencyId")
       .lean()
       .exec();
     return {
@@ -37,7 +37,7 @@ export async function GET() {
 
 const patchSchema = z.object({
   fbAppId: z.string().min(1).max(64).trim(),
-  fbAppSecret: z.string().min(1).max(128).trim(),
+  fbAppSecret: z.string().max(128).trim().optional(),
 });
 
 export async function PATCH(request: NextRequest) {
@@ -67,12 +67,20 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  const encryptedFbAppSecret = encryptSecret(parsed.data.fbAppSecret);
+  const fbAppSecret = parsed.data.fbAppSecret?.trim();
+
+  const existingUser = await UserModel.findById(session.user.id)
+    .select("+encryptedFbAppSecret")
+    .lean()
+    .exec();
+  if (!fbAppSecret && !existingUser?.encryptedFbAppSecret) {
+    return NextResponse.json({ error: "App Secret is required." }, { status: 400 });
+  }
 
   await UserModel.findByIdAndUpdate(session.user.id, {
     $set: {
       fbAppId: parsed.data.fbAppId,
-      encryptedFbAppSecret,
+      ...(fbAppSecret ? { encryptedFbAppSecret: encryptSecret(fbAppSecret) } : {}),
     },
   }).exec();
   invalidateCacheByPrefix(`user:fb-app:${session.user.id}`);

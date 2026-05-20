@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Eye, ExternalLink, Filter, Loader2, Plus, Search, Trash2 } from "lucide-react";
+import { Eye, ExternalLink, Filter, Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -43,6 +43,17 @@ import {
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
+const DEFAULT_DOLLAR_RATE_BDT = 126;
+
+function formatUsd(value: number | null) {
+  if (value == null) return "Not set";
+  return `$${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+}
+
+function formatRate(value: number | null) {
+  if (value == null) return "Not set";
+  return `৳${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+}
 
 export function ClientsPage() {
   const queryClient = useQueryClient();
@@ -53,6 +64,9 @@ export function ClientsPage() {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<ClientRow | null>(null);
+  const [editTarget, setEditTarget] = useState<ClientRow | null>(null);
+  const [editDeposit, setEditDeposit] = useState("");
+  const [editDollarRate, setEditDollarRate] = useState(String(DEFAULT_DOLLAR_RATE_BDT));
   const [deletedClientIds, setDeletedClientIds] = useState<Set<string>>(() => new Set());
 
   const { data, isPending, isError, error } = useQuery({
@@ -131,6 +145,63 @@ export function ClientsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const updateFinancialsMut = useMutation({
+    mutationFn: async (params: {
+      id: string;
+      totalDeposit: number | null;
+      dollarRateBdt: number;
+    }) => {
+      const res = await fetch(`/api/clients/${encodeURIComponent(params.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          totalDeposit: params.totalDeposit,
+          dollarRateBdt: params.dollarRateBdt,
+        }),
+      });
+      const j = (await res.json()) as {
+        success?: boolean;
+        error?: string;
+        totalDeposit?: number | null;
+        dollarRateBdt?: number;
+        updatedCount?: number;
+      };
+      if (!res.ok || j.success === false) {
+        throw new Error(typeof j.error === "string" ? j.error : "Could not update client");
+      }
+      return j;
+    },
+    onSuccess: (result, params) => {
+      queryClient.setQueryData(
+        dashboardQk.clients(),
+        (prev: DashboardClientsPayload | undefined) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            clients: (prev.clients ?? []).map((c) =>
+              c.id === params.id
+                ? {
+                    ...c,
+                    totalDeposit: result.totalDeposit ?? null,
+                    dollarRateBdt: result.dollarRateBdt ?? DEFAULT_DOLLAR_RATE_BDT,
+                  }
+                : c,
+            ),
+          };
+        },
+      );
+      void queryClient.invalidateQueries({ queryKey: dashboardQk.clients() });
+      setEditTarget(null);
+      toast.success(
+        result.updatedCount && result.updatedCount > 0
+          ? "Client budget and dollar rate updated"
+          : "Saved, but this client has no active share link yet",
+      );
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const filtered = useMemo(() => {
     const qt = q.trim().toLowerCase();
     let list = clients;
@@ -173,6 +244,27 @@ export function ClientsPage() {
 
   const submitAdd = () => {
     createMut.mutate({ name: newName.trim(), email: newEmail.trim() });
+  };
+
+  const openEdit = (client: ClientRow) => {
+    setEditTarget(client);
+    setEditDeposit(client.totalDeposit == null ? "" : String(client.totalDeposit));
+    setEditDollarRate(String(client.dollarRateBdt ?? DEFAULT_DOLLAR_RATE_BDT));
+  };
+
+  const submitEdit = () => {
+    if (!editTarget) return;
+    const totalDeposit = editDeposit.trim() ? Number(editDeposit) : null;
+    const dollarRateBdt = Number(editDollarRate);
+    if (totalDeposit !== null && (!Number.isFinite(totalDeposit) || totalDeposit <= 0)) {
+      toast.error("Budget must be a positive number.");
+      return;
+    }
+    if (!Number.isFinite(dollarRateBdt) || dollarRateBdt <= 0) {
+      toast.error("Dollar rate must be a positive number.");
+      return;
+    }
+    updateFinancialsMut.mutate({ id: editTarget.id, totalDeposit, dollarRateBdt });
   };
 
   if (isPending) {
@@ -309,6 +401,65 @@ export function ClientsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <Dialog open={Boolean(editTarget)} onOpenChange={(o) => !o && setEditTarget(null)}>
+        <DialogContent className="rounded-2xl sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit budget and dollar rate</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              <div className="truncate font-semibold text-foreground">{editTarget?.name}</div>
+              <div className="truncate">{editTarget?.email}</div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-client-budget">Client budget / deposit (USD)</Label>
+              <Input
+                id="edit-client-budget"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                value={editDeposit}
+                onChange={(e) => setEditDeposit(e.target.value)}
+                placeholder="e.g. 500"
+                className="rounded-xl"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-client-rate">Dollar rate (BDT)</Label>
+              <Input
+                id="edit-client-rate"
+                type="number"
+                inputMode="decimal"
+                min="1"
+                step="0.01"
+                value={editDollarRate}
+                onChange={(e) => setEditDollarRate(e.target.value)}
+                placeholder="126"
+                className="rounded-xl"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="bg-gradient-primary text-primary-foreground"
+              disabled={updateFinancialsMut.isPending}
+              onClick={() => submitEdit()}
+            >
+              {updateFinancialsMut.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Save changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="relative min-w-0 flex-1 sm:min-w-[240px]">
           <Label htmlFor="clients-search" className="sr-only">
@@ -366,14 +517,17 @@ export function ClientsPage() {
       ) : (
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
           <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
-            <table className="w-full min-w-[44rem] text-sm">
+            <table className="w-full min-w-[58rem] text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/40 text-left">
                   <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-5">
                     Client
                   </th>
                   <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Mobile
+                    Budget
+                  </th>
+                  <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Dollar rate
                   </th>
                   <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Client ID
@@ -405,8 +559,17 @@ export function ClientsPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3.5 text-muted-foreground">
-                      {c.mobile?.trim() ? c.mobile : "N/A"}
+                    <td className="whitespace-nowrap px-4 py-3.5">
+                      <div className="font-semibold text-foreground">
+                        {formatUsd(c.totalDeposit)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">client deposit</div>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3.5">
+                      <div className="font-semibold text-foreground">
+                        {formatRate(c.dollarRateBdt)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">per USD</div>
                     </td>
                     <td className="px-4 py-3.5">
                       <button
@@ -439,6 +602,16 @@ export function ClientsPage() {
                           onClick={() => openClientShare(c)}
                         >
                           <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 rounded-lg"
+                          type="button"
+                          aria-label="Edit client budget and dollar rate"
+                          onClick={() => openEdit(c)}
+                        >
+                          <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"

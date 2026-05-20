@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { agencyClientExists } from "@/lib/agency-client-service";
+import { agencyClientExists, findSingleAgencyClientByEmail } from "@/lib/agency-client-service";
 import { metaAccessContext } from "@/lib/agency-from-request";
 import { invalidateCacheByPrefix } from "@/lib/server-cache";
 import { normalizeDollarRateBdt, positiveFiniteNumber } from "@/lib/share-financial";
@@ -64,11 +64,13 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+  const rosterClient = await findSingleAgencyClientByEmail(agencyId, emailNorm);
 
   await persistShareLink({
     shareToken,
     campaignId,
     agencyId,
+    clientId: rosterClient?.id ?? null,
     clientEmail: clientEmail.trim(),
     clientName,
     totalDeposit,

@@ -3,10 +3,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Download, Link2, FileText, Share2, Copy, Check } from "lucide-react";
+import { Download, Link2, FileText, Share2, Copy, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -38,8 +47,72 @@ import {
   periodLabelFromDaily,
 } from "@/lib/performance-report";
 import { DEFAULT_DOLLAR_RATE_BDT, positiveFiniteNumber } from "@/lib/share-financial";
+import { cn } from "@/lib/utils";
 
 type CampOpt = { id: string; name: string };
+
+function CampaignSearchSelect({
+  campaigns,
+  value,
+  onChange,
+}: {
+  campaigns: CampOpt[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = campaigns.find((c) => c.id === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={campaigns.length === 0}
+          className="h-11 w-full justify-between rounded-xl px-3 font-normal shadow-soft"
+        >
+          <span className="min-w-0 truncate text-left">
+            {selected?.name ??
+              (campaigns.length ? "Select campaign" : "No campaigns (connect Meta)")}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search campaign..." />
+          <CommandList>
+            <CommandEmpty>No campaign found.</CommandEmpty>
+            <CommandGroup>
+              {campaigns.map((campaign) => (
+                <CommandItem
+                  key={campaign.id}
+                  value={`${campaign.name} ${campaign.id}`}
+                  onSelect={() => {
+                    onChange(campaign.id);
+                    setOpen(false);
+                  }}
+                  className="items-start"
+                >
+                  <Check
+                    className={cn(
+                      "mt-0.5 h-4 w-4 shrink-0",
+                      campaign.id === value ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  <span className="line-clamp-2 min-w-0">{campaign.name}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export function ReportsPage() {
   const queryClient = useQueryClient();
@@ -277,26 +350,11 @@ export function ReportsPage() {
           <div className="relative mt-5 space-y-4">
             <div className="space-y-1.5">
               <Label>Campaign</Label>
-              <Select
-                value={campaignId || undefined}
-                onValueChange={setCampaignId}
-                disabled={campaigns.length === 0}
-              >
-                <SelectTrigger className="h-11 rounded-xl">
-                  <SelectValue
-                    placeholder={
-                      campaigns.length ? "Select campaign" : "No campaigns (connect Meta)"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {campaigns.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CampaignSearchSelect
+                campaigns={campaigns}
+                value={campaignId}
+                onChange={setCampaignId}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="report-date-range">Date range</Label>
@@ -428,26 +486,11 @@ export function ReportsPage() {
           <div className="relative mt-5 space-y-4">
             <div className="space-y-1.5">
               <Label>Campaign</Label>
-              <Select
-                value={campaignId || undefined}
-                onValueChange={setCampaignId}
-                disabled={campaigns.length === 0}
-              >
-                <SelectTrigger className="h-11 rounded-xl">
-                  <SelectValue
-                    placeholder={
-                      campaigns.length ? "Select campaign" : "No campaigns (connect Meta)"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {campaigns.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CampaignSearchSelect
+                campaigns={campaigns}
+                value={campaignId}
+                onChange={setCampaignId}
+              />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">

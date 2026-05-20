@@ -95,7 +95,7 @@ export function SettingsPage() {
   };
 
   const saveFbApp = async () => {
-    if (!fbAppId.trim() || !fbAppSecret.trim()) {
+    if (!fbAppId.trim() || (!fbAppSecret.trim() && !hasSecret)) {
       toast.error("App ID and App Secret are both required.");
       return;
     }
@@ -104,7 +104,10 @@ export function SettingsPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ fbAppId: fbAppId.trim(), fbAppSecret: fbAppSecret.trim() }),
+      body: JSON.stringify({
+        fbAppId: fbAppId.trim(),
+        ...(fbAppSecret.trim() ? { fbAppSecret: fbAppSecret.trim() } : {}),
+      }),
     });
     const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
     setFbSaving(false);

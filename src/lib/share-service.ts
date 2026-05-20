@@ -162,6 +162,152 @@ export async function findLatestActiveShareUrlByClientId(
   return doc?.token ? buildShareUrl(doc.token) : null;
 }
 
+export type ClientShareFinancials = {
+  totalDeposit: number | null;
+  dollarRateBdt: number;
+};
+
+/** Latest non-expired share financial settings for this agency + client email, or null. */
+export async function findLatestActiveShareFinancials(
+  agencyId: string,
+  clientEmail: string,
+): Promise<ClientShareFinancials | null> {
+  const want = normEmail(clientEmail);
+  const now = Date.now();
+  if (!process.env.MONGODB_URI) {
+    let best: ShareRecord | null = null;
+    for (const r of memoryShares.values()) {
+      if (r.agencyId !== agencyId || normEmail(r.clientEmail) !== want) continue;
+      const exp = r.expiresAt instanceof Date ? r.expiresAt : new Date(r.expiresAt);
+      if (exp.getTime() <= now) continue;
+      const created = r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt);
+      if (!best) {
+        best = r;
+        continue;
+      }
+      const bCreated = best.createdAt instanceof Date ? best.createdAt : new Date(best.createdAt);
+      if (created > bCreated) best = r;
+    }
+    return best
+      ? {
+          totalDeposit: positiveFiniteNumber(best.totalDeposit),
+          dollarRateBdt: normalizeDollarRateBdt(best.dollarRateBdt),
+        }
+      : null;
+  }
+  await connectDb();
+  const doc = (await SharedLinkModel.findOne({
+    agencyId,
+    expiresAt: { $gt: new Date() },
+    $expr: {
+      $eq: [{ $toLower: { $trim: { input: { $ifNull: ["$clientEmail", ""] } } } }, want],
+    },
+  })
+    .sort({ createdAt: -1 })
+    .select("totalDeposit dollarRateBdt")
+    .lean()
+    .exec()) as { totalDeposit?: number | null; dollarRateBdt?: number | null } | null;
+  return doc
+    ? {
+        totalDeposit: positiveFiniteNumber(doc.totalDeposit),
+        dollarRateBdt: normalizeDollarRateBdt(doc.dollarRateBdt),
+      }
+    : null;
+}
+
+/** Latest non-expired share financial settings for this agency + roster clientId, or null. */
+export async function findLatestActiveShareFinancialsByClientId(
+  agencyId: string,
+  clientId: string,
+): Promise<ClientShareFinancials | null> {
+  const now = Date.now();
+  if (!process.env.MONGODB_URI) {
+    let best: ShareRecord | null = null;
+    for (const r of memoryShares.values()) {
+      if (r.agencyId !== agencyId || (r.clientId ?? null) !== clientId) continue;
+      const exp = r.expiresAt instanceof Date ? r.expiresAt : new Date(r.expiresAt);
+      if (exp.getTime() <= now) continue;
+      const created = r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt);
+      if (!best) {
+        best = r;
+        continue;
+      }
+      const bCreated = best.createdAt instanceof Date ? best.createdAt : new Date(best.createdAt);
+      if (created > bCreated) best = r;
+    }
+    return best
+      ? {
+          totalDeposit: positiveFiniteNumber(best.totalDeposit),
+          dollarRateBdt: normalizeDollarRateBdt(best.dollarRateBdt),
+        }
+      : null;
+  }
+  await connectDb();
+  const doc = (await SharedLinkModel.findOne({
+    agencyId,
+    clientId,
+    expiresAt: { $gt: new Date() },
+  })
+    .sort({ createdAt: -1 })
+    .select("totalDeposit dollarRateBdt")
+    .lean()
+    .exec()) as { totalDeposit?: number | null; dollarRateBdt?: number | null } | null;
+  return doc
+    ? {
+        totalDeposit: positiveFiniteNumber(doc.totalDeposit),
+        dollarRateBdt: normalizeDollarRateBdt(doc.dollarRateBdt),
+      }
+    : null;
+}
+
+export async function updateActiveShareFinancialsForClient(params: {
+  agencyId: string;
+  clientId: string;
+  clientEmail: string;
+  totalDeposit: number | null;
+  dollarRateBdt: number;
+  allowEmailFallback: boolean;
+}): Promise<number> {
+  const totalDeposit = positiveFiniteNumber(params.totalDeposit);
+  const dollarRateBdt = normalizeDollarRateBdt(params.dollarRateBdt);
+  const now = new Date();
+  if (!process.env.MONGODB_URI) {
+    let n = 0;
+    const want = normEmail(params.clientEmail);
+    for (const r of memoryShares.values()) {
+      const exp = r.expiresAt instanceof Date ? r.expiresAt : new Date(r.expiresAt);
+      const byId = (r.clientId ?? null) === params.clientId;
+      const byEmail = params.allowEmailFallback && normEmail(r.clientEmail) === want;
+      if (r.agencyId !== params.agencyId || exp <= now || (!byId && !byEmail)) continue;
+      r.totalDeposit = totalDeposit;
+      r.dollarRateBdt = dollarRateBdt;
+      n += 1;
+    }
+    return n;
+  }
+  await connectDb();
+  const filters: Array<Record<string, unknown>> = [{ clientId: params.clientId }];
+  if (params.allowEmailFallback) {
+    filters.push({
+      $expr: {
+        $eq: [
+          { $toLower: { $trim: { input: { $ifNull: ["$clientEmail", ""] } } } },
+          normEmail(params.clientEmail),
+        ],
+      },
+    });
+  }
+  const result = await SharedLinkModel.updateMany(
+    {
+      agencyId: params.agencyId,
+      expiresAt: { $gt: now },
+      $or: filters,
+    },
+    { $set: { totalDeposit, dollarRateBdt } },
+  ).exec();
+  return result.modifiedCount ?? 0;
+}
+
 export async function deleteSharesForAgencyClientEmail(agencyId: string, clientEmail: string) {
   const want = normEmail(clientEmail);
   if (!process.env.MONGODB_URI) {

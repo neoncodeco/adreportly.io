@@ -82,7 +82,7 @@ const UserSchema = new Schema<IUser>(
     resetPasswordToken: { type: String, default: null },
     resetPasswordExpires: { type: Date, default: null },
     fbAppId: { type: String, default: null },
-    encryptedFbAppSecret: { type: String, default: null },
+    encryptedFbAppSecret: { type: String, default: null, select: false },
   },
   { timestamps: true, versionKey: false },
 );

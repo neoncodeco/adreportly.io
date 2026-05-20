@@ -363,6 +363,8 @@ export type ClientRow = {
   status: "active";
   lastShared: string;
   latestShareUrl: string | null;
+  totalDeposit: number | null;
+  dollarRateBdt: number | null;
 };
 
 export type DashboardClientsPayload = {
@@ -403,6 +405,8 @@ export async function fetchDashboardClients(): Promise<DashboardClientsPayload> 
         typeof c.latestShareUrl === "string" && c.latestShareUrl.length > 0
           ? c.latestShareUrl
           : null,
+      totalDeposit: typeof c.totalDeposit === "number" ? c.totalDeposit : null,
+      dollarRateBdt: typeof c.dollarRateBdt === "number" ? c.dollarRateBdt : null,
     };
   });
   return {

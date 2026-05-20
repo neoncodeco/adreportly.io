@@ -60,8 +60,13 @@ export async function POST(request: Request) {
   await UserModel.updateOne(
     { _id: user._id },
     {
-      $set: { passwordHash },
-      $unset: { resetPasswordToken: "", resetPasswordExpires: "" },
+      $set: { passwordHash, isEmailVerified: true },
+      $unset: {
+        resetPasswordToken: "",
+        resetPasswordExpires: "",
+        emailVerificationToken: "",
+        emailVerificationExpires: "",
+      },
     },
   );
 

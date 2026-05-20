@@ -5,9 +5,12 @@ import { AgencyClientModel } from "@/models/agency-client";
 import {
   deleteSharesForAgencyClientEmail,
   deleteSharesForAgencyClientId,
+  findLatestActiveShareFinancials,
+  findLatestActiveShareFinancialsByClientId,
   findLatestActiveShareUrl,
   findLatestActiveShareUrlByClientId,
   listClientEmailsForAgency,
+  updateActiveShareFinancialsForClient,
 } from "@/lib/share-service";
 
 export type AgencyClientDoc = {
@@ -17,6 +20,11 @@ export type AgencyClientDoc = {
   email: string;
   createdAt: Date;
   deletedAt?: Date | null;
+};
+
+export type AgencyClientShareSettings = {
+  totalDeposit: number | null;
+  dollarRateBdt: number | null;
 };
 
 type MemAgencyClient = AgencyClientDoc;
@@ -54,6 +62,39 @@ export async function agencyClientExists(agencyId: string, email: string): Promi
   await connectDb();
   const n = await AgencyClientModel.countDocuments({ agencyId, email: e, deletedAt: null });
   return n > 0;
+}
+
+export async function findSingleAgencyClientByEmail(
+  agencyId: string,
+  email: string,
+): Promise<AgencyClientDoc | null> {
+  const e = normalizeEmail(email);
+  if (!process.env.MONGODB_URI) {
+    const matches = memoryAgencyClients.filter((c) => c.agencyId === agencyId && c.email === e);
+    return matches.length === 1 ? matches[0] : null;
+  }
+  await connectDb();
+  const rows = (await AgencyClientModel.find({ agencyId, email: e, deletedAt: null })
+    .limit(2)
+    .lean()
+    .exec()) as unknown as Array<{
+    _id: unknown;
+    agencyId: string;
+    name: string;
+    email: string;
+    createdAt: Date;
+    deletedAt?: Date | null;
+  }>;
+  if (rows.length !== 1) return null;
+  const row = rows[0];
+  return {
+    id: String(row._id),
+    agencyId: row.agencyId,
+    name: row.name,
+    email: row.email,
+    createdAt: row.createdAt,
+    deletedAt: row.deletedAt ?? null,
+  };
 }
 
 /**
@@ -301,10 +342,67 @@ export async function deleteAgencyClient(agencyId: string, clientId: string): Pr
   return true;
 }
 
+export async function getAgencyClientById(
+  agencyId: string,
+  clientId: string,
+): Promise<AgencyClientDoc | null> {
+  if (process.env.MONGODB_URI && !mongoose.Types.ObjectId.isValid(clientId)) return null;
+  if (!process.env.MONGODB_URI) {
+    return memoryAgencyClients.find((c) => c.agencyId === agencyId && c.id === clientId) ?? null;
+  }
+  await connectDb();
+  const row = (await AgencyClientModel.findOne({
+    _id: new mongoose.Types.ObjectId(clientId),
+    agencyId,
+    deletedAt: null,
+  })
+    .lean()
+    .exec()) as {
+    _id: unknown;
+    agencyId: string;
+    name: string;
+    email: string;
+    createdAt: Date;
+    deletedAt?: Date | null;
+  } | null;
+  return row
+    ? {
+        id: String(row._id),
+        agencyId: row.agencyId,
+        name: row.name,
+        email: row.email,
+        createdAt: row.createdAt,
+        deletedAt: row.deletedAt ?? null,
+      }
+    : null;
+}
+
+export async function updateAgencyClientShareSettings(
+  agencyId: string,
+  clientId: string,
+  settings: { totalDeposit: number | null; dollarRateBdt: number },
+): Promise<{ ok: true; updatedCount: number } | { ok: false; error: string }> {
+  const client = await getAgencyClientById(agencyId, clientId);
+  if (!client) return { ok: false, error: "Client not found." };
+
+  const clients = await listAgencyClients(agencyId);
+  const allowEmailFallback = clients.filter((c) => c.email === client.email).length <= 1;
+  const updatedCount = await updateActiveShareFinancialsForClient({
+    agencyId,
+    clientId,
+    clientEmail: client.email,
+    totalDeposit: settings.totalDeposit,
+    dollarRateBdt: settings.dollarRateBdt,
+    allowEmailFallback,
+  });
+  return { ok: true, updatedCount };
+}
+
 export async function listAgencyClientsWithShareUrls(agencyId: string): Promise<
   Array<
     AgencyClientDoc & {
       latestShareUrl: string | null;
+      shareSettings: AgencyClientShareSettings;
     }
   >
 > {
@@ -313,7 +411,9 @@ export async function listAgencyClientsWithShareUrls(agencyId: string): Promise<
   for (const c of clients) {
     emailCounts.set(c.email, (emailCounts.get(c.email) ?? 0) + 1);
   }
-  const out: Array<AgencyClientDoc & { latestShareUrl: string | null }> = [];
+  const out: Array<
+    AgencyClientDoc & { latestShareUrl: string | null; shareSettings: AgencyClientShareSettings }
+  > = [];
   for (const c of clients) {
     // Only fall back to email-based links when the email is unique in the roster.
     // Otherwise, we might show another client's link.
@@ -321,7 +421,18 @@ export async function listAgencyClientsWithShareUrls(agencyId: string): Promise<
     const allowEmailFallback = (emailCounts.get(c.email) ?? 0) <= 1;
     const latestShareUrl =
       byClientId ?? (allowEmailFallback ? await findLatestActiveShareUrl(agencyId, c.email) : null);
-    out.push({ ...c, latestShareUrl });
+    const byClientIdFinancials = await findLatestActiveShareFinancialsByClientId(agencyId, c.id);
+    const shareSettings =
+      byClientIdFinancials ??
+      (allowEmailFallback ? await findLatestActiveShareFinancials(agencyId, c.email) : null);
+    out.push({
+      ...c,
+      latestShareUrl,
+      shareSettings: {
+        totalDeposit: shareSettings?.totalDeposit ?? null,
+        dollarRateBdt: shareSettings?.dollarRateBdt ?? null,
+      },
+    });
   }
   return out;
 }

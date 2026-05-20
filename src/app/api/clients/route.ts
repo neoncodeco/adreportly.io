@@ -54,6 +54,8 @@ export async function GET(request: NextRequest) {
         status: "active" as const,
         lastShared: r.createdAt.toISOString(),
         latestShareUrl: r.latestShareUrl,
+        totalDeposit: r.shareSettings.totalDeposit,
+        dollarRateBdt: r.shareSettings.dollarRateBdt,
       }));
       return {
         success: true as const,
@@ -131,6 +133,8 @@ export async function POST(request: NextRequest) {
       status: "active" as const,
       lastShared: r.createdAt.toISOString(),
       latestShareUrl: null as string | null,
+      totalDeposit: null as number | null,
+      dollarRateBdt: null as number | null,
     },
   });
 }

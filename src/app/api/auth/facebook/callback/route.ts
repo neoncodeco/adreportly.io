@@ -13,7 +13,10 @@ async function getUserFbCredentials(
   if (!process.env.MONGODB_URI) return null;
   try {
     await connectDb();
-    const u = await UserModel.findById(userId).select("fbAppId encryptedFbAppSecret").lean().exec();
+    const u = await UserModel.findById(userId)
+      .select("fbAppId +encryptedFbAppSecret")
+      .lean()
+      .exec();
     if (!u?.fbAppId || !u?.encryptedFbAppSecret) return null;
     const appSecret = decryptSecret(u.encryptedFbAppSecret);
     return { appId: u.fbAppId, appSecret };
