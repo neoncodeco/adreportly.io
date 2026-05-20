@@ -8,7 +8,6 @@ import { requireMongo } from "@/lib/db";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { UserModel } from "@/models/user";
 
-
 // Warn if no auth secret or too short, which causes sessions to break after restarts and JWTSessionError on old cookies.
 const authSecret = getAuthSecret();
 if (!authSecret || authSecret.length < 16) {
