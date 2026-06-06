@@ -1,0 +1,493 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  user
+  admin
+}
+
+enum BillingPlanId {
+  free
+  starter
+  pro
+  enterprise
+}
+
+enum BillingStatus {
+  inactive
+  pending
+  active
+  past_due
+  canceled
+  expired
+}
+
+enum BillingCycle {
+  monthly
+  yearly
+}
+
+enum SubscriptionStatus {
+  pending
+  active
+  past_due
+  canceled
+  expired
+  incomplete
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+  canceled
+}
+
+enum BillingEventStatus {
+  received
+  processed
+  ignored
+  failed
+}
+
+enum TicketStatus {
+  open
+  in_progress
+  waiting_user
+  resolved
+  closed
+}
+
+enum TicketPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum TicketCategory {
+  billing
+  technical
+  feature_request
+  account
+  general
+}
+
+enum FeedbackType {
+  bug
+  improvement
+  feature_request
+  usability
+  praise
+  other
+}
+
+enum FeedbackArea {
+  overall
+  dashboard
+  campaigns
+  reports
+  billing
+  meta_connect
+  support
+  settings
+}
+
+enum FeedbackStatus {
+  new
+  reviewed
+  planned
+  archived
+}
+
+enum NotificationTargetRole {
+  all
+  user
+  admin
+}
+
+model User {
+  id                        String         @id @default(uuid()) @db.Uuid
+  email                     String         @unique
+  fullName                  String         @default("") @map("full_name")
+  organization              String         @default("")
+  agencyId                  String?        @map("agency_id")
+  role                      UserRole       @default(user)
+  isBanned                  Boolean        @default(false) @map("is_banned")
+  bannedAt                  DateTime?      @map("banned_at")
+  billingPlanId             BillingPlanId  @default(free) @map("billing_plan_id")
+  billingStatus             BillingStatus  @default(inactive) @map("billing_status")
+  billingCycle              BillingCycle?  @map("billing_cycle")
+  billingCurrentPeriodEnd   DateTime?      @map("billing_current_period_end")
+  billingScheduledPlanId    BillingPlanId? @map("billing_scheduled_plan_id")
+  billingScheduledCycle     BillingCycle?  @map("billing_scheduled_cycle")
+  billingScheduledChangeAt  DateTime?      @map("billing_scheduled_change_at")
+  fbAppId                   String?        @map("fb_app_id")
+  encryptedFbAppSecret      String?        @map("encrypted_fb_app_secret")
+  createdAt                 DateTime       @default(now()) @map("created_at")
+  updatedAt                 DateTime       @default(now()) @updatedAt @map("updated_at")
+
+  agency            Agency?            @relation(fields: [agencyId], references: [agencyId], onDelete: SetNull)
+  subscriptions     Subscription[]
+  offerRedemption   OfferRedemption?
+  paymentTransactions PaymentTransaction[]
+  tickets           Ticket[]
+  feedbacks         Feedback[]
+
+  @@index([agencyId])
+  @@index([role])
+  @@index([isBanned])
+  @@index([billingPlanId])
+  @@index([billingStatus])
+  @@map("users")
+}
+
+model Agency {
+  agencyId               String   @id @map("agency_id")
+  name                   String?
+  email                  String?
+  encryptedToken         String   @map("encrypted_token")
+  fbUserId               String?  @unique @map("fb_user_id")
+  appUserId              String?  @map("app_user_id") @db.Uuid
+  disabledAdAccountIds   String[] @default([]) @map("disabled_ad_account_ids")
+
+  users                  User[]
+  clients                AgencyClient[]
+
+  @@index([appUserId])
+  @@map("agencies")
+}
+
+model AgencyClient {
+  id        String    @id @default(cuid())
+  agencyId  String    @map("agency_id")
+  name      String
+  email     String
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  agency Agency @relation(fields: [agencyId], references: [agencyId], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([agencyId, deletedAt])
+  @@index([agencyId, email])
+  @@map("agency_clients")
+}
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  userId                 String             @map("user_id") @db.Uuid
+  agencyId               String?            @map("agency_id")
+  planId                 BillingPlanId      @map("plan_id")
+  billingCycle           BillingCycle       @default(monthly) @map("billing_cycle")
+  status                 SubscriptionStatus @default(pending)
+  currency               String             @default("USD")
+  amount                 Float              @default(0)
+  provider               String             @default("uddoktapay")
+  providerCustomerId     String?            @map("provider_customer_id")
+  providerSubscriptionId String?            @unique @map("provider_subscription_id")
+  providerReference      String?            @map("provider_reference")
+  periodStartAt          DateTime?          @map("period_start_at")
+  periodEndAt            DateTime?          @map("period_end_at")
+  nextBillingAt          DateTime?          @map("next_billing_at")
+  canceledAt             DateTime?          @map("canceled_at")
+  metadata               Json               @default("{}")
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime           @updatedAt @map("updated_at")
+
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentTransactions PaymentTransaction[]
+
+  @@index([userId])
+  @@index([agencyId])
+  @@index([planId])
+  @@index([billingCycle])
+  @@index([status])
+  @@index([provider])
+  @@index([providerCustomerId])
+  @@index([providerReference])
+  @@index([userId, status, updatedAt(sort: Desc)])
+  @@map("subscriptions")
+}
+
+model PaymentTransaction {
+  id                     String        @id @default(cuid())
+  userId                 String        @map("user_id") @db.Uuid
+  subscriptionId         String?       @map("subscription_id")
+  planId                 String        @map("plan_id")
+  provider               String        @default("uddoktapay")
+  providerPaymentId      String        @unique @map("provider_payment_id")
+  providerSubscriptionId String?       @map("provider_subscription_id")
+  providerReference      String?       @map("provider_reference")
+  amount                 Float
+  currency               String        @default("USD")
+  status                 PaymentStatus @default(pending)
+  paidAt                 DateTime?     @map("paid_at")
+  raw                    Json          @default("{}")
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@index([provider])
+  @@index([providerSubscriptionId])
+  @@index([providerReference])
+  @@index([status])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("payment_transactions")
+}
+
+model Coupon {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  percentOff      Int       @map("percent_off")
+  active          Boolean   @default(true)
+  maxRedemptions  Int?      @map("max_redemptions")
+  redemptionCount Int       @default(0) @map("redemption_count")
+  expiresAt       DateTime? @map("expires_at")
+  createdBy       String    @map("created_by") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  offerRedemptions OfferRedemption[]
+
+  @@index([active])
+  @@index([expiresAt])
+  @@index([createdBy])
+  @@map("coupons")
+}
+
+model OfferRedemption {
+  id             String       @id @default(cuid())
+  userId         String       @unique @map("user_id") @db.Uuid
+  deviceHash     String       @unique @map("device_hash")
+  couponId       String       @map("coupon_id")
+  couponCode     String       @map("coupon_code")
+  offerSlug      String       @map("offer_slug")
+  planId         String       @map("plan_id")
+  billingCycle   BillingCycle @default(monthly) @map("billing_cycle")
+  subscriptionId String?      @map("subscription_id")
+  transactionId  String?      @map("transaction_id")
+  metadata       Json         @default("{}")
+  claimedAt      DateTime     @default(now()) @map("claimed_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Restrict)
+
+  @@index([couponId])
+  @@index([couponCode])
+  @@index([offerSlug])
+  @@index([planId])
+  @@index([claimedAt])
+  @@index([couponId, claimedAt(sort: Desc)])
+  @@map("offer_redemptions")
+}
+
+model BillingEventLog {
+  id          String             @id @default(cuid())
+  provider    String             @default("uddoktapay")
+  eventId     String             @unique @map("event_id")
+  eventType   String             @default("unknown") @map("event_type")
+  processedAt DateTime?          @map("processed_at")
+  status      BillingEventStatus @default(received)
+  error       String?
+  payload     Json               @default("{}")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  @@index([provider])
+  @@index([eventType])
+  @@map("billing_event_logs")
+}
+
+model Ticket {
+  id                 String         @id @default(cuid())
+  ticketNumber       String         @unique @map("ticket_number")
+  userId             String         @map("user_id") @db.Uuid
+  userEmail          String         @map("user_email")
+  userName           String         @default("") @map("user_name")
+  subject            String
+  category           TicketCategory @default(general)
+  priority           TicketPriority @default(medium)
+  status             TicketStatus   @default(open)
+  description        String
+  resolvedAt         DateTime?      @map("resolved_at")
+  lastRepliedAt      DateTime?      @map("last_replied_at")
+  lastRepliedByAdmin Boolean        @default(false) @map("last_replied_by_admin")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+  replies            TicketReply[]
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([category])
+  @@index([priority])
+  @@index([status])
+  @@index([userId, status, updatedAt(sort: Desc)])
+  @@index([status, priority, updatedAt(sort: Desc)])
+  @@map("tickets")
+}
+
+model TicketReply {
+  id          String   @id @default(cuid())
+  ticketId    String   @map("ticket_id")
+  authorId    String   @map("author_id") @db.Uuid
+  authorName  String   @default("") @map("author_name")
+  authorEmail String   @default("") @map("author_email")
+  isAdmin     Boolean  @default(false) @map("is_admin")
+  message     String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("ticket_replies")
+}
+
+model Feedback {
+  id           String         @id @default(cuid())
+  userId       String         @map("user_id") @db.Uuid
+  userEmail    String         @map("user_email")
+  userName     String         @default("") @map("user_name")
+  organization String         @default("")
+  type         FeedbackType
+  area         FeedbackArea   @default(overall)
+  rating       Int
+  message      String
+  pageUrl      String?        @map("page_url")
+  status       FeedbackStatus @default(new)
+  adminNote    String         @default("") @map("admin_note")
+  reviewedAt   DateTime?      @map("reviewed_at")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([area])
+  @@index([rating])
+  @@index([status])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([type, area, createdAt(sort: Desc)])
+  @@map("feedbacks")
+}
+
+model Notification {
+  id                String                 @id @default(cuid())
+  title             String
+  message           String
+  link              String?
+  createdByUserId   String                 @map("created_by_user_id") @db.Uuid
+  targetRole        NotificationTargetRole @default(all) @map("target_role")
+  recipientUserId   String?                @map("recipient_user_id") @db.Uuid
+  readBy            String[]               @default([]) @map("read_by") @db.Uuid
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
+
+  @@index([createdByUserId])
+  @@index([targetRole])
+  @@index([recipientUserId])
+  @@index([createdAt(sort: Desc)])
+  @@index([recipientUserId, createdAt(sort: Desc)])
+  @@index([targetRole, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model SharedLink {
+  id            String   @id @default(cuid())
+  token         String   @unique
+  campaignId    String   @map("campaign_id")
+  agencyId      String   @map("agency_id")
+  clientId      String?  @map("client_id")
+  clientEmail   String   @map("client_email")
+  clientName    String   @default("") @map("client_name")
+  totalDeposit  Float?   @map("total_deposit")
+  dollarRateBdt Float    @default(126) @map("dollar_rate_bdt")
+  expiresAt     DateTime @map("expires_at")
+  createdAt     DateTime @map("created_at")
+
+  @@index([agencyId, clientEmail, createdAt(sort: Desc)])
+  @@index([agencyId, clientId, createdAt(sort: Desc)])
+  @@index([agencyId, expiresAt])
+  @@map("shared_links")
+}
+
+model AdAccountsSnapshot {
+  id        String   @id @default(cuid())
+  agencyId  String   @unique @map("agency_id")
+  payload   Json     @default("[]")
+  fetchedAt DateTime @map("fetched_at")
+  lastError String?  @map("last_error")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([fetchedAt])
+  @@map("ad_accounts_snapshots")
+}
+
+model AccountCampaignsSnapshot {
+  id        String   @id @default(cuid())
+  agencyId  String   @map("agency_id")
+  accountId String   @map("account_id")
+  payload   Json     @default("[]")
+  fetchedAt DateTime @map("fetched_at")
+  lastError String?  @map("last_error")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([agencyId, accountId])
+  @@index([agencyId])
+  @@index([accountId])
+  @@index([fetchedAt])
+  @@map("account_campaigns_snapshots")
+}
+
+model CampaignInsightsSnapshot {
+  id            String   @id @default(cuid())
+  agencyId      String   @map("agency_id")
+  campaignId    String   @map("campaign_id")
+  datePreset    String   @map("date_preset")
+  timeIncrement String   @map("time_increment")
+  payload       Json     @default("[]")
+  fetchedAt     DateTime @map("fetched_at")
+  lastError     String?  @map("last_error")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([agencyId, campaignId, datePreset, timeIncrement])
+  @@index([agencyId])
+  @@index([campaignId])
+  @@index([datePreset])
+  @@index([timeIncrement])
+  @@index([fetchedAt])
+  @@map("campaign_insights_snapshots")
+}
+
+model AnalyticsOverviewSnapshot {
+  id        String   @id @default(cuid())
+  agencyId  String   @unique @map("agency_id")
+  payload   Json     @default("{}")
+  fetchedAt DateTime @map("fetched_at")
+  lastError String?  @map("last_error")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([fetchedAt])
+  @@map("analytics_overview_snapshots")
+}
