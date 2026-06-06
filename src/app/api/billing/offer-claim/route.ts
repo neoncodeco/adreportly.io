@@ -1,7 +1,8 @@
 import { createHash } from "crypto";
+import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import {
   STANDARD_OFFER_BILLING_CYCLE,
   STANDARD_OFFER_PATH,
@@ -15,13 +16,9 @@ import {
   type BillingCycle,
 } from "@/lib/billing/plans";
 import { getPlanCycleForStorage } from "@/lib/billing/subscription-state";
-import { requireMongo } from "@/lib/db";
+import { prisma, requireDb } from "@/lib/db";
+import { isPrismaUniqueViolation } from "@/lib/prisma-errors";
 import { invalidateCacheKey } from "@/lib/server-cache";
-import { CouponModel } from "@/models/coupon";
-import { OfferRedemptionModel } from "@/models/offer-redemption";
-import { PaymentTransactionModel } from "@/models/payment-transaction";
-import { SubscriptionModel } from "@/models/subscription";
-import { UserModel } from "@/models/user";
 
 const bodySchema = z.object({
   couponCode: z.string().min(4).max(40),
@@ -44,8 +41,8 @@ function hashDeviceId(value: string) {
 }
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id || !session.user.email) {
+  const authUser = await getServerUser();
+  if (!authUser?.id || !authUser.email) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
 
@@ -66,7 +63,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Database unavailable.";
     return NextResponse.json({ error: msg }, { status: 503 });
@@ -85,7 +82,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const user = await UserModel.findById(session.user.id).select("billingPlanId").lean().exec();
+  const user = await prisma.user.findUnique({
+    where: { id: authUser.id },
+    select: { billingPlanId: true },
+  });
 
   if (!user) {
     return NextResponse.json({ error: "Account not found." }, { status: 404 });
@@ -108,8 +108,14 @@ export async function POST(request: Request) {
   const deviceHash = hashDeviceId(parsed.data.deviceId.trim());
 
   const [existingUserClaim, existingDeviceClaim] = await Promise.all([
-    OfferRedemptionModel.findOne({ userId: session.user.id }).select("_id").lean().exec(),
-    OfferRedemptionModel.findOne({ deviceHash }).select("_id").lean().exec(),
+    prisma.offerRedemption.findUnique({
+      where: { userId: authUser.id },
+      select: { id: true },
+    }),
+    prisma.offerRedemption.findUnique({
+      where: { deviceHash },
+      select: { id: true },
+    }),
   ]);
 
   if (existingUserClaim) {
@@ -134,122 +140,125 @@ export async function POST(request: Request) {
   let claimId: string | null = null;
 
   try {
-    const claim = await OfferRedemptionModel.create({
-      userId: session.user.id,
-      deviceHash,
-      couponId: coupon._id.toString(),
-      couponCode: coupon.code,
-      offerSlug: STANDARD_OFFER_SLUG,
-      planId: plan.id,
-      billingCycle,
-      subscriptionId: null,
-      transactionId: null,
-      metadata: {
-        source: "offer_claim",
-        status: "initiated",
-        returnPath: STANDARD_OFFER_PATH,
-      },
-      claimedAt: now,
-    });
-    claimId = claim._id.toString();
-
-    await SubscriptionModel.updateMany(
-      {
-        userId: session.user.id,
-        status: { $in: ["pending", "active", "past_due", "incomplete"] },
-      },
-      {
-        $set: {
-          status: "canceled",
-          canceledAt: now,
-        },
-      },
-    ).exec();
-
-    const subscription = await SubscriptionModel.create({
-      userId: session.user.id,
-      agencyId: null,
-      planId: plan.id,
-      billingCycle,
-      status: "active",
-      amount: 0,
-      currency: plan.currency,
-      provider: "offer_claim",
-      providerCustomerId: null,
-      providerSubscriptionId: null,
-      providerReference: `offer:${STANDARD_OFFER_SLUG}:${claimId}`,
-      periodStartAt: now,
-      periodEndAt: periodEnd,
-      nextBillingAt: periodEnd,
-      canceledAt: null,
-      metadata: {
-        source: "offer_claim",
-        offerSlug: STANDARD_OFFER_SLUG,
-        couponMongoId: coupon._id.toString(),
-        couponCode: coupon.code,
-        couponPercentOff: coupon.percentOff,
-        couponRedeemed: true,
-        originalChargeAmount,
-        couponDiscountAmount: originalChargeAmount,
+    const claim = await prisma.offerRedemption.create({
+      data: {
+        userId: authUser.id,
         deviceHash,
-        autoDowngradePlanId: "free",
+        couponId: coupon.id,
+        couponCode: coupon.code,
+        offerSlug: STANDARD_OFFER_SLUG,
+        planId: plan.id,
+        billingCycle,
+        subscriptionId: null,
+        transactionId: null,
+        metadata: {
+          source: "offer_claim",
+          status: "initiated",
+          returnPath: STANDARD_OFFER_PATH,
+        } as Prisma.InputJsonValue,
+        claimedAt: now,
+      },
+    });
+    claimId = claim.id;
+
+    await prisma.subscription.updateMany({
+      where: {
+        userId: authUser.id,
+        status: { in: ["pending", "active", "past_due", "incomplete"] },
+      },
+      data: {
+        status: "canceled",
+        canceledAt: now,
       },
     });
 
-    const payment = await PaymentTransactionModel.create({
-      userId: session.user.id,
-      subscriptionId: subscription._id.toString(),
-      planId: plan.id,
-      provider: "offer_claim",
-      providerPaymentId: `offer_${subscription._id.toString()}`,
-      providerSubscriptionId: null,
-      providerReference: subscription.providerReference,
-      amount: 0,
-      currency: plan.currency,
-      status: "paid",
-      paidAt: now,
-      raw: {
-        source: "offer_claim",
-        offerSlug: STANDARD_OFFER_SLUG,
-        couponCode: coupon.code,
-        originalChargeAmount,
+    const subscription = await prisma.subscription.create({
+      data: {
+        userId: authUser.id,
+        agencyId: null,
+        planId: plan.id,
+        billingCycle,
+        status: "active",
+        amount: 0,
+        currency: plan.currency,
+        provider: "offer_claim",
+        providerCustomerId: null,
+        providerSubscriptionId: null,
+        providerReference: `offer:${STANDARD_OFFER_SLUG}:${claimId}`,
+        periodStartAt: now,
+        periodEndAt: periodEnd,
+        nextBillingAt: periodEnd,
+        canceledAt: null,
+        metadata: {
+          source: "offer_claim",
+          offerSlug: STANDARD_OFFER_SLUG,
+          couponMongoId: coupon.id,
+          couponCode: coupon.code,
+          couponPercentOff: coupon.percentOff,
+          couponRedeemed: true,
+          originalChargeAmount,
+          couponDiscountAmount: originalChargeAmount,
+          deviceHash,
+          autoDowngradePlanId: "free",
+        } as Prisma.InputJsonValue,
+      },
+    });
+
+    const payment = await prisma.paymentTransaction.create({
+      data: {
+        userId: authUser.id,
+        subscriptionId: subscription.id,
+        planId: plan.id,
+        provider: "offer_claim",
+        providerPaymentId: `offer_${subscription.id}`,
+        providerSubscriptionId: null,
+        providerReference: subscription.providerReference,
+        amount: 0,
+        currency: plan.currency,
+        status: "paid",
+        paidAt: now,
+        raw: {
+          source: "offer_claim",
+          offerSlug: STANDARD_OFFER_SLUG,
+          couponCode: coupon.code,
+          originalChargeAmount,
+        } as Prisma.InputJsonValue,
       },
     });
 
     await Promise.all([
-      UserModel.updateOne(
-        { _id: session.user.id },
-        {
-          $set: {
-            billingPlanId: plan.id,
-            billingStatus: "active",
-            billingCycle: getPlanCycleForStorage(plan.id, billingCycle),
-            billingCurrentPeriodEnd: periodEnd,
-            billingScheduledPlanId: "free",
-            billingScheduledCycle: null,
-            billingScheduledChangeAt: periodEnd,
-          },
+      prisma.user.update({
+        where: { id: authUser.id },
+        data: {
+          billingPlanId: plan.id,
+          billingStatus: "active",
+          billingCycle: getPlanCycleForStorage(plan.id, billingCycle),
+          billingCurrentPeriodEnd: periodEnd,
+          billingScheduledPlanId: "free",
+          billingScheduledCycle: null,
+          billingScheduledChangeAt: periodEnd,
         },
-      ).exec(),
-      CouponModel.updateOne({ _id: coupon._id }, { $inc: { redemptionCount: 1 } }).exec(),
-      OfferRedemptionModel.updateOne(
-        { _id: claim._id },
-        {
-          $set: {
-            subscriptionId: subscription._id.toString(),
-            transactionId: payment._id.toString(),
-            metadata: {
-              source: "offer_claim",
-              status: "completed",
-              originalChargeAmount,
-              grantedAt: now.toISOString(),
-            },
-          },
+      }),
+      prisma.coupon.update({
+        where: { id: coupon.id },
+        data: { redemptionCount: { increment: 1 } },
+      }),
+      prisma.offerRedemption.update({
+        where: { id: claim.id },
+        data: {
+          subscriptionId: subscription.id,
+          transactionId: payment.id,
+          metadata: {
+            source: "offer_claim",
+            status: "completed",
+            originalChargeAmount,
+            grantedAt: now.toISOString(),
+          } as Prisma.InputJsonValue,
         },
-      ).exec(),
+      }),
     ]);
 
-    invalidateCacheKey(`user:billing-me:${session.user.id}`);
+    invalidateCacheKey(`user:billing-me:${authUser.id}`);
 
     return NextResponse.json({
       success: true,
@@ -259,25 +268,22 @@ export async function POST(request: Request) {
       validUntil: periodEnd.toISOString(),
     });
   } catch (e) {
-    const maybeMongo = e as { code?: number; keyPattern?: Record<string, number> };
     if (claimId) {
-      await OfferRedemptionModel.deleteOne({ _id: claimId, subscriptionId: null }).catch(
-        () => null,
+      await prisma.offerRedemption
+        .deleteMany({ where: { id: claimId, subscriptionId: null } })
+        .catch(() => null);
+    }
+    if (isPrismaUniqueViolation(e, "userId")) {
+      return NextResponse.json(
+        { error: "This account has already used the Standard offer once." },
+        { status: 409 },
       );
     }
-    if (maybeMongo?.code === 11000) {
-      if (maybeMongo.keyPattern?.userId) {
-        return NextResponse.json(
-          { error: "This account has already used the Standard offer once." },
-          { status: 409 },
-        );
-      }
-      if (maybeMongo.keyPattern?.deviceHash) {
-        return NextResponse.json(
-          { error: "This device has already used the Standard offer once." },
-          { status: 409 },
-        );
-      }
+    if (isPrismaUniqueViolation(e, "deviceHash")) {
+      return NextResponse.json(
+        { error: "This device has already used the Standard offer once." },
+        { status: 409 },
+      );
     }
 
     const msg = e instanceof Error ? e.message : "Could not activate offer right now.";

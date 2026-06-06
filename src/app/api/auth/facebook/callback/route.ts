@@ -2,21 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { exchangeCodeForToken } from "@/services/facebook";
 import { upsertAgencyFromFacebook } from "@/lib/agency-service";
 import { signAgencyJwt, COOKIE_NAME } from "@/lib/jwt";
-import { connectDb } from "@/lib/db";
+import { hasDatabase, prisma } from "@/lib/db";
 import { decryptSecret } from "@/lib/encryption";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
-import { UserModel } from "@/models/user";
 
 async function getUserFbCredentials(
   userId: string,
 ): Promise<{ appId: string; appSecret: string } | null> {
-  if (!process.env.MONGODB_URI) return null;
+  if (!hasDatabase()) return null;
   try {
-    await connectDb();
-    const u = await UserModel.findById(userId)
-      .select("fbAppId +encryptedFbAppSecret")
-      .lean()
-      .exec();
+    const u = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { fbAppId: true, encryptedFbAppSecret: true },
+    });
     if (!u?.fbAppId || !u?.encryptedFbAppSecret) return null;
     const appSecret = decryptSecret(u.encryptedFbAppSecret);
     return { appId: u.fbAppId, appSecret };

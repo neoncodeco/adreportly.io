@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import { getAgencyIdForAppUser } from "@/lib/agency-service";
 import { createAgencyClient } from "@/lib/agency-client-service";
 import { verifyAgencyJwt, COOKIE_NAME } from "@/lib/jwt";
@@ -31,14 +31,14 @@ export async function createShareLinkAction(input: {
     if (payload?.agencyId) agencyId = payload.agencyId;
   }
 
-  // 2. Fallback to next-auth session
+  // 2. Fallback to Supabase session
   if (!agencyId) {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const authUser = await getServerUser();
+    if (!authUser?.id) {
       return { ok: false, error: "Sign in required." };
     }
-    userId = session.user.id;
-    agencyId = await getAgencyIdForAppUser(session.user.id);
+    userId = authUser.id;
+    agencyId = await getAgencyIdForAppUser(authUser.id);
   }
 
   if (!agencyId) {

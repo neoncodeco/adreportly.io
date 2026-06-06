@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import mongoose from "mongoose";
-import { connectDb } from "@/lib/db";
-import { AgencyClientModel } from "@/models/agency-client";
+import { Prisma } from "@prisma/client";
+import { hasDatabase, prisma } from "@/lib/db";
+import { isValidId } from "@/lib/id";
 import {
   deleteSharesForAgencyClientEmail,
   deleteSharesForAgencyClientId,
@@ -35,32 +35,49 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+function toAgencyClientDoc(row: {
+  id: string;
+  agencyId: string;
+  name: string;
+  email: string;
+  createdAt: Date;
+  deletedAt: Date | null;
+}): AgencyClientDoc {
+  return {
+    id: row.id,
+    agencyId: row.agencyId,
+    name: row.name,
+    email: row.email,
+    createdAt: row.createdAt,
+    deletedAt: row.deletedAt ?? null,
+  };
+}
+
 export async function countAgencyClients(agencyId: string): Promise<number> {
-  if (!process.env.MONGODB_URI) {
+  if (!hasDatabase()) {
     return memoryAgencyClients.filter((c) => c.agencyId === agencyId).length;
   }
-  await connectDb();
-  return AgencyClientModel.countDocuments({ agencyId, deletedAt: null });
+  return prisma.agencyClient.count({ where: { agencyId, deletedAt: null } });
 }
 
 /** Lifetime count — does not decrease when a client is deleted. */
 export async function countAgencyClientsLifetime(agencyId: string): Promise<number> {
-  if (!process.env.MONGODB_URI) {
+  if (!hasDatabase()) {
     // In-memory storage deletes rows, so we cannot keep lifetime history here.
     // Best effort: treat active count as lifetime in dev mode.
     return memoryAgencyClients.filter((c) => c.agencyId === agencyId).length;
   }
-  await connectDb();
-  return AgencyClientModel.countDocuments({ agencyId });
+  return prisma.agencyClient.count({ where: { agencyId } });
 }
 
 export async function agencyClientExists(agencyId: string, email: string): Promise<boolean> {
   const e = normalizeEmail(email);
-  if (!process.env.MONGODB_URI) {
+  if (!hasDatabase()) {
     return memoryAgencyClients.some((c) => c.agencyId === agencyId && c.email === e);
   }
-  await connectDb();
-  const n = await AgencyClientModel.countDocuments({ agencyId, email: e, deletedAt: null });
+  const n = await prisma.agencyClient.count({
+    where: { agencyId, email: { equals: e, mode: "insensitive" }, deletedAt: null },
+  });
   return n > 0;
 }
 
@@ -69,32 +86,16 @@ export async function findSingleAgencyClientByEmail(
   email: string,
 ): Promise<AgencyClientDoc | null> {
   const e = normalizeEmail(email);
-  if (!process.env.MONGODB_URI) {
+  if (!hasDatabase()) {
     const matches = memoryAgencyClients.filter((c) => c.agencyId === agencyId && c.email === e);
     return matches.length === 1 ? matches[0] : null;
   }
-  await connectDb();
-  const rows = (await AgencyClientModel.find({ agencyId, email: e, deletedAt: null })
-    .limit(2)
-    .lean()
-    .exec()) as unknown as Array<{
-    _id: unknown;
-    agencyId: string;
-    name: string;
-    email: string;
-    createdAt: Date;
-    deletedAt?: Date | null;
-  }>;
+  const rows = await prisma.agencyClient.findMany({
+    where: { agencyId, email: { equals: e, mode: "insensitive" }, deletedAt: null },
+    take: 2,
+  });
   if (rows.length !== 1) return null;
-  const row = rows[0];
-  return {
-    id: String(row._id),
-    agencyId: row.agencyId,
-    name: row.name,
-    email: row.email,
-    createdAt: row.createdAt,
-    deletedAt: row.deletedAt ?? null,
-  };
+  return toAgencyClientDoc(rows[0]);
 }
 
 /**
@@ -111,7 +112,7 @@ export async function backfillAgencyClientsFromSharesIfEmpty(
   const rows = await listClientEmailsForAgency(agencyId);
   const slice = maxClients === null ? rows : rows.slice(0, maxClients);
 
-  if (!process.env.MONGODB_URI) {
+  if (!hasDatabase()) {
     const now = new Date();
     for (const r of slice) {
       const email = normalizeEmail(r.email);
@@ -137,7 +138,6 @@ export async function backfillAgencyClientsFromSharesIfEmpty(
   }
 
   if (slice.length === 0) return;
-  await connectDb();
   const docs = slice.map((r) => {
     const email = normalizeEmail(r.email);
     const name =
@@ -153,77 +153,24 @@ export async function backfillAgencyClientsFromSharesIfEmpty(
     return { agencyId, email, name, createdAt: r.lastShared };
   });
   try {
-    await AgencyClientModel.insertMany(docs, { ordered: false });
+    await prisma.agencyClient.createMany({ data: docs, skipDuplicates: true });
   } catch {
     /* ignore duplicate key noise from parallel requests */
   }
 }
 
 export async function listAgencyClients(agencyId: string): Promise<AgencyClientDoc[]> {
-  if (!process.env.MONGODB_URI) {
+  if (!hasDatabase()) {
     return memoryAgencyClients
       .filter((c) => c.agencyId === agencyId)
       .slice()
       .sort((a, b) => a.email.localeCompare(b.email));
   }
-  await connectDb();
-  const rows = (await AgencyClientModel.find({ agencyId, deletedAt: null })
-    .sort({ email: 1 })
-    .lean()
-    .exec()) as unknown as Array<{
-    _id: unknown;
-    agencyId: string;
-    name: string;
-    email: string;
-    createdAt: Date;
-    deletedAt?: Date | null;
-  }>;
-  return rows.map((r) => ({
-    id: String(r._id),
-    agencyId: r.agencyId,
-    name: r.name,
-    email: r.email,
-    createdAt: r.createdAt,
-    deletedAt: r.deletedAt ?? null,
-  }));
-}
-
-let mongoIndexesSynced: Promise<void> | null = null;
-async function ensureAgencyClientIndexes(force = false) {
-  if (!process.env.MONGODB_URI) return;
-  if (!mongoIndexesSynced || force) {
-    mongoIndexesSynced = (async () => {
-      await connectDb();
-      try {
-        // Align DB indexes with schema (drops old unique index on {agencyId,email}).
-        await AgencyClientModel.syncIndexes();
-        // Some deployments keep the old unique index even after syncIndexes.
-        // Drop it explicitly if present.
-        try {
-          const idx = (await AgencyClientModel.collection.indexes()) as Array<{
-            name: string;
-            key: Record<string, number>;
-            unique?: boolean;
-          }>;
-          const legacy = idx.find(
-            (i) =>
-              i.unique === true &&
-              i.key?.agencyId === 1 &&
-              i.key?.email === 1 &&
-              Object.keys(i.key ?? {}).length === 2,
-          );
-          if (legacy?.name) {
-            await AgencyClientModel.collection.dropIndex(legacy.name);
-          }
-        } catch {
-          /* ignore */
-        }
-      } catch {
-        // Ignore in case the DB user lacks permissions; app will still function in memory/dev.
-      }
-    })();
-  }
-  await mongoIndexesSynced;
+  const rows = await prisma.agencyClient.findMany({
+    where: { agencyId, deletedAt: null },
+    orderBy: { email: "asc" },
+  });
+  return rows.map(toAgencyClientDoc);
 }
 
 export async function createAgencyClient(
@@ -235,7 +182,7 @@ export async function createAgencyClient(
   if (!name) return { ok: false, error: "Name is required." };
   if (!email || !email.includes("@")) return { ok: false, error: "Valid email is required." };
 
-  if (!process.env.MONGODB_URI) {
+  if (!hasDatabase()) {
     const doc: AgencyClientDoc = {
       id: randomUUID(),
       agencyId,
@@ -248,59 +195,28 @@ export async function createAgencyClient(
     return { ok: true, client: doc };
   }
 
-  await connectDb();
-  await ensureAgencyClientIndexes();
-  const attemptCreate = async () => {
-    const created = await AgencyClientModel.create({
-      agencyId,
-      name,
-      email,
-      deletedAt: null,
-    });
-    const lean = created.toObject();
-    return {
-      ok: true as const,
-      client: {
-        id: String(lean._id),
-        agencyId,
-        name: lean.name,
-        email: lean.email,
-        createdAt: lean.createdAt,
-        deletedAt: lean.deletedAt ?? null,
-      },
-    };
-  };
-
   try {
-    return await attemptCreate();
+    const created = await prisma.agencyClient.create({
+      data: { agencyId, name, email, deletedAt: null },
+    });
+    return { ok: true, client: toAgencyClientDoc(created) };
   } catch (e: unknown) {
-    const code = (e as { code?: number })?.code;
-    if (code !== 11000) throw e;
-
-    // Legacy unique index on (agencyId,email) may still exist; drop + retry once.
-    await ensureAgencyClientIndexes(true);
-    try {
-      return await attemptCreate();
-    } catch (e2: unknown) {
-      const code2 = (e2 as { code?: number })?.code;
-      if (code2 === 11000) {
-        return {
-          ok: false,
-          code: "duplicate",
-          error:
-            "Could not create duplicate-email client because the database still enforces a legacy unique index. Please ensure the DB user has permission to drop indexes, then retry.",
-        };
-      }
-      throw e2;
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      return {
+        ok: false,
+        code: "duplicate",
+        error: "A client with this email already exists for this agency.",
+      };
     }
+    throw e;
   }
 }
 
 export async function deleteAgencyClient(agencyId: string, clientId: string): Promise<boolean> {
-  if (process.env.MONGODB_URI && !mongoose.Types.ObjectId.isValid(clientId)) {
+  if (hasDatabase() && !isValidId(clientId)) {
     return false;
   }
-  if (!process.env.MONGODB_URI) {
+  if (!hasDatabase()) {
     const i = memoryAgencyClients.findIndex((c) => c.agencyId === agencyId && c.id === clientId);
     if (i === -1) return false;
     const email = memoryAgencyClients[i].email;
@@ -308,33 +224,25 @@ export async function deleteAgencyClient(agencyId: string, clientId: string): Pr
     await deleteSharesForAgencyClientEmail(agencyId, email);
     return true;
   }
-  await connectDb();
-  // Use the underlying collection update to avoid dev-server model caching issues
-  // (an older compiled Mongoose model might strip unknown fields like deletedAt).
+  const existing = await prisma.agencyClient.findFirst({
+    where: { id: clientId, agencyId, deletedAt: null },
+    select: { email: true },
+  });
+  if (!existing) return false;
   const now = new Date();
-  const raw = await AgencyClientModel.collection.findOneAndUpdate(
-    {
-      _id: new mongoose.Types.ObjectId(clientId),
-      agencyId,
-      $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
-    },
-    { $set: { deletedAt: now } },
-    { returnDocument: "before", projection: { email: 1 } },
-  );
-  const doc = (raw && typeof raw === "object" && "value" in raw ? raw.value : raw) ?? null;
-  if (!doc) return false;
-  const email =
-    typeof (doc as { email?: unknown }).email === "string"
-      ? ((doc as { email?: unknown }).email as string)
-      : "";
-  // Prefer clientId-based cleanup.
+  await prisma.agencyClient.update({
+    where: { id: clientId },
+    data: { deletedAt: now },
+  });
+  const email = existing.email;
   await deleteSharesForAgencyClientId(agencyId, clientId);
-  // Only delete legacy email-based shares if no other active client uses this email.
-  const otherActiveWithEmail = await AgencyClientModel.countDocuments({
-    agencyId,
-    deletedAt: null,
-    email,
-    _id: { $ne: clientId },
+  const otherActiveWithEmail = await prisma.agencyClient.count({
+    where: {
+      agencyId,
+      deletedAt: null,
+      email: { equals: email, mode: "insensitive" },
+      NOT: { id: clientId },
+    },
   });
   if (otherActiveWithEmail === 0 && email) {
     await deleteSharesForAgencyClientEmail(agencyId, email);
@@ -346,35 +254,14 @@ export async function getAgencyClientById(
   agencyId: string,
   clientId: string,
 ): Promise<AgencyClientDoc | null> {
-  if (process.env.MONGODB_URI && !mongoose.Types.ObjectId.isValid(clientId)) return null;
-  if (!process.env.MONGODB_URI) {
+  if (hasDatabase() && !isValidId(clientId)) return null;
+  if (!hasDatabase()) {
     return memoryAgencyClients.find((c) => c.agencyId === agencyId && c.id === clientId) ?? null;
   }
-  await connectDb();
-  const row = (await AgencyClientModel.findOne({
-    _id: new mongoose.Types.ObjectId(clientId),
-    agencyId,
-    deletedAt: null,
-  })
-    .lean()
-    .exec()) as {
-    _id: unknown;
-    agencyId: string;
-    name: string;
-    email: string;
-    createdAt: Date;
-    deletedAt?: Date | null;
-  } | null;
-  return row
-    ? {
-        id: String(row._id),
-        agencyId: row.agencyId,
-        name: row.name,
-        email: row.email,
-        createdAt: row.createdAt,
-        deletedAt: row.deletedAt ?? null,
-      }
-    : null;
+  const row = await prisma.agencyClient.findFirst({
+    where: { id: clientId, agencyId, deletedAt: null },
+  });
+  return row ? toAgencyClientDoc(row) : null;
 }
 
 export async function updateAgencyClientShareSettings(
@@ -415,8 +302,6 @@ export async function listAgencyClientsWithShareUrls(agencyId: string): Promise<
     AgencyClientDoc & { latestShareUrl: string | null; shareSettings: AgencyClientShareSettings }
   > = [];
   for (const c of clients) {
-    // Only fall back to email-based links when the email is unique in the roster.
-    // Otherwise, we might show another client's link.
     const byClientId = await findLatestActiveShareUrlByClientId(agencyId, c.id);
     const allowEmailFallback = (emailCounts.get(c.email) ?? 0) <= 1;
     const latestShareUrl =

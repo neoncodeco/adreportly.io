@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import { isSafeInternalLink } from "@/lib/admin-route-utils";
-import { requireMongo } from "@/lib/db";
+import { prisma, requireDb } from "@/lib/db";
 import {
   FEEDBACK_AREA_LABELS,
   FEEDBACK_AREAS,
@@ -10,9 +10,6 @@ import {
   FEEDBACK_TYPES,
 } from "@/lib/feedback";
 import { invalidateCacheByPrefix } from "@/lib/server-cache";
-import { FeedbackModel } from "@/models/feedback";
-import { NotificationModel } from "@/models/notification";
-import { UserModel } from "@/models/user";
 
 const createSchema = z.object({
   type: z.enum(FEEDBACK_TYPES),
@@ -23,18 +20,18 @@ const createSchema = z.object({
 });
 
 function serializeFeedback(row: {
-  _id: { toString(): string };
+  id: string;
   type: string;
   area: string;
   rating: number;
   message: string;
-  pageUrl?: string | null;
+  pageUrl: string | null;
   status: string;
   createdAt: Date;
   updatedAt: Date;
 }) {
   return {
-    id: row._id.toString(),
+    id: row.id,
     type: row.type,
     area: row.area,
     rating: row.rating,
@@ -47,13 +44,13 @@ function serializeFeedback(row: {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Database unavailable" },
@@ -61,18 +58,18 @@ export async function GET() {
     );
   }
 
-  const rows = await FeedbackModel.find({ userId: session.user.id })
-    .sort({ createdAt: -1 })
-    .limit(25)
-    .lean()
-    .exec();
+  const rows = await prisma.feedback.findMany({
+    where: { userId: authUser.id },
+    orderBy: { createdAt: "desc" },
+    take: 25,
+  });
 
   return NextResponse.json({ feedback: rows.map(serializeFeedback) });
 }
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id || !session.user.email) {
+  const authUser = await getServerUser();
+  if (!authUser?.id || !authUser.email) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
 
@@ -99,7 +96,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Database unavailable" },
@@ -107,38 +104,42 @@ export async function POST(request: Request) {
     );
   }
 
-  const userRow = (await UserModel.findById(session.user.id)
-    .select("fullName organization")
-    .lean()
-    .exec()) as { fullName?: string; organization?: string } | null;
-
-  const row = await FeedbackModel.create({
-    userId: session.user.id,
-    userEmail: session.user.email,
-    userName: userRow?.fullName ?? session.user.name ?? "",
-    organization: userRow?.organization ?? "",
-    type: parsed.data.type,
-    area: parsed.data.area,
-    rating: parsed.data.rating,
-    message: parsed.data.message,
-    pageUrl,
+  const userRow = await prisma.user.findUnique({
+    where: { id: authUser.id },
+    select: { fullName: true, organization: true },
   });
 
-  const displayName = userRow?.fullName || session.user.email;
-  await NotificationModel.create({
-    title: "New customer feedback",
-    message: `${displayName} rated ${parsed.data.rating}/5 for ${
-      FEEDBACK_AREA_LABELS[parsed.data.area]
-    } (${FEEDBACK_TYPE_LABELS[parsed.data.type]}).`,
-    link: "/admin/feedback",
-    targetRole: "admin",
-    recipientUserId: null,
-    createdByUserId: session.user.id,
+  const row = await prisma.feedback.create({
+    data: {
+      userId: authUser.id,
+      userEmail: authUser.email,
+      userName: userRow?.fullName ?? "",
+      organization: userRow?.organization ?? "",
+      type: parsed.data.type,
+      area: parsed.data.area,
+      rating: parsed.data.rating,
+      message: parsed.data.message,
+      pageUrl,
+    },
+  });
+
+  const displayName = userRow?.fullName || authUser.email;
+  await prisma.notification.create({
+    data: {
+      title: "New customer feedback",
+      message: `${displayName} rated ${parsed.data.rating}/5 for ${
+        FEEDBACK_AREA_LABELS[parsed.data.area]
+      } (${FEEDBACK_TYPE_LABELS[parsed.data.type]}).`,
+      link: "/admin/feedback",
+      targetRole: "admin",
+      recipientUserId: null,
+      createdByUserId: authUser.id,
+    },
   });
 
   invalidateCacheByPrefix("admin:feedback:");
   invalidateCacheByPrefix("admin:overview:");
   invalidateCacheByPrefix("user:notifications:");
 
-  return NextResponse.json({ id: row._id.toString(), status: row.status });
+  return NextResponse.json({ id: row.id, status: row.status });
 }

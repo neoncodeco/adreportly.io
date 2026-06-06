@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import { deleteAgencyClient, updateAgencyClientShareSettings } from "@/lib/agency-client-service";
 import { metaAccessContext } from "@/lib/agency-from-request";
 import { getAgencyIdForAppUser } from "@/lib/agency-service";
@@ -7,12 +7,12 @@ import { invalidateCacheByPrefix } from "@/lib/server-cache";
 import { normalizeDollarRateBdt, positiveFiniteNumber } from "@/lib/share-financial";
 
 async function resolveAgency(request: NextRequest) {
-  const session = await auth();
+  const authUser = await getServerUser();
   const reqCtx = await metaAccessContext(request);
   const fallbackAgencyId =
-    !reqCtx.agencyId && session?.user?.id ? await getAgencyIdForAppUser(session.user.id) : null;
+    !reqCtx.agencyId && authUser?.id ? await getAgencyIdForAppUser(authUser.id) : null;
   const agencyId = reqCtx.agencyId ?? fallbackAgencyId;
-  const isAuthenticated = reqCtx.isAuthenticated || Boolean(session?.user?.id);
+  const isAuthenticated = reqCtx.isAuthenticated || Boolean(authUser?.id);
   return { agencyId, isAuthenticated };
 }
 

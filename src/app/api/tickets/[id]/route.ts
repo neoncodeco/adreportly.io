@@ -1,11 +1,9 @@
-import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/auth";
-import { requireMongo } from "@/lib/db";
+import { getServerUser } from "@/lib/auth/session";
+import { prisma, requireDb } from "@/lib/db";
+import { isValidId } from "@/lib/id";
 import { invalidateCacheByPrefix } from "@/lib/server-cache";
-import { TicketModel } from "@/models/ticket";
-import { UserModel } from "@/models/user";
 
 const replySchema = z.object({
   message: z.string().trim().min(2).max(4000),
@@ -17,12 +15,12 @@ const patchSchema = z.object({
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Database unavailable" },
@@ -30,34 +28,34 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     );
   }
 
-  if (!mongoose.isValidObjectId(id)) {
+  if (!isValidId(id)) {
     return NextResponse.json({ error: "Invalid ticket id." }, { status: 400 });
   }
 
-  const userRow = (await UserModel.findById(session.user.id).select("role").lean().exec()) as {
-    role?: string;
-  } | null;
+  const userRow = await prisma.user.findUnique({
+    where: { id: authUser.id },
+    select: { role: true },
+  });
   const isAdmin = userRow?.role === "admin";
 
-  const query = isAdmin ? { _id: id } : { _id: id, userId: session.user.id };
-  const ticket = await TicketModel.findOne(query).lean().exec();
+  const ticket = await prisma.ticket.findFirst({
+    where: isAdmin ? { id } : { id, userId: authUser.id },
+    include: { replies: { orderBy: { createdAt: "asc" } } },
+  });
 
   if (!ticket) {
     return NextResponse.json({ error: "Ticket not found." }, { status: 404 });
   }
 
-  const t = ticket as typeof ticket & {
-    _id: { toString(): string };
-    replies?: Array<{ _id?: { toString(): string } }>;
-  };
+  const { replies, ...rest } = ticket;
 
   return NextResponse.json({
     ticket: {
-      ...ticket,
-      id: t._id.toString(),
-      replies: (ticket.replies ?? []).map((r) => ({
+      ...rest,
+      id: ticket.id,
+      replies: replies.map((r) => ({
         ...r,
-        _id: (r as { _id?: { toString(): string } })._id?.toString?.() ?? "",
+        _id: r.id,
       })),
     },
   });
@@ -65,8 +63,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await auth();
-  if (!session?.user?.id || !session.user.email) {
+  const authUser = await getServerUser();
+  if (!authUser?.id || !authUser.email) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
 
@@ -83,7 +81,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Database unavailable" },
@@ -91,18 +89,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     );
   }
 
-  if (!mongoose.isValidObjectId(id)) {
+  if (!isValidId(id)) {
     return NextResponse.json({ error: "Invalid ticket id." }, { status: 400 });
   }
 
-  const userRow = (await UserModel.findById(session.user.id)
-    .select("role fullName")
-    .lean()
-    .exec()) as { role?: string; fullName?: string } | null;
+  const userRow = await prisma.user.findUnique({
+    where: { id: authUser.id },
+    select: { role: true, fullName: true },
+  });
   const isAdmin = userRow?.role === "admin";
 
-  const query = isAdmin ? { _id: id } : { _id: id, userId: session.user.id };
-  const ticket = await TicketModel.findOne(query).exec();
+  const ticket = await prisma.ticket.findFirst({
+    where: isAdmin ? { id } : { id, userId: authUser.id },
+  });
 
   if (!ticket) {
     return NextResponse.json({ error: "Ticket not found." }, { status: 404 });
@@ -111,23 +110,35 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Cannot reply to a closed ticket." }, { status: 400 });
   }
 
-  ticket.replies.push({
-    authorId: session.user.id,
-    authorName: userRow?.fullName ?? session.user.name ?? "",
-    authorEmail: session.user.email,
-    isAdmin,
-    message: parsed.data.message,
-  } as Parameters<typeof ticket.replies.push>[0]);
-
-  ticket.lastRepliedAt = new Date();
-  ticket.lastRepliedByAdmin = isAdmin;
+  const now = new Date();
+  let nextStatus = ticket.status;
   if (isAdmin && ticket.status === "open") {
-    ticket.status = "in_progress";
+    nextStatus = "in_progress";
   } else if (!isAdmin && ticket.status === "waiting_user") {
-    ticket.status = "in_progress";
+    nextStatus = "in_progress";
   }
 
-  await ticket.save();
+  await prisma.$transaction([
+    prisma.ticketReply.create({
+      data: {
+        ticketId: id,
+        authorId: authUser.id,
+        authorName: userRow?.fullName ?? "",
+        authorEmail: authUser.email,
+        isAdmin,
+        message: parsed.data.message,
+      },
+    }),
+    prisma.ticket.update({
+      where: { id },
+      data: {
+        lastRepliedAt: now,
+        lastRepliedByAdmin: isAdmin,
+        status: nextStatus,
+      },
+    }),
+  ]);
+
   invalidateCacheByPrefix("admin:tickets:");
 
   return NextResponse.json({ ok: true });
@@ -135,8 +146,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
 
@@ -153,7 +164,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Database unavailable" },
@@ -161,18 +172,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     );
   }
 
-  if (!mongoose.isValidObjectId(id)) {
+  if (!isValidId(id)) {
     return NextResponse.json({ error: "Invalid ticket id." }, { status: 400 });
   }
 
-  const userRow = (await UserModel.findById(session.user.id).select("role").lean().exec()) as {
-    role?: string;
-  } | null;
+  const userRow = await prisma.user.findUnique({
+    where: { id: authUser.id },
+    select: { role: true },
+  });
   const isAdmin = userRow?.role === "admin";
 
   const body = parsed.data;
+  const update: {
+    status?: typeof body.status;
+    priority?: typeof body.priority;
+    resolvedAt?: Date | null;
+  } = {};
 
-  const update: Record<string, unknown> = {};
   if (body.status) {
     const allowed = isAdmin
       ? ["open", "in_progress", "waiting_user", "resolved", "closed"]
@@ -189,11 +205,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     update.priority = body.priority;
   }
 
-  const query = isAdmin ? { _id: id } : { _id: id, userId: session.user.id };
-  const ticket = await TicketModel.findOneAndUpdate(query, { $set: update }, { new: true })
-    .lean()
-    .exec();
-  if (!ticket) {
+  const result = await prisma.ticket.updateMany({
+    where: isAdmin ? { id } : { id, userId: authUser.id },
+    data: update,
+  });
+
+  if (result.count === 0) {
     return NextResponse.json({ error: "Ticket not found." }, { status: 404 });
   }
 

@@ -1,15 +1,16 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { connectDb } from "@/lib/db";
+import { getServerUser } from "@/lib/auth/session";
+import { hasDatabase, prisma } from "@/lib/db";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
-import { UserModel } from "@/models/user";
 
 async function getUserFbAppId(userId: string): Promise<string | null> {
-  if (!process.env.MONGODB_URI) return null;
+  if (!hasDatabase()) return null;
   try {
-    await connectDb();
-    const u = await UserModel.findById(userId).select("fbAppId").lean().exec();
+    const u = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { fbAppId: true },
+    });
     return u?.fbAppId ?? null;
   } catch {
     return null;
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const session = await auth();
+  const authUser = await getServerUser();
 
   const site =
     process.env.NEXT_PUBLIC_SITE_URL ??
@@ -40,8 +41,8 @@ export async function GET(request: NextRequest) {
 
   // Per-user App ID from DB takes priority over .env
   let appId = process.env.FACEBOOK_APP_ID ?? null;
-  if (session?.user?.id) {
-    const dbAppId = await getUserFbAppId(session.user.id);
+  if (authUser?.id) {
+    const dbAppId = await getUserFbAppId(authUser.id);
     if (dbAppId) appId = dbAppId;
   }
 
@@ -68,8 +69,8 @@ export async function GET(request: NextRequest) {
     path: "/",
     maxAge: 600,
   });
-  if (session?.user?.id) {
-    res.cookies.set("fb_oauth_app_user", session.user.id, {
+  if (authUser?.id) {
+    res.cookies.set("fb_oauth_app_user", authUser.id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

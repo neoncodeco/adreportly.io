@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import { metaAccessContext } from "@/lib/agency-from-request";
 import { getDecryptedTokenForAgency, getDisabledAdAccountIdSet } from "@/lib/agency-service";
 import { resolvePlanForUsage } from "@/lib/billing/usage";
@@ -67,7 +67,7 @@ function sortRows(rows: DashboardAdSetBreakdownRow[], sortKey: string) {
 
 export async function GET(req: NextRequest) {
   const { agencyId, isAuthenticated } = await metaAccessContext(req);
-  const session = await auth();
+  const authUser = await getServerUser();
 
   if (!isAuthenticated) {
     return NextResponse.json({ success: false, error: "Sign in required." }, { status: 401 });
@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
             adsets: [] as DashboardAdSetBreakdownRow[],
           };
         }
-        const plan = await resolvePlanForUsage({ userId: session?.user?.id ?? null, agencyId });
+        const plan = await resolvePlanForUsage({ userId: authUser?.id ?? null, agencyId });
         const disabledAdAccountIds = await getDisabledAdAccountIdSet(agencyId);
         return buildDashboardAdSetRowsFromFacebook(
           token,

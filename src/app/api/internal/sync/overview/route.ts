@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectDb } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { syncAgencyOverviewSnapshot } from "@/lib/facebook/overview-snapshot";
-import { AgencyModel } from "@/models/agency";
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
@@ -31,13 +30,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, synced: 1, agencyId: body.agencyId, payload });
   }
 
-  await connectDb();
   const limit = Math.min(200, Math.max(1, body.limit ?? 50));
-  const agencies = (await AgencyModel.find({})
-    .select("agencyId")
-    .limit(limit)
-    .lean()
-    .exec()) as Array<{ agencyId?: string }>;
+  const agencies = await prisma.agency.findMany({
+    select: { agencyId: true },
+    take: limit,
+  });
   const ids = agencies.map((a) => a.agencyId).filter((id): id is string => Boolean(id));
 
   const BATCH = 4;

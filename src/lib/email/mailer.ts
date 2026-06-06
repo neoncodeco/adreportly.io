@@ -123,67 +123,6 @@ async function sendMail(params: {
   });
 }
 
-export async function sendVerificationEmail(to: string, token: string) {
-  const base = getBaseUrl();
-  const verifyUrl = `${base}/api/auth/verify-email?token=${encodeURIComponent(token)}`;
-  const html = wrapEmailHtml({
-    title: "Verify your email",
-    preheader: "Confirm your email to start using AdReportly.",
-    bodyHtml: `
-      <p style="margin:0 0 12px;font-size:18px;font-weight:700;color:#18181b;">Verify your email</p>
-      <p style="margin:0 0 8px;">Thanks for signing up. Tap the button below to confirm your email address and activate your account.</p>
-      ${ctaButton(verifyUrl, "Verify email address")}
-      <p style="margin:16px 0 0;font-size:13px;color:#71717a;">This button expires in <strong>24 hours</strong>. If you didn&apos;t create an account, you can ignore this message.</p>
-    `,
-  });
-  const text = [
-    `Thanks for signing up for ${BRAND_NAME}.`,
-    "",
-    "Verify your email (copy and paste into your browser if the button does not work):",
-    verifyUrl,
-    "",
-    "This link expires in 24 hours.",
-  ].join("\n");
-
-  await sendMail({
-    to,
-    subject: `Verify your ${BRAND_NAME} account`,
-    html,
-    text,
-  });
-}
-
-export async function sendPasswordResetEmail(to: string, token: string) {
-  const base = getBaseUrl();
-  const resetUrl = `${base}/reset-password?token=${encodeURIComponent(token)}`;
-  const html = wrapEmailHtml({
-    title: "Reset your password",
-    preheader: "Set a new password for your AdReportly account.",
-    bodyHtml: `
-      <p style="margin:0 0 12px;font-size:18px;font-weight:700;color:#18181b;">Reset your password</p>
-      <p style="margin:0 0 8px;">We received a request to reset the password for your account. Use the button below to choose a new password.</p>
-      ${ctaButton(resetUrl, "Reset password")}
-      <p style="margin:16px 0 0;font-size:13px;color:#71717a;">This button expires in <strong>1 hour</strong>. If you didn&apos;t request a reset, you can safely ignore this email.</p>
-    `,
-    footerNote: `If you didn&apos;t request a password reset, ignore this email. Your password will stay the same.`,
-  });
-  const text = [
-    `${BRAND_NAME} password reset`,
-    "",
-    "Reset your password by opening this link:",
-    resetUrl,
-    "",
-    "This link expires in 1 hour.",
-  ].join("\n");
-
-  await sendMail({
-    to,
-    subject: `Reset your ${BRAND_NAME} password`,
-    html,
-    text,
-  });
-}
-
 export async function sendPaymentPaidInvoiceEmail(params: {
   to: string;
   customerName: string;

@@ -1,45 +1,42 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { requireMongo } from "@/lib/db";
-import { PaymentTransactionModel } from "@/models/payment-transaction";
-import { SubscriptionModel } from "@/models/subscription";
+import { getServerUser } from "@/lib/auth/session";
+import { prisma, requireDb } from "@/lib/db";
 
 export async function POST() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Database unavailable";
     return NextResponse.json({ error: msg }, { status: 503 });
   }
 
-  const pendingPayment = await PaymentTransactionModel.findOne({
-    userId: session.user.id,
-    status: "pending",
-  })
-    .sort({ createdAt: -1 })
-    .exec();
+  const pendingPayment = await prisma.paymentTransaction.findFirst({
+    where: { userId: authUser.id, status: "pending" },
+    orderBy: { createdAt: "desc" },
+  });
 
   if (pendingPayment) {
-    pendingPayment.status = "canceled";
-    await pendingPayment.save();
+    await prisma.paymentTransaction.update({
+      where: { id: pendingPayment.id },
+      data: { status: "canceled" },
+    });
   }
 
-  const pendingSub = await SubscriptionModel.findOne({
-    userId: session.user.id,
-    status: "pending",
-  })
-    .sort({ createdAt: -1 })
-    .exec();
+  const pendingSub = await prisma.subscription.findFirst({
+    where: { userId: authUser.id, status: "pending" },
+    orderBy: { createdAt: "desc" },
+  });
 
   if (pendingSub) {
-    pendingSub.status = "canceled";
-    pendingSub.canceledAt = new Date();
-    await pendingSub.save();
+    await prisma.subscription.update({
+      where: { id: pendingSub.id },
+      data: { status: "canceled", canceledAt: new Date() },
+    });
   }
 
   return NextResponse.json({

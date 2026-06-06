@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Zap, Loader2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +30,6 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    // Facebook sometimes appends `#_=_` in callback flows; remove it for cleaner URL/state.
     if (window.location.hash === "#_=_") {
       history.replaceState(null, "", window.location.pathname + window.location.search);
     }
@@ -44,6 +43,7 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const verify = params.get("verify");
     const email = params.get("email") ?? "";
+    const error = params.get("error");
     setVerifyState(verify);
     setVerifyEmail(email);
     if (verify === "success") toast.success("Email verified. You can sign in now.");
@@ -51,6 +51,8 @@ export default function LoginPage() {
     if (verify === "expired") toast.error("Verification link expired. Request a new one.");
     if (verify === "invalid") toast.error("Invalid verification link.");
     if (verify === "error") toast.error("Could not verify email right now.");
+    if (error === "account_banned") toast.error("This account has been suspended.");
+    if (error === "auth_callback_error") toast.error("Sign-in link expired or invalid. Try again.");
   }, []);
 
   const {
@@ -66,18 +68,14 @@ export default function LoginPage() {
     const { error } = await signIn(data.email.trim(), data.password);
     setSubmitting(false);
     if (error) {
-      toast.error(error.message || "Invalid credentials");
+      const msg = error.message || "Invalid credentials";
+      toast.error(msg);
+      if (msg.toLowerCase().includes("verify your email")) {
+        setVerifyState("pending");
+        setVerifyEmail(data.email.trim());
+      }
     } else {
       toast.success("Welcome back!");
-      const safeNext = getSafeNext();
-      if (safeNext) {
-        router.replace(safeNext);
-        return;
-      }
-      const s = await getSession();
-      const dest =
-        (s?.user as { role?: string } | undefined)?.role === "admin" ? "/admin" : "/dashboard";
-      router.replace(dest);
     }
   };
 
@@ -88,14 +86,18 @@ export default function LoginPage() {
     }
     setResending(true);
     try {
-      const res = await fetch("/api/auth/resend-verification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: verifyEmail }),
+      const supabase = createClient();
+      const origin = window.location.origin;
+      const verifyNext = encodeURIComponent("/login?verify=success");
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: verifyEmail,
+        options: {
+          emailRedirectTo: `${origin}/auth/callback?next=${verifyNext}`,
+        },
       });
-      const json = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        toast.error(json.error || "Could not resend verification email.");
+      if (error) {
+        toast.error(error.message || "Could not resend verification email.");
         return;
       }
       toast.success("Verification email sent.");

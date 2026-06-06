@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import { getAgencyIdForAppUser } from "@/lib/agency-service";
 import { verifyAgencyJwt, COOKIE_NAME } from "@/lib/jwt";
 
@@ -11,7 +11,7 @@ export type MetaAccessContext = {
 };
 
 /**
- * JWT (Bearer or `ar_agency` cookie) or NextAuth session. When the user is signed in but has not
+ * JWT (Bearer or `ar_agency` cookie) or Supabase session. When the user is signed in but has not
  * connected Facebook, `agencyId` is null and `isAuthenticated` is still true.
  */
 export async function metaAccessContext(request: NextRequest): Promise<MetaAccessContext> {
@@ -25,11 +25,11 @@ export async function metaAccessContext(request: NextRequest): Promise<MetaAcces
     const payload = await verifyAgencyJwt(cookie);
     if (payload?.agencyId) return { agencyId: payload.agencyId, isAuthenticated: true };
   }
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return { agencyId: null, isAuthenticated: false };
   }
-  const agencyId = await getAgencyIdForAppUser(session.user.id);
+  const agencyId = await getAgencyIdForAppUser(authUser.id);
   return { agencyId, isAuthenticated: true };
 }
 

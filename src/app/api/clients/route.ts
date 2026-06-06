@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import {
   backfillAgencyClientsFromSharesIfEmpty,
   countAgencyClientsLifetime,
@@ -21,11 +21,11 @@ function initialsFromName(name: string) {
 
 export async function GET(request: NextRequest) {
   const ctx = await metaAccessContext(request);
-  const session = await auth();
+  const authUser = await getServerUser();
   const fallbackAgencyId =
-    !ctx.agencyId && session?.user?.id ? await getAgencyIdForAppUser(session.user.id) : null;
+    !ctx.agencyId && authUser?.id ? await getAgencyIdForAppUser(authUser.id) : null;
   const agencyId = ctx.agencyId ?? fallbackAgencyId;
-  const isAuthenticated = ctx.isAuthenticated || Boolean(session?.user?.id);
+  const isAuthenticated = ctx.isAuthenticated || Boolean(authUser?.id);
 
   if (!isAuthenticated || !agencyId) {
     return NextResponse.json({
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const plan = await resolvePlanForUsage({ userId: session?.user?.id ?? null, agencyId });
+    const plan = await resolvePlanForUsage({ userId: authUser?.id ?? null, agencyId });
     const payload = await getOrSetCache(`user:clients:${agencyId}`, 15_000, async () => {
       await backfillAgencyClientsFromSharesIfEmpty(agencyId, plan.limits.clients);
       const rows = await listAgencyClientsWithShareUrls(agencyId);
@@ -74,11 +74,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const ctx = await metaAccessContext(request);
-  const session = await auth();
+  const authUser = await getServerUser();
   const fallbackAgencyId =
-    !ctx.agencyId && session?.user?.id ? await getAgencyIdForAppUser(session.user.id) : null;
+    !ctx.agencyId && authUser?.id ? await getAgencyIdForAppUser(authUser.id) : null;
   const agencyId = ctx.agencyId ?? fallbackAgencyId;
-  const isAuthenticated = ctx.isAuthenticated || Boolean(session?.user?.id);
+  const isAuthenticated = ctx.isAuthenticated || Boolean(authUser?.id);
 
   if (!isAuthenticated || !agencyId) {
     return NextResponse.json({ success: false, error: "Sign in required." }, { status: 401 });
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: "Invalid JSON" }, { status: 400 });
   }
 
-  const plan = await resolvePlanForUsage({ userId: session?.user?.id ?? null, agencyId });
+  const plan = await resolvePlanForUsage({ userId: authUser?.id ?? null, agencyId });
   const maxClients = plan.limits.clients;
   if (maxClients !== null) {
     const n = await countAgencyClientsLifetime(agencyId);

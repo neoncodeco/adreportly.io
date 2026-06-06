@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import { metaAccessContext } from "@/lib/agency-from-request";
 import { USER_CACHE_HEADERS } from "@/lib/server-cache";
 import {
@@ -9,7 +9,6 @@ import {
 
 export async function GET(request: NextRequest) {
   const { agencyId, isAuthenticated } = await metaAccessContext(request);
-  await auth();
 
   if (!isAuthenticated) {
     return NextResponse.json({ success: false, error: "Sign in required." }, { status: 401 });

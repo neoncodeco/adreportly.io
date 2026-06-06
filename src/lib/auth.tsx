@@ -1,7 +1,16 @@
 "use client";
 
-import { createContext, useContext, useMemo, type ReactNode } from "react";
-import { signIn as nextAuthSignIn, useSession } from "next-auth/react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
 
 /** Shape compatible with previous Supabase `User` usage in dashboard UI. */
 export type AppUser = {
@@ -10,9 +19,17 @@ export type AppUser = {
   role: "user" | "admin";
 };
 
+type CompatSession = {
+  user: {
+    id: string;
+    email: string | null;
+    role: "user" | "admin";
+  };
+};
+
 interface AuthContextValue {
   user: AppUser | null;
-  session: ReturnType<typeof useSession>["data"];
+  session: CompatSession | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (
@@ -25,32 +42,89 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function mapSupabaseAuthError(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("email not confirmed") || lower.includes("not confirmed")) {
+    return "Verify your email before signing in.";
+  }
+  if (lower.includes("invalid login credentials") || lower.includes("invalid credentials")) {
+    return "Invalid credentials";
+  }
+  return message;
+}
+
+async function fetchAppRole(userId: string): Promise<"user" | "admin"> {
+  const res = await fetch("/api/auth/me", { credentials: "include" });
+  if (!res.ok) {
+    return "user";
+  }
+  const data = (await res.json()) as { role?: string };
+  return data.role === "admin" ? "admin" : "user";
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { data: session, status, update } = useSession();
+  const [appUser, setAppUser] = useState<AppUser | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const loading = status === "loading";
+  const syncFromAuthUser = useCallback(async (authUser: SupabaseUser | null) => {
+    if (!authUser?.id) {
+      setAppUser(null);
+      return;
+    }
+    const role = await fetchAppRole(authUser.id);
+    setAppUser({
+      id: authUser.id,
+      email: authUser.email ?? null,
+      role,
+    });
+  }, []);
 
-  const user = useMemo((): AppUser | null => {
-    if (!session?.user?.id) return null;
-    return {
-      id: session.user.id,
-      email: session.user.email ?? null,
-      role: session.user.role === "admin" ? "admin" : "user",
+  useEffect(() => {
+    const supabase = createClient();
+
+    const init = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      await syncFromAuthUser(session?.user ?? null);
+      setLoading(false);
     };
-  }, [session]);
+
+    void init();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      await syncFromAuthUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [syncFromAuthUser]);
+
+  const session = useMemo((): CompatSession | null => {
+    if (!appUser) return null;
+    return {
+      user: {
+        id: appUser.id,
+        email: appUser.email,
+        role: appUser.role,
+      },
+    };
+  }, [appUser]);
 
   const signIn = async (email: string, password: string) => {
-    const res = await nextAuthSignIn("credentials", {
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
-      redirect: false,
     });
-    if (res?.error) {
-      return {
-        error: new Error(res.error === "CredentialsSignin" ? "Invalid credentials" : res.error),
-      };
+    if (error) {
+      return { error: new Error(mapSupabaseAuthError(error.message)) };
     }
-    await update();
+    await syncFromAuthUser((await supabase.auth.getSession()).data.session?.user ?? null);
     return { error: null };
   };
 
@@ -59,38 +133,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     meta?: { full_name?: string; organization?: string },
   ) => {
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        password,
-        full_name: meta?.full_name ?? "",
-        organization: meta?.organization ?? "",
-      }),
+    const supabase = createClient();
+    const origin = window.location.origin;
+    const verifyNext = encodeURIComponent("/login?verify=success");
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: {
+          full_name: meta?.full_name ?? "",
+          organization: meta?.organization ?? "",
+        },
+        emailRedirectTo: `${origin}/auth/callback?next=${verifyNext}`,
+      },
     });
-    const data = (await res.json().catch(() => ({}))) as {
-      error?: string | Record<string, unknown>;
-    };
-    if (!res.ok) {
-      const msg =
-        typeof data.error === "string"
-          ? data.error
-          : res.status === 409
-            ? "An account with this email already exists"
-            : "Sign up failed";
+
+    if (error) {
+      const lower = error.message.toLowerCase();
+      const msg = lower.includes("already registered")
+        ? "An account with this email already exists"
+        : error.message;
       return { error: new Error(msg), verificationRequired: false };
     }
-    return { error: null, verificationRequired: true };
+
+    const verificationRequired = !data.session;
+    return { error: null, verificationRequired };
   };
 
   const signOut = async () => {
-    // Single full navigation: server clears httpOnly cookies (session + agency) then redirects to /login.
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setAppUser(null);
     window.location.assign("/api/auth/logout");
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user: appUser,
+        session,
+        loading,
+        signIn,
+        signUp,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -5,7 +5,6 @@ import {
   QueryClientProvider,
   defaultShouldDehydrateQuery,
 } from "@tanstack/react-query";
-import { SessionProvider } from "next-auth/react";
 import { useState, type ReactNode } from "react";
 
 function makeQueryClient() {
@@ -26,9 +25,5 @@ function makeQueryClient() {
 
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(makeQueryClient);
-  return (
-    <SessionProvider refetchOnWindowFocus>
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    </SessionProvider>
-  );
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }

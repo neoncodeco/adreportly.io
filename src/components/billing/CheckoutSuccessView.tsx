@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ const MAX_ATTEMPTS = 28;
 
 export function CheckoutSuccessView() {
   const searchParams = useSearchParams();
-  const { data: session, status: sessionStatus } = useSession();
+  const { user, loading: authLoading } = useAuth();
   const invoiceId = searchParams.get("invoice_id");
   const gatewayPending =
     searchParams.get("status")?.toLowerCase() === "pending" ||
@@ -21,7 +21,7 @@ export function CheckoutSuccessView() {
   const [syncDetail, setSyncDetail] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!invoiceId || sessionStatus !== "authenticated" || !session?.user?.id) return;
+    if (!invoiceId || authLoading || !user?.id) return;
 
     let cancelled = false;
     let attempt = 0;
@@ -111,9 +111,9 @@ export function CheckoutSuccessView() {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [gatewayPending, invoiceId, session?.user?.id, sessionStatus]);
+  }, [authLoading, gatewayPending, invoiceId, user?.id]);
 
-  const showSyncBanner = Boolean(invoiceId && sessionStatus === "authenticated");
+  const showSyncBanner = Boolean(invoiceId && user?.id);
 
   return (
     <div className="mx-auto max-w-2xl py-14">
@@ -150,7 +150,7 @@ export function CheckoutSuccessView() {
             )}
           </div>
         )}
-        {sessionStatus === "unauthenticated" && (
+        {!authLoading && !user && (
           <p className="mt-4 text-sm text-muted-foreground">
             <Link
               href="/login?next=/dashboard/billing"

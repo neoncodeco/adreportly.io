@@ -1,6 +1,6 @@
-import { connectDb } from "@/lib/db";
+import { Prisma } from "@prisma/client";
+import { hasDatabase, prisma } from "@/lib/db";
 import { getDecryptedTokenForAgency } from "@/lib/agency-service";
-import { CampaignInsightsSnapshotModel } from "@/models/campaign-insights-snapshot";
 import { fetchCampaignInsights } from "@/services/facebook";
 
 const DEFAULT_TTL_MS = 60 * 1000;
@@ -28,17 +28,18 @@ export async function getCampaignInsightsSnapshot(params: {
   datePreset: string;
   timeIncrement: string;
 }) {
-  if (!process.env.MONGODB_URI) return null;
-  await connectDb();
-  return CampaignInsightsSnapshotModel.findOne({
-    agencyId: params.agencyId,
-    campaignId: params.campaignId,
-    datePreset: params.datePreset,
-    timeIncrement: params.timeIncrement,
-  })
-    .select("payload fetchedAt")
-    .lean()
-    .exec();
+  if (!hasDatabase()) return null;
+  return prisma.campaignInsightsSnapshot.findUnique({
+    where: {
+      agencyId_campaignId_datePreset_timeIncrement: {
+        agencyId: params.agencyId,
+        campaignId: params.campaignId,
+        datePreset: params.datePreset,
+        timeIncrement: params.timeIncrement,
+      },
+    },
+    select: { payload: true, fetchedAt: true },
+  });
 }
 
 export async function syncCampaignInsightsSnapshot(params: {
@@ -52,8 +53,7 @@ export async function syncCampaignInsightsSnapshot(params: {
   if (pending) return pending;
 
   const task = (async () => {
-    if (!process.env.MONGODB_URI) return [] as unknown[];
-    await connectDb();
+    if (!hasDatabase()) return [] as unknown[];
     const token = await getDecryptedTokenForAgency(params.agencyId);
     if (!token) return [] as unknown[];
 
@@ -62,51 +62,59 @@ export async function syncCampaignInsightsSnapshot(params: {
       timeIncrement: params.timeIncrement || undefined,
     });
     const payload = res.data ?? [];
-    await CampaignInsightsSnapshotModel.updateOne(
-      {
-        agencyId: params.agencyId,
-        campaignId: params.campaignId,
-        datePreset: params.datePreset,
-        timeIncrement: params.timeIncrement,
-      },
-      {
-        $set: {
+    const fetchedAt = new Date();
+    await prisma.campaignInsightsSnapshot.upsert({
+      where: {
+        agencyId_campaignId_datePreset_timeIncrement: {
           agencyId: params.agencyId,
           campaignId: params.campaignId,
           datePreset: params.datePreset,
           timeIncrement: params.timeIncrement,
-          payload,
-          fetchedAt: new Date(),
-          lastError: null,
         },
       },
-      { upsert: true },
-    );
+      create: {
+        agencyId: params.agencyId,
+        campaignId: params.campaignId,
+        datePreset: params.datePreset,
+        timeIncrement: params.timeIncrement,
+        payload: payload as Prisma.InputJsonValue,
+        fetchedAt,
+        lastError: null,
+      },
+      update: {
+        payload: payload as Prisma.InputJsonValue,
+        fetchedAt,
+        lastError: null,
+      },
+    });
     return payload;
   })()
     .catch(async (error: unknown) => {
       const message = error instanceof Error ? error.message : "Campaign insights sync failed";
-      if (process.env.MONGODB_URI) {
-        await connectDb();
-        await CampaignInsightsSnapshotModel.updateOne(
-          {
-            agencyId: params.agencyId,
-            campaignId: params.campaignId,
-            datePreset: params.datePreset,
-            timeIncrement: params.timeIncrement,
-          },
-          {
-            $set: {
+      if (hasDatabase()) {
+        await prisma.campaignInsightsSnapshot.upsert({
+          where: {
+            agencyId_campaignId_datePreset_timeIncrement: {
               agencyId: params.agencyId,
               campaignId: params.campaignId,
               datePreset: params.datePreset,
               timeIncrement: params.timeIncrement,
-              lastError: message,
-              fetchedAt: new Date(),
             },
           },
-          { upsert: true },
-        );
+          create: {
+            agencyId: params.agencyId,
+            campaignId: params.campaignId,
+            datePreset: params.datePreset,
+            timeIncrement: params.timeIncrement,
+            payload: [],
+            fetchedAt: new Date(),
+            lastError: message,
+          },
+          update: {
+            lastError: message,
+            fetchedAt: new Date(),
+          },
+        });
       }
       throw error;
     })

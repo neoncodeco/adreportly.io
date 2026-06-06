@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { requireMongo } from "@/lib/db";
+import { getServerUser } from "@/lib/auth/session";
+import { prisma, requireDb } from "@/lib/db";
+import { notificationScopeWhere } from "@/lib/notification-scope";
 import { getOrSetCache, USER_CACHE_HEADERS } from "@/lib/server-cache";
-import { UserModel } from "@/models/user";
-import { NotificationModel } from "@/models/notification";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ success: false, error: "Sign in required." }, { status: 401 });
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     return NextResponse.json(
       { success: false, error: e instanceof Error ? e.message : "Database unavailable" },
@@ -20,29 +19,24 @@ export async function GET() {
     );
   }
 
-  const uid = session.user.id;
+  const uid = authUser.id;
   const payload = await getOrSetCache(`user:notifications:${uid}`, 8_000, async () => {
-    const me = await UserModel.findById(uid).select("role").lean().exec();
+    const me = await prisma.user.findUnique({
+      where: { id: uid },
+      select: { role: true },
+    });
     const role = me?.role === "admin" ? "admin" : "user";
 
-    const filter = {
-      $or: [
-        { recipientUserId: uid },
-        { recipientUserId: null, targetRole: "all" },
-        { recipientUserId: null, targetRole: role },
-      ],
-    };
-
-    const docs = await NotificationModel.find(filter)
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .lean()
-      .exec();
+    const docs = await prisma.notification.findMany({
+      where: notificationScopeWhere(uid, role),
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    });
 
     const notifications = docs.map((n) => {
-      const read = Array.isArray(n.readBy) && n.readBy.includes(uid);
+      const read = n.readBy.includes(uid);
       return {
-        id: n._id.toString(),
+        id: n.id,
         title: n.title,
         message: n.message,
         link: n.link ?? null,

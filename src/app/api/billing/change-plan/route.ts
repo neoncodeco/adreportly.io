@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import { getBillingPlanById } from "@/lib/billing/plans";
 import {
   getBillingChangeKind,
@@ -9,10 +9,8 @@ import {
   normalizeBillingCycle,
   syncUserScheduledBillingChangeIfDue,
 } from "@/lib/billing/subscription-state";
-import { requireMongo } from "@/lib/db";
+import { prisma, requireDb } from "@/lib/db";
 import { invalidateCacheKey } from "@/lib/server-cache";
-import { SubscriptionModel } from "@/models/subscription";
-import { UserModel } from "@/models/user";
 
 const bodySchema = z.object({
   planId: z.enum(["free", "starter", "pro"]),
@@ -20,8 +18,8 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
 
@@ -38,21 +36,21 @@ export async function POST(request: Request) {
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Database unavailable";
     return NextResponse.json({ error: msg }, { status: 503 });
   }
 
   const [user, activeSub] = await Promise.all([
-    syncUserScheduledBillingChangeIfDue(session.user.id),
-    SubscriptionModel.findOne({
-      userId: session.user.id,
-      status: { $in: ["active", "past_due", "incomplete"] },
-    })
-      .sort({ updatedAt: -1 })
-      .lean()
-      .exec(),
+    syncUserScheduledBillingChangeIfDue(authUser.id),
+    prisma.subscription.findFirst({
+      where: {
+        userId: authUser.id,
+        status: { in: ["active", "past_due", "incomplete"] },
+      },
+      orderBy: { updatedAt: "desc" },
+    }),
   ]);
 
   if (!user) {
@@ -66,8 +64,7 @@ export async function POST(request: Request) {
 
   const currentPlanId = user.billingPlanId ?? activeSub?.planId ?? "free";
   const currentCycle =
-    normalizeBillingCycle(user.billingCycle) ??
-    normalizeBillingCycle((activeSub as { billingCycle?: string | null } | null)?.billingCycle);
+    normalizeBillingCycle(user.billingCycle) ?? normalizeBillingCycle(activeSub?.billingCycle);
   const targetCycle = getPlanCycleForStorage(targetPlan.id, parsed.data.billingCycle);
   const changeKind = getBillingChangeKind({
     currentPlanId,
@@ -89,26 +86,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, action: "none" });
     }
 
-    await UserModel.updateOne(
-      { _id: session.user.id },
-      {
-        $unset: {
-          billingScheduledPlanId: 1,
-          billingScheduledCycle: 1,
-          billingScheduledChangeAt: 1,
-        },
+    await prisma.user.update({
+      where: { id: authUser.id },
+      data: {
+        billingScheduledPlanId: null,
+        billingScheduledCycle: null,
+        billingScheduledChangeAt: null,
       },
-    ).exec();
+    });
 
-    invalidateCacheKey(`user:billing-me:${session.user.id}`);
+    invalidateCacheKey(`user:billing-me:${authUser.id}`);
     return NextResponse.json({ ok: true, action: "cleared" });
   }
 
   const effectiveAt =
-    user.billingCurrentPeriodEnd ??
-    activeSub?.nextBillingAt ??
-    (activeSub as { periodEndAt?: Date | null } | null)?.periodEndAt ??
-    null;
+    user.billingCurrentPeriodEnd ?? activeSub?.nextBillingAt ?? activeSub?.periodEndAt ?? null;
 
   if (!effectiveAt) {
     return NextResponse.json(
@@ -117,18 +109,16 @@ export async function POST(request: Request) {
     );
   }
 
-  await UserModel.updateOne(
-    { _id: session.user.id },
-    {
-      $set: {
-        billingScheduledPlanId: targetPlan.id,
-        billingScheduledCycle: targetCycle,
-        billingScheduledChangeAt: effectiveAt,
-      },
+  await prisma.user.update({
+    where: { id: authUser.id },
+    data: {
+      billingScheduledPlanId: targetPlan.id,
+      billingScheduledCycle: targetCycle,
+      billingScheduledChangeAt: effectiveAt,
     },
-  ).exec();
+  });
 
-  invalidateCacheKey(`user:billing-me:${session.user.id}`);
+  invalidateCacheKey(`user:billing-me:${authUser.id}`);
 
   return NextResponse.json({
     ok: true,

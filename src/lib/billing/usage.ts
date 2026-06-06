@@ -1,7 +1,6 @@
-import { connectDb } from "@/lib/db";
+import { hasDatabase, prisma } from "@/lib/db";
 import { syncUserScheduledBillingChangeIfDue } from "@/lib/billing/subscription-state";
 import { BILLING_PLANS, type BillingPlanId } from "@/lib/billing/plans";
-import { AgencyModel } from "@/models/agency";
 
 const FREE_PLAN = BILLING_PLANS.find((p) => p.id === "free") ?? BILLING_PLANS[0];
 
@@ -16,9 +15,7 @@ export async function resolvePlanIdForUsage(params: {
   userId?: string | null;
   agencyId?: string | null;
 }): Promise<BillingPlanId> {
-  if (!process.env.MONGODB_URI) return "free";
-
-  await connectDb();
+  if (!hasDatabase()) return "free";
 
   if (params.userId) {
     const user = await syncUserScheduledBillingChangeIfDue(params.userId);
@@ -26,10 +23,10 @@ export async function resolvePlanIdForUsage(params: {
   }
 
   if (params.agencyId) {
-    const agency = (await AgencyModel.findOne({ agencyId: params.agencyId })
-      .select("appUserId")
-      .lean()
-      .exec()) as { appUserId?: string | null } | null;
+    const agency = await prisma.agency.findUnique({
+      where: { agencyId: params.agencyId },
+      select: { appUserId: true },
+    });
     if (agency?.appUserId) {
       const owner = await syncUserScheduledBillingChangeIfDue(agency.appUserId);
       if (owner?.billingPlanId) return normalizePlanId(owner.billingPlanId);

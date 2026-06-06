@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import { OfferPageClient } from "@/components/offers/OfferPageClient";
 import { STANDARD_OFFER_SLUG } from "@/lib/billing/offer-config";
 import { getLatestStandardOfferCouponSafe } from "@/lib/billing/offer-server";
-import { requireMongo } from "@/lib/db";
-import { OfferRedemptionModel } from "@/models/offer-redemption";
-import { UserModel } from "@/models/user";
+import { prisma, requireDb } from "@/lib/db";
 
 export const metadata: Metadata = {
   title: "Standard Offer",
@@ -20,17 +18,26 @@ export default async function OfferSlugPage({ params }: { params: Promise<{ slug
     notFound();
   }
 
-  const [session, offerCoupon] = await Promise.all([auth(), getLatestStandardOfferCouponSafe()]);
+  const [authUser, offerCoupon] = await Promise.all([
+    getServerUser(),
+    getLatestStandardOfferCouponSafe(),
+  ]);
 
   let hasAccountClaim = false;
   let currentPlanId: "free" | "starter" | "pro" | "enterprise" | null = null;
 
-  if (session?.user?.id) {
+  if (authUser?.id) {
     try {
-      await requireMongo();
+      await requireDb();
       const [claimRow, userRow] = await Promise.all([
-        OfferRedemptionModel.findOne({ userId: session.user.id }).select("_id").lean().exec(),
-        UserModel.findById(session.user.id).select("billingPlanId").lean().exec(),
+        prisma.offerRedemption.findUnique({
+          where: { userId: authUser.id },
+          select: { id: true },
+        }),
+        prisma.user.findUnique({
+          where: { id: authUser.id },
+          select: { billingPlanId: true },
+        }),
       ]);
       hasAccountClaim = Boolean(claimRow);
       currentPlanId =
@@ -49,7 +56,7 @@ export default async function OfferSlugPage({ params }: { params: Promise<{ slug
   return (
     <OfferPageClient
       couponCode={offerCoupon?.code ?? null}
-      isSignedIn={Boolean(session?.user?.id)}
+      isSignedIn={Boolean(authUser?.id)}
       hasAccountClaim={hasAccountClaim}
       currentPlanId={currentPlanId}
     />

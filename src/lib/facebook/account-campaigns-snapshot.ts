@@ -1,6 +1,6 @@
-import { connectDb } from "@/lib/db";
+import { Prisma } from "@prisma/client";
+import { hasDatabase, prisma } from "@/lib/db";
 import { getDecryptedTokenForAgency } from "@/lib/agency-service";
-import { AccountCampaignsSnapshotModel } from "@/models/account-campaigns-snapshot";
 import { fetchCampaignsForAdAccount } from "@/services/facebook";
 
 const DEFAULT_TTL_MS = 60 * 1000;
@@ -19,12 +19,11 @@ export function isAccountCampaignsSnapshotFresh(fetchedAt: Date | string | null 
 }
 
 export async function getAccountCampaignsSnapshot(agencyId: string, accountId: string) {
-  if (!process.env.MONGODB_URI) return null;
-  await connectDb();
-  return AccountCampaignsSnapshotModel.findOne({ agencyId, accountId })
-    .select("payload fetchedAt")
-    .lean()
-    .exec();
+  if (!hasDatabase()) return null;
+  return prisma.accountCampaignsSnapshot.findUnique({
+    where: { agencyId_accountId: { agencyId, accountId } },
+    select: { payload: true, fetchedAt: true },
+  });
 }
 
 export async function syncAccountCampaignsSnapshot(params: {
@@ -37,8 +36,7 @@ export async function syncAccountCampaignsSnapshot(params: {
   if (pending) return pending;
 
   const task = (async () => {
-    if (!process.env.MONGODB_URI) return [] as unknown[];
-    await connectDb();
+    if (!hasDatabase()) return [] as unknown[];
     const token = await getDecryptedTokenForAgency(params.agencyId);
     if (!token) return [] as unknown[];
     const rows = await fetchCampaignsForAdAccount(token, params.accountId);
@@ -49,37 +47,45 @@ export async function syncAccountCampaignsSnapshot(params: {
       objective: c.objective ?? "",
       status: c.effective_status ?? c.status ?? "",
     }));
-    await AccountCampaignsSnapshotModel.updateOne(
-      { agencyId: params.agencyId, accountId: params.accountId },
-      {
-        $set: {
-          agencyId: params.agencyId,
-          accountId: params.accountId,
-          payload,
-          fetchedAt: new Date(),
-          lastError: null,
-        },
+    const fetchedAt = new Date();
+    await prisma.accountCampaignsSnapshot.upsert({
+      where: {
+        agencyId_accountId: { agencyId: params.agencyId, accountId: params.accountId },
       },
-      { upsert: true },
-    );
+      create: {
+        agencyId: params.agencyId,
+        accountId: params.accountId,
+        payload: payload as Prisma.InputJsonValue,
+        fetchedAt,
+        lastError: null,
+      },
+      update: {
+        payload: payload as Prisma.InputJsonValue,
+        fetchedAt,
+        lastError: null,
+      },
+    });
     return payload;
   })()
     .catch(async (error: unknown) => {
       const message = error instanceof Error ? error.message : "Account campaigns sync failed";
-      if (process.env.MONGODB_URI) {
-        await connectDb();
-        await AccountCampaignsSnapshotModel.updateOne(
-          { agencyId: params.agencyId, accountId: params.accountId },
-          {
-            $set: {
-              agencyId: params.agencyId,
-              accountId: params.accountId,
-              lastError: message,
-              fetchedAt: new Date(),
-            },
+      if (hasDatabase()) {
+        await prisma.accountCampaignsSnapshot.upsert({
+          where: {
+            agencyId_accountId: { agencyId: params.agencyId, accountId: params.accountId },
           },
-          { upsert: true },
-        );
+          create: {
+            agencyId: params.agencyId,
+            accountId: params.accountId,
+            payload: [],
+            fetchedAt: new Date(),
+            lastError: message,
+          },
+          update: {
+            lastError: message,
+            fetchedAt: new Date(),
+          },
+        });
       }
       throw error;
     })

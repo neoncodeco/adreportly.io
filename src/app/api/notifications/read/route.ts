@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/auth";
-import { requireMongo } from "@/lib/db";
+import { getServerUser } from "@/lib/auth/session";
+import { prisma, requireDb } from "@/lib/db";
+import { isValidId } from "@/lib/id";
+import { markNotificationsRead } from "@/lib/notification-scope";
 import { invalidateCacheByPrefix } from "@/lib/server-cache";
-import { UserModel } from "@/models/user";
-import { NotificationModel } from "@/models/notification";
 
 const bodySchema = z.object({
   id: z.string().optional(),
@@ -12,8 +12,8 @@ const bodySchema = z.object({
 });
 
 export async function PATCH(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ success: false, error: "Sign in required." }, { status: 401 });
   }
 
@@ -33,7 +33,7 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     return NextResponse.json(
       { success: false, error: e instanceof Error ? e.message : "Database unavailable" },
@@ -41,20 +41,15 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const me = await UserModel.findById(session.user.id).select("role").lean().exec();
+  const me = await prisma.user.findUnique({
+    where: { id: authUser.id },
+    select: { role: true },
+  });
   const role = me?.role === "admin" ? "admin" : "user";
-  const uid = session.user.id;
-
-  const scopeFilter = {
-    $or: [
-      { recipientUserId: uid },
-      { recipientUserId: null, targetRole: "all" },
-      { recipientUserId: null, targetRole: role },
-    ],
-  };
+  const uid = authUser.id;
 
   if (parsed.data.all) {
-    await NotificationModel.updateMany(scopeFilter, { $addToSet: { readBy: uid } }).exec();
+    await markNotificationsRead(uid, role);
     invalidateCacheByPrefix(`user:notifications:${uid}`);
     return NextResponse.json({ success: true });
   }
@@ -63,10 +58,14 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ success: false, error: "id or all is required" }, { status: 400 });
   }
 
-  await NotificationModel.updateOne(
-    { _id: parsed.data.id, ...scopeFilter },
-    { $addToSet: { readBy: uid } },
-  ).exec();
+  if (!isValidId(parsed.data.id)) {
+    return NextResponse.json(
+      { success: false, error: "Invalid notification id." },
+      { status: 400 },
+    );
+  }
+
+  await markNotificationsRead(uid, role, parsed.data.id);
   invalidateCacheByPrefix(`user:notifications:${uid}`);
 
   return NextResponse.json({ success: true });

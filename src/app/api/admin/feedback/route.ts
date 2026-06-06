@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  clampPageSize,
-  clampSkip,
-  escapeRegex,
-  sanitizeSearchQuery,
-} from "@/lib/admin-route-utils";
+import type { Prisma } from "@prisma/client";
+import { clampPageSize, clampSkip, sanitizeSearchQuery } from "@/lib/admin-route-utils";
 import { FEEDBACK_AREAS, FEEDBACK_STATUSES, FEEDBACK_TYPES } from "@/lib/feedback";
+import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
 import { ADMIN_CACHE_HEADERS, getOrSetCache } from "@/lib/server-cache";
-import { FeedbackModel } from "@/models/feedback";
 
 const ALLOWED_TYPES = new Set<string>(FEEDBACK_TYPES);
 const ALLOWED_AREAS = new Set<string>(FEEDBACK_AREAS);
 const ALLOWED_STATUSES = new Set<string>(FEEDBACK_STATUSES);
 
 function serializeFeedback(row: {
-  _id: { toString(): string };
+  id: string;
   userId: string;
   userEmail: string;
   userName: string;
@@ -24,15 +20,15 @@ function serializeFeedback(row: {
   area: string;
   rating: number;
   message: string;
-  pageUrl?: string | null;
+  pageUrl: string | null;
   status: string;
   adminNote: string;
-  reviewedAt?: Date | null;
+  reviewedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
   return {
-    id: row._id.toString(),
+    id: row.id,
     userId: row.userId,
     userEmail: row.userEmail,
     userName: row.userName,
@@ -64,26 +60,31 @@ export async function GET(request: NextRequest) {
   const limit = clampPageSize(searchParams.get("limit"), 60, 100);
   const skip = clampSkip(searchParams.get("skip"));
 
-  const filter: Record<string, unknown> = {};
-  if (status && ALLOWED_STATUSES.has(status)) filter.status = status;
-  if (type && ALLOWED_TYPES.has(type)) filter.type = type;
-  if (area && ALLOWED_AREAS.has(area)) filter.area = area;
-  if (rating && rating >= 1 && rating <= 5) filter.rating = rating;
+  const where: Prisma.FeedbackWhereInput = {};
+  if (status && ALLOWED_STATUSES.has(status))
+    where.status = status as Prisma.EnumFeedbackStatusFilter;
+  if (type && ALLOWED_TYPES.has(type)) where.type = type as Prisma.EnumFeedbackTypeFilter;
+  if (area && ALLOWED_AREAS.has(area)) where.area = area as Prisma.EnumFeedbackAreaFilter;
+  if (rating && rating >= 1 && rating <= 5) where.rating = rating;
   if (q) {
-    const safe = escapeRegex(q);
-    filter.$or = [
-      { message: { $regex: safe, $options: "i" } },
-      { userEmail: { $regex: safe, $options: "i" } },
-      { userName: { $regex: safe, $options: "i" } },
-      { organization: { $regex: safe, $options: "i" } },
-      { pageUrl: { $regex: safe, $options: "i" } },
+    where.OR = [
+      { message: { contains: q, mode: "insensitive" } },
+      { userEmail: { contains: q, mode: "insensitive" } },
+      { userName: { contains: q, mode: "insensitive" } },
+      { organization: { contains: q, mode: "insensitive" } },
+      { pageUrl: { contains: q, mode: "insensitive" } },
     ];
   }
 
   const payload = await getOrSetCache(`admin:feedback:${request.url}`, 8_000, async () => {
     const [rows, total] = await Promise.all([
-      FeedbackModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean().exec(),
-      FeedbackModel.countDocuments(filter),
+      prisma.feedback.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.feedback.count({ where }),
     ]);
 
     return {

@@ -1,10 +1,10 @@
-import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { FEEDBACK_STATUSES } from "@/lib/feedback";
+import { prisma } from "@/lib/db";
+import { isValidId } from "@/lib/id";
 import { requireAdmin } from "@/lib/require-admin";
 import { invalidateCacheByPrefix } from "@/lib/server-cache";
-import { FeedbackModel } from "@/models/feedback";
 
 const patchSchema = z
   .object({
@@ -20,7 +20,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!gate.ok) return gate.response;
 
   const { id } = await params;
-  if (!mongoose.isValidObjectId(id)) {
+  if (!isValidId(id)) {
     return NextResponse.json({ success: false, error: "Invalid feedback id." }, { status: 400 });
   }
 
@@ -39,20 +39,22 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     );
   }
 
-  const update: Record<string, unknown> = {};
+  const data: {
+    status?: (typeof FEEDBACK_STATUSES)[number];
+    adminNote?: string;
+    reviewedAt?: Date | null;
+  } = {};
   if (parsed.data.status) {
-    update.status = parsed.data.status;
-    update.reviewedAt = parsed.data.status === "new" ? null : new Date();
+    data.status = parsed.data.status;
+    data.reviewedAt = parsed.data.status === "new" ? null : new Date();
   }
   if (parsed.data.adminNote !== undefined) {
-    update.adminNote = parsed.data.adminNote;
+    data.adminNote = parsed.data.adminNote;
   }
 
-  const feedback = await FeedbackModel.findByIdAndUpdate(id, { $set: update }, { new: true })
-    .lean()
-    .exec();
-
-  if (!feedback) {
+  try {
+    await prisma.feedback.update({ where: { id }, data });
+  } catch {
     return NextResponse.json({ success: false, error: "Feedback not found." }, { status: 404 });
   }
 

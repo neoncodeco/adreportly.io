@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import { metaAccessContext } from "@/lib/agency-from-request";
 import { resolvePlanForUsage } from "@/lib/billing/usage";
 import {
@@ -23,8 +23,8 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ account
   }
 
   try {
-    const session = await auth();
-    const plan = await resolvePlanForUsage({ userId: session?.user?.id ?? null, agencyId });
+    const authUser = await getServerUser();
+    const plan = await resolvePlanForUsage({ userId: authUser?.id ?? null, agencyId });
     const normalizedAccountId = decodeURIComponent(accountId);
     const snapshot = await getAccountCampaignsSnapshot(agencyId, normalizedAccountId);
     if (snapshot?.payload && isAccountCampaignsSnapshotFresh(snapshot.fetchedAt)) {

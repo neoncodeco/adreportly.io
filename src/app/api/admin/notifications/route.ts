@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
 import { z } from "zod";
 import { isSafeInternalLink } from "@/lib/admin-route-utils";
-import { requireMongo } from "@/lib/db";
+import { prisma, requireDb } from "@/lib/db";
+import { isValidId } from "@/lib/id";
 import { requireAdmin } from "@/lib/require-admin";
-import { NotificationModel } from "@/models/notification";
 
 const bodySchema = z.object({
   title: z.string().trim().min(2).max(120),
@@ -34,7 +33,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     return NextResponse.json(
       { success: false, error: e instanceof Error ? e.message : "Database unavailable" },
@@ -47,7 +46,7 @@ export async function POST(request: Request) {
     payload.recipientUserId && payload.recipientUserId.length > 0 ? payload.recipientUserId : null;
   const link = payload.link && payload.link.length > 0 ? payload.link : null;
 
-  if (recipientUserId && !mongoose.isValidObjectId(recipientUserId)) {
+  if (recipientUserId && !isValidId(recipientUserId)) {
     return NextResponse.json(
       { success: false, error: "Invalid recipient user id." },
       { status: 400 },
@@ -61,14 +60,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const row = await NotificationModel.create({
-    title: payload.title,
-    message: payload.message,
-    link,
-    targetRole: recipientUserId ? "all" : (payload.targetRole ?? "all"),
-    recipientUserId,
-    createdByUserId: guard.userId,
+  const row = await prisma.notification.create({
+    data: {
+      title: payload.title,
+      message: payload.message,
+      link,
+      targetRole: recipientUserId ? "all" : (payload.targetRole ?? "all"),
+      recipientUserId,
+      createdByUserId: guard.userId,
+    },
   });
 
-  return NextResponse.json({ success: true, id: row._id.toString() });
+  return NextResponse.json({ success: true, id: row.id });
 }

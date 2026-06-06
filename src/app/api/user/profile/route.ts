@@ -1,29 +1,27 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/auth";
-import { requireMongo } from "@/lib/db";
+import { getServerUser } from "@/lib/auth/session";
+import { prisma, requireDb } from "@/lib/db";
 import { getOrSetCache, invalidateCacheByPrefix, USER_CACHE_HEADERS } from "@/lib/server-cache";
-import { UserModel } from "@/models/user";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Database unavailable";
     return NextResponse.json({ error: msg }, { status: 503 });
   }
 
-  const payload = await getOrSetCache(`user:profile:${session.user.id}`, 30_000, async () => {
-    const user = (await UserModel.findById(session.user.id).lean().exec()) as {
-      email?: string;
-      fullName?: string;
-      organization?: string;
-    } | null;
+  const payload = await getOrSetCache(`user:profile:${authUser.id}`, 30_000, async () => {
+    const user = await prisma.user.findUnique({
+      where: { id: authUser.id },
+      select: { email: true, fullName: true, organization: true },
+    });
     if (!user) {
       return null;
     }
@@ -45,8 +43,8 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
 
@@ -63,18 +61,21 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Database unavailable";
     return NextResponse.json({ error: msg }, { status: 503 });
   }
 
-  const update: { fullName?: string; organization?: string } = {};
-  if (parsed.data.full_name !== undefined) update.fullName = parsed.data.full_name;
-  if (parsed.data.organization !== undefined) update.organization = parsed.data.organization;
+  const data: { fullName?: string; organization?: string } = {};
+  if (parsed.data.full_name !== undefined) data.fullName = parsed.data.full_name;
+  if (parsed.data.organization !== undefined) data.organization = parsed.data.organization;
 
-  await UserModel.updateOne({ _id: session.user.id }, { $set: update });
-  invalidateCacheByPrefix(`user:profile:${session.user.id}`);
+  await prisma.user.update({
+    where: { id: authUser.id },
+    data,
+  });
+  invalidateCacheByPrefix(`user:profile:${authUser.id}`);
 
   return NextResponse.json({ ok: true });
 }

@@ -1,32 +1,30 @@
-import mongoose from "mongoose";
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import { renderInvoiceHtml } from "@/lib/billing/invoice-html";
 import { getBillingPlanById } from "@/lib/billing/plans";
-import { requireMongo } from "@/lib/db";
-import { PaymentTransactionModel } from "@/models/payment-transaction";
-import { UserModel } from "@/models/user";
+import { prisma, requireDb } from "@/lib/db";
+import { isValidId } from "@/lib/id";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
 
   const { id } = await params;
-  if (!mongoose.Types.ObjectId.isValid(id)) {
+  if (!isValidId(id)) {
     return NextResponse.json({ error: "Invalid invoice id." }, { status: 404 });
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Database unavailable";
     return NextResponse.json({ error: msg }, { status: 503 });
   }
 
-  const tx = await PaymentTransactionModel.findById(id).lean().exec();
-  if (!tx || tx.userId !== session.user.id) {
+  const tx = await prisma.paymentTransaction.findUnique({ where: { id } });
+  if (!tx || tx.userId !== authUser.id) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
   if (tx.status !== "paid") {
@@ -36,14 +34,17 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     );
   }
 
-  const user = await UserModel.findById(session.user.id).select("email fullName").lean().exec();
+  const user = await prisma.user.findUnique({
+    where: { id: authUser.id },
+    select: { email: true, fullName: true },
+  });
   const plan = getBillingPlanById(tx.planId);
   const issuedAt = tx.paidAt ?? tx.updatedAt ?? new Date();
 
   const html = renderInvoiceHtml({
     invoiceNo: tx.providerPaymentId,
     customerName: user?.fullName?.trim() || "Customer",
-    customerEmail: user?.email || session.user.email || "",
+    customerEmail: user?.email || authUser.email || "",
     planLabel: plan?.name ?? tx.planId,
     amount: tx.amount,
     currency: tx.currency,

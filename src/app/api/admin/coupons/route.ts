@@ -1,17 +1,13 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
-import {
-  clampPageSize,
-  clampSkip,
-  escapeRegex,
-  sanitizeSearchQuery,
-} from "@/lib/admin-route-utils";
+import { clampPageSize, clampSkip, sanitizeSearchQuery } from "@/lib/admin-route-utils";
+import { normalizeCouponCode } from "@/lib/billing/coupon-discount";
+import { prisma, requireDb } from "@/lib/db";
+import { isPrismaUniqueViolation } from "@/lib/prisma-errors";
 import { requireAdmin } from "@/lib/require-admin";
 import { ADMIN_CACHE_HEADERS, getOrSetCache, invalidateCacheByPrefix } from "@/lib/server-cache";
-import { normalizeCouponCode } from "@/lib/billing/coupon-discount";
-import { requireMongo } from "@/lib/db";
-import { CouponModel } from "@/models/coupon";
 
 const createSchema = z.object({
   code: z.string().max(40).optional(),
@@ -31,7 +27,7 @@ export async function GET(request: NextRequest) {
   if (!gate.ok) return gate.response;
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Database unavailable";
     return NextResponse.json({ success: false, error: msg }, { status: 503 });
@@ -41,13 +37,17 @@ export async function GET(request: NextRequest) {
   const limit = clampPageSize(searchParams.get("limit"), 25, 100);
   const skip = clampSkip(searchParams.get("skip"));
   const q = sanitizeSearchQuery(searchParams.get("q"), 40);
-  const safeQ = escapeRegex(q);
-  const filter = q ? { code: { $regex: safeQ, $options: "i" } } : {};
+  const where: Prisma.CouponWhereInput = q ? { code: { contains: q, mode: "insensitive" } } : {};
 
   const payload = await getOrSetCache(`admin:coupons:${request.url}`, 15_000, async () => {
     const [rows, total] = await Promise.all([
-      CouponModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean().exec(),
-      CouponModel.countDocuments(filter),
+      prisma.coupon.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.coupon.count({ where }),
     ]);
 
     return {
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       limit,
       skip,
       coupons: rows.map((r) => ({
-        id: r._id.toString(),
+        id: r.id,
         code: r.code,
         percentOff: r.percentOff,
         active: r.active,
@@ -121,21 +121,23 @@ export async function POST(request: Request) {
         : parsed.data.maxRedemptions;
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Database unavailable";
     return NextResponse.json({ success: false, error: msg }, { status: 503 });
   }
 
   try {
-    const doc = await CouponModel.create({
-      code,
-      percentOff: parsed.data.percentOff,
-      active: parsed.data.active ?? true,
-      maxRedemptions,
-      redemptionCount: 0,
-      expiresAt,
-      createdBy: gate.userId,
+    const doc = await prisma.coupon.create({
+      data: {
+        code,
+        percentOff: parsed.data.percentOff,
+        active: parsed.data.active ?? true,
+        maxRedemptions,
+        redemptionCount: 0,
+        expiresAt,
+        createdBy: gate.userId,
+      },
     });
 
     invalidateCacheByPrefix("admin:coupons:");
@@ -143,7 +145,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       coupon: {
-        id: doc._id.toString(),
+        id: doc.id,
         code: doc.code,
         percentOff: doc.percentOff,
         active: doc.active,
@@ -153,9 +155,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (e: unknown) {
-    const codeDup =
-      typeof e === "object" && e !== null && "code" in e && (e as { code?: number }).code === 11000;
-    if (codeDup) {
+    if (isPrismaUniqueViolation(e, "code")) {
       return NextResponse.json(
         { success: false, error: "A coupon with this code already exists." },
         { status: 409 },

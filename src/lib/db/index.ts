@@ -1,1 +1,2 @@
-export { connectDb, requireMongo } from "./connection";
+export { hasDatabase, requireDb } from "./connection";
+export { prisma } from "@/lib/prisma";

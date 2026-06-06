@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { agencyClientExists, findSingleAgencyClientByEmail } from "@/lib/agency-client-service";
 import { metaAccessContext } from "@/lib/agency-from-request";
 import { invalidateCacheByPrefix } from "@/lib/server-cache";

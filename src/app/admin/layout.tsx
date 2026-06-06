@@ -1,26 +1,19 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
-import { requireMongo } from "@/lib/db";
-import { UserModel } from "@/models/user";
+import { getAppProfile, getServerUser } from "@/lib/auth/session";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser) {
     redirect("/login");
   }
 
-  try {
-    await requireMongo();
-  } catch {
-    redirect("/dashboard");
+  const profile = await getAppProfile(authUser.id);
+  if (!profile || profile.isBanned) {
+    redirect("/login");
   }
 
-  const row = (await UserModel.findById(session.user.id).select("role").lean().exec()) as {
-    role?: string | null;
-  } | null;
-
-  if (row?.role !== "admin") {
+  if (profile.role !== "admin") {
     redirect("/dashboard");
   }
 

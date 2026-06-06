@@ -1,7 +1,7 @@
-import type { UpdateQuery } from "mongoose";
+import type { Prisma } from "@prisma/client";
 import type { BillingCycle, BillingPlanId } from "@/lib/billing/plans";
+import { prisma } from "@/lib/db";
 import { invalidateCacheKey } from "@/lib/server-cache";
-import { UserModel, type IUser } from "@/models/user";
 
 const PLAN_RANK: Record<BillingPlanId, number> = {
   free: 0,
@@ -15,17 +15,18 @@ const CYCLE_RANK: Record<BillingCycle, number> = {
   yearly: 1,
 };
 
-type UserBillingLean = Pick<
-  IUser,
-  | "_id"
-  | "billingPlanId"
-  | "billingStatus"
-  | "billingCycle"
-  | "billingCurrentPeriodEnd"
-  | "billingScheduledPlanId"
-  | "billingScheduledCycle"
-  | "billingScheduledChangeAt"
->;
+const USER_BILLING_SELECT = {
+  id: true,
+  billingPlanId: true,
+  billingStatus: true,
+  billingCycle: true,
+  billingCurrentPeriodEnd: true,
+  billingScheduledPlanId: true,
+  billingScheduledCycle: true,
+  billingScheduledChangeAt: true,
+} satisfies Prisma.UserSelect;
+
+type UserBillingLean = Prisma.UserGetPayload<{ select: typeof USER_BILLING_SELECT }>;
 
 export type BillingChangeKind = "same" | "upgrade" | "downgrade";
 
@@ -84,43 +85,26 @@ export function getScheduledBillingChange(
   };
 }
 
-function buildAppliedBillingUpdate(
-  change: ScheduledBillingChange,
-): UpdateQuery<IUser> & { $unset: Record<string, 1> } {
+function buildAppliedBillingUpdate(change: ScheduledBillingChange): Prisma.UserUpdateInput {
   const nextCycle = getPlanCycleForStorage(change.planId, change.billingCycle);
   return {
-    $set: {
-      billingPlanId: change.planId,
-      billingStatus: change.planId === "free" ? "inactive" : "active",
-      billingCurrentPeriodEnd: null,
-      ...(nextCycle ? { billingCycle: nextCycle } : {}),
-    },
-    $unset: {
-      billingScheduledPlanId: 1 as const,
-      billingScheduledCycle: 1 as const,
-      billingScheduledChangeAt: 1 as const,
-      ...(nextCycle ? {} : { billingCycle: 1 as const }),
-    },
+    billingPlanId: change.planId,
+    billingStatus: change.planId === "free" ? "inactive" : "active",
+    billingCurrentPeriodEnd: null,
+    billingCycle: nextCycle,
+    billingScheduledPlanId: null,
+    billingScheduledCycle: null,
+    billingScheduledChangeAt: null,
   };
 }
 
 export async function syncUserScheduledBillingChangeIfDue(
   userId: string,
 ): Promise<UserBillingLean | null> {
-  let user = await UserModel.findById(userId)
-    .select(
-      [
-        "billingPlanId",
-        "billingStatus",
-        "billingCycle",
-        "billingCurrentPeriodEnd",
-        "billingScheduledPlanId",
-        "billingScheduledCycle",
-        "billingScheduledChangeAt",
-      ].join(" "),
-    )
-    .lean<UserBillingLean | null>()
-    .exec();
+  let user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: USER_BILLING_SELECT,
+  });
 
   if (!user) return null;
 
@@ -129,30 +113,20 @@ export async function syncUserScheduledBillingChangeIfDue(
     return user;
   }
 
-  await UserModel.updateOne(
-    {
-      _id: userId,
-      billingScheduledChangeAt: { $lte: new Date() },
+  await prisma.user.updateMany({
+    where: {
+      id: userId,
+      billingScheduledChangeAt: { lte: new Date() },
     },
-    buildAppliedBillingUpdate(scheduled),
-  ).exec();
+    data: buildAppliedBillingUpdate(scheduled),
+  });
 
   invalidateCacheKey(`user:billing-me:${userId}`);
 
-  user = await UserModel.findById(userId)
-    .select(
-      [
-        "billingPlanId",
-        "billingStatus",
-        "billingCycle",
-        "billingCurrentPeriodEnd",
-        "billingScheduledPlanId",
-        "billingScheduledCycle",
-        "billingScheduledChangeAt",
-      ].join(" "),
-    )
-    .lean<UserBillingLean | null>()
-    .exec();
+  user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: USER_BILLING_SELECT,
+  });
 
   return user;
 }

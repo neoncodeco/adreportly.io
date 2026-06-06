@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import { metaAccessContext } from "@/lib/agency-from-request";
 import { getDisabledAdAccountIdSet, setAdAccountEnabledForAgency } from "@/lib/agency-service";
 import { resolvePlanForUsage } from "@/lib/billing/usage";
@@ -76,8 +76,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const session = await auth();
-    const plan = await resolvePlanForUsage({ userId: session?.user?.id ?? null, agencyId });
+    const authUser = await getServerUser();
+    const plan = await resolvePlanForUsage({ userId: authUser?.id ?? null, agencyId });
     const raw = await loadRawAdAccounts(agencyId, plan.limits.adAccounts);
     const disabled = await getDisabledAdAccountIdSet(agencyId);
 

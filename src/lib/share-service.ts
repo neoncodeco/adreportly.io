@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { connectDb } from "@/lib/db";
+import { Prisma } from "@prisma/client";
+import { hasDatabase, prisma } from "@/lib/db";
 import { normalizeDollarRateBdt, positiveFiniteNumber } from "@/lib/share-financial";
-import { SharedLinkModel } from "@/models/shared-link";
 
 export type ShareRecord = {
   shareToken: string;
@@ -22,6 +22,10 @@ function normEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+function emailWhere(want: string): Prisma.StringFilter {
+  return { equals: want, mode: "insensitive" };
+}
+
 export async function persistShareLink(record: ShareRecord) {
   const normalized: ShareRecord = {
     ...record,
@@ -30,39 +34,28 @@ export async function persistShareLink(record: ShareRecord) {
     dollarRateBdt: normalizeDollarRateBdt(record.dollarRateBdt),
   };
   memoryShares.set(record.shareToken, normalized);
-  if (!process.env.MONGODB_URI) return;
-  await connectDb();
-  await SharedLinkModel.collection.insertOne({
-    token: normalized.shareToken,
-    campaignId: normalized.campaignId,
-    agencyId: normalized.agencyId,
-    clientId: normalized.clientId ?? null,
-    clientEmail: normalized.clientEmail,
-    clientName: normalized.clientName || "",
-    totalDeposit: normalized.totalDeposit,
-    dollarRateBdt: normalized.dollarRateBdt,
-    expiresAt: normalized.expiresAt,
-    createdAt: normalized.createdAt,
+  if (!hasDatabase()) return;
+  await prisma.sharedLink.create({
+    data: {
+      token: normalized.shareToken,
+      campaignId: normalized.campaignId,
+      agencyId: normalized.agencyId,
+      clientId: normalized.clientId ?? null,
+      clientEmail: normalized.clientEmail,
+      clientName: normalized.clientName || "",
+      totalDeposit: normalized.totalDeposit,
+      dollarRateBdt: normalized.dollarRateBdt ?? 126,
+      expiresAt: normalized.expiresAt,
+      createdAt: normalized.createdAt,
+    },
   });
 }
 
 export async function getShareByToken(token: string): Promise<ShareRecord | null> {
   const mem = memoryShares.get(token);
   if (mem) return mem;
-  if (!process.env.MONGODB_URI) return null;
-  await connectDb();
-  const doc = (await SharedLinkModel.collection.findOne({ token })) as {
-    token: string;
-    campaignId: string;
-    agencyId: string;
-    clientId?: string | null;
-    clientEmail: string;
-    clientName?: string;
-    totalDeposit?: number | null;
-    dollarRateBdt?: number | null;
-    expiresAt: Date;
-    createdAt: Date;
-  } | null;
+  if (!hasDatabase()) return null;
+  const doc = await prisma.sharedLink.findUnique({ where: { token } });
   if (!doc) return null;
   return {
     shareToken: doc.token,
@@ -70,7 +63,7 @@ export async function getShareByToken(token: string): Promise<ShareRecord | null
     agencyId: doc.agencyId,
     clientId: doc.clientId ?? null,
     clientEmail: doc.clientEmail,
-    clientName: typeof doc.clientName === "string" ? doc.clientName : "",
+    clientName: doc.clientName,
     totalDeposit: positiveFiniteNumber(doc.totalDeposit),
     dollarRateBdt: normalizeDollarRateBdt(doc.dollarRateBdt),
     expiresAt: doc.expiresAt,
@@ -96,7 +89,7 @@ export async function findLatestActiveShareUrl(
 ): Promise<string | null> {
   const want = normEmail(clientEmail);
   const now = Date.now();
-  if (!process.env.MONGODB_URI) {
+  if (!hasDatabase()) {
     let best: ShareRecord | null = null;
     for (const r of memoryShares.values()) {
       if (r.agencyId !== agencyId || normEmail(r.clientEmail) !== want) continue;
@@ -112,18 +105,15 @@ export async function findLatestActiveShareUrl(
     }
     return best ? buildShareUrl(best.shareToken) : null;
   }
-  await connectDb();
-  const doc = (await SharedLinkModel.findOne({
-    agencyId,
-    expiresAt: { $gt: new Date() },
-    $expr: {
-      $eq: [{ $toLower: { $trim: { input: { $ifNull: ["$clientEmail", ""] } } } }, want],
+  const doc = await prisma.sharedLink.findFirst({
+    where: {
+      agencyId,
+      expiresAt: { gt: new Date() },
+      clientEmail: emailWhere(want),
     },
-  })
-    .sort({ createdAt: -1 })
-    .select("token")
-    .lean()
-    .exec()) as { token?: string } | null;
+    orderBy: { createdAt: "desc" },
+    select: { token: true },
+  });
   return doc?.token ? buildShareUrl(doc.token) : null;
 }
 
@@ -133,7 +123,7 @@ export async function findLatestActiveShareUrlByClientId(
   clientId: string,
 ): Promise<string | null> {
   const now = Date.now();
-  if (!process.env.MONGODB_URI) {
+  if (!hasDatabase()) {
     let best: ShareRecord | null = null;
     for (const r of memoryShares.values()) {
       if (r.agencyId !== agencyId || (r.clientId ?? null) !== clientId) continue;
@@ -149,16 +139,15 @@ export async function findLatestActiveShareUrlByClientId(
     }
     return best ? buildShareUrl(best.shareToken) : null;
   }
-  await connectDb();
-  const doc = (await SharedLinkModel.findOne({
-    agencyId,
-    clientId,
-    expiresAt: { $gt: new Date() },
-  })
-    .sort({ createdAt: -1 })
-    .select("token")
-    .lean()
-    .exec()) as { token?: string } | null;
+  const doc = await prisma.sharedLink.findFirst({
+    where: {
+      agencyId,
+      clientId,
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { token: true },
+  });
   return doc?.token ? buildShareUrl(doc.token) : null;
 }
 
@@ -174,7 +163,7 @@ export async function findLatestActiveShareFinancials(
 ): Promise<ClientShareFinancials | null> {
   const want = normEmail(clientEmail);
   const now = Date.now();
-  if (!process.env.MONGODB_URI) {
+  if (!hasDatabase()) {
     let best: ShareRecord | null = null;
     for (const r of memoryShares.values()) {
       if (r.agencyId !== agencyId || normEmail(r.clientEmail) !== want) continue;
@@ -195,18 +184,15 @@ export async function findLatestActiveShareFinancials(
         }
       : null;
   }
-  await connectDb();
-  const doc = (await SharedLinkModel.findOne({
-    agencyId,
-    expiresAt: { $gt: new Date() },
-    $expr: {
-      $eq: [{ $toLower: { $trim: { input: { $ifNull: ["$clientEmail", ""] } } } }, want],
+  const doc = await prisma.sharedLink.findFirst({
+    where: {
+      agencyId,
+      expiresAt: { gt: new Date() },
+      clientEmail: emailWhere(want),
     },
-  })
-    .sort({ createdAt: -1 })
-    .select("totalDeposit dollarRateBdt")
-    .lean()
-    .exec()) as { totalDeposit?: number | null; dollarRateBdt?: number | null } | null;
+    orderBy: { createdAt: "desc" },
+    select: { totalDeposit: true, dollarRateBdt: true },
+  });
   return doc
     ? {
         totalDeposit: positiveFiniteNumber(doc.totalDeposit),
@@ -221,7 +207,7 @@ export async function findLatestActiveShareFinancialsByClientId(
   clientId: string,
 ): Promise<ClientShareFinancials | null> {
   const now = Date.now();
-  if (!process.env.MONGODB_URI) {
+  if (!hasDatabase()) {
     let best: ShareRecord | null = null;
     for (const r of memoryShares.values()) {
       if (r.agencyId !== agencyId || (r.clientId ?? null) !== clientId) continue;
@@ -242,16 +228,15 @@ export async function findLatestActiveShareFinancialsByClientId(
         }
       : null;
   }
-  await connectDb();
-  const doc = (await SharedLinkModel.findOne({
-    agencyId,
-    clientId,
-    expiresAt: { $gt: new Date() },
-  })
-    .sort({ createdAt: -1 })
-    .select("totalDeposit dollarRateBdt")
-    .lean()
-    .exec()) as { totalDeposit?: number | null; dollarRateBdt?: number | null } | null;
+  const doc = await prisma.sharedLink.findFirst({
+    where: {
+      agencyId,
+      clientId,
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { totalDeposit: true, dollarRateBdt: true },
+  });
   return doc
     ? {
         totalDeposit: positiveFiniteNumber(doc.totalDeposit),
@@ -271,7 +256,7 @@ export async function updateActiveShareFinancialsForClient(params: {
   const totalDeposit = positiveFiniteNumber(params.totalDeposit);
   const dollarRateBdt = normalizeDollarRateBdt(params.dollarRateBdt);
   const now = new Date();
-  if (!process.env.MONGODB_URI) {
+  if (!hasDatabase()) {
     let n = 0;
     const want = normEmail(params.clientEmail);
     for (const r of memoryShares.values()) {
@@ -285,55 +270,45 @@ export async function updateActiveShareFinancialsForClient(params: {
     }
     return n;
   }
-  await connectDb();
-  const filters: Array<Record<string, unknown>> = [{ clientId: params.clientId }];
+  const orFilters: Prisma.SharedLinkWhereInput[] = [{ clientId: params.clientId }];
   if (params.allowEmailFallback) {
-    filters.push({
-      $expr: {
-        $eq: [
-          { $toLower: { $trim: { input: { $ifNull: ["$clientEmail", ""] } } } },
-          normEmail(params.clientEmail),
-        ],
-      },
-    });
+    orFilters.push({ clientEmail: emailWhere(normEmail(params.clientEmail)) });
   }
-  const result = await SharedLinkModel.updateMany(
-    {
+  const result = await prisma.sharedLink.updateMany({
+    where: {
       agencyId: params.agencyId,
-      expiresAt: { $gt: now },
-      $or: filters,
+      expiresAt: { gt: now },
+      OR: orFilters,
     },
-    { $set: { totalDeposit, dollarRateBdt } },
-  ).exec();
-  return result.modifiedCount ?? 0;
+    data: { totalDeposit, dollarRateBdt },
+  });
+  return result.count;
 }
 
 export async function deleteSharesForAgencyClientEmail(agencyId: string, clientEmail: string) {
   const want = normEmail(clientEmail);
-  if (!process.env.MONGODB_URI) {
+  if (!hasDatabase()) {
     for (const [k, v] of memoryShares) {
       if (v.agencyId === agencyId && normEmail(v.clientEmail) === want) memoryShares.delete(k);
     }
     return;
   }
-  await connectDb();
-  await SharedLinkModel.deleteMany({
-    agencyId,
-    $expr: {
-      $eq: [{ $toLower: { $trim: { input: { $ifNull: ["$clientEmail", ""] } } } }, want],
+  await prisma.sharedLink.deleteMany({
+    where: {
+      agencyId,
+      clientEmail: emailWhere(want),
     },
-  }).exec();
+  });
 }
 
 export async function deleteSharesForAgencyClientId(agencyId: string, clientId: string) {
-  if (!process.env.MONGODB_URI) {
+  if (!hasDatabase()) {
     for (const [k, v] of memoryShares) {
       if (v.agencyId === agencyId && (v.clientId ?? null) === clientId) memoryShares.delete(k);
     }
     return;
   }
-  await connectDb();
-  await SharedLinkModel.deleteMany({ agencyId, clientId }).exec();
+  await prisma.sharedLink.deleteMany({ where: { agencyId, clientId } });
 }
 
 export type AgencyClientEmailRow = {
@@ -345,32 +320,30 @@ export type AgencyClientEmailRow = {
 
 /** Distinct client emails this agency has created share links for. */
 export async function listClientEmailsForAgency(agencyId: string): Promise<AgencyClientEmailRow[]> {
-  if (process.env.MONGODB_URI) {
-    await connectDb();
-    const rows = (await SharedLinkModel.aggregate([
-      { $match: { agencyId } },
-      { $sort: { clientEmail: 1, createdAt: -1 } },
-      {
-        $group: {
-          _id: "$clientEmail",
-          shareCount: { $sum: 1 },
-          lastShared: { $first: "$createdAt" },
-          clientName: { $first: "$clientName" },
-        },
-      },
-      { $sort: { _id: 1 } },
-    ]).exec()) as Array<{
-      _id: string;
-      shareCount: number;
-      lastShared: Date;
-      clientName?: string;
-    }>;
-    return rows.map((row) => ({
-      email: row._id,
-      shareCount: row.shareCount,
-      lastShared: row.lastShared,
-      clientName: typeof row.clientName === "string" ? row.clientName : "",
-    }));
+  if (hasDatabase()) {
+    const rows = await prisma.sharedLink.findMany({
+      where: { agencyId },
+      select: { clientEmail: true, clientName: true, createdAt: true },
+      orderBy: [{ clientEmail: "asc" }, { createdAt: "desc" }],
+    });
+    const byEmail = new Map<string, { shareCount: number; lastShared: Date; clientName: string }>();
+    for (const row of rows) {
+      const key = normEmail(row.clientEmail);
+      const nm = (row.clientName || "").trim();
+      const prev = byEmail.get(key);
+      if (!prev) {
+        byEmail.set(key, { shareCount: 1, lastShared: row.createdAt, clientName: nm });
+      } else {
+        prev.shareCount += 1;
+        if (row.createdAt > prev.lastShared) {
+          prev.lastShared = row.createdAt;
+          if (nm) prev.clientName = nm;
+        }
+      }
+    }
+    return [...byEmail.entries()]
+      .map(([email, v]) => ({ email, ...v }))
+      .sort((a, b) => a.email.localeCompare(b.email));
   }
 
   const fromMem = new Map<string, { shareCount: number; lastShared: Date; clientName: string }>();

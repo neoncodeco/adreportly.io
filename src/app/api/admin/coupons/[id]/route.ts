@@ -1,10 +1,9 @@
-import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { prisma, requireDb } from "@/lib/db";
+import { isValidId } from "@/lib/id";
 import { requireAdmin } from "@/lib/require-admin";
 import { invalidateCacheByPrefix } from "@/lib/server-cache";
-import { requireMongo } from "@/lib/db";
-import { CouponModel } from "@/models/coupon";
 
 const patchSchema = z.object({
   active: z.boolean().optional(),
@@ -18,7 +17,7 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
   if (!gate.ok) return gate.response;
 
   const { id } = await ctx.params;
-  if (!mongoose.isValidObjectId(id)) {
+  if (!isValidId(id)) {
     return NextResponse.json({ success: false, error: "Invalid id." }, { status: 400 });
   }
 
@@ -37,53 +36,58 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
     );
   }
 
-  const $set: Record<string, unknown> = {};
-  if (parsed.data.active !== undefined) $set.active = parsed.data.active;
-  if (parsed.data.percentOff !== undefined) $set.percentOff = parsed.data.percentOff;
+  const data: {
+    active?: boolean;
+    percentOff?: number;
+    maxRedemptions?: number | null;
+    expiresAt?: Date | null;
+  } = {};
+  if (parsed.data.active !== undefined) data.active = parsed.data.active;
+  if (parsed.data.percentOff !== undefined) data.percentOff = parsed.data.percentOff;
   if (parsed.data.maxRedemptions !== undefined) {
-    $set.maxRedemptions = parsed.data.maxRedemptions === null ? null : parsed.data.maxRedemptions;
+    data.maxRedemptions = parsed.data.maxRedemptions === null ? null : parsed.data.maxRedemptions;
   }
   if (parsed.data.expiresAt !== undefined) {
     if (parsed.data.expiresAt === null) {
-      $set.expiresAt = null;
+      data.expiresAt = null;
     } else {
       const raw = parsed.data.expiresAt.trim();
       const d = new Date(raw.length <= 10 ? `${raw}T23:59:59.999Z` : raw);
       if (Number.isNaN(d.getTime())) {
         return NextResponse.json({ success: false, error: "Invalid expiresAt." }, { status: 400 });
       }
-      $set.expiresAt = d;
+      data.expiresAt = d;
     }
   }
 
-  if (Object.keys($set).length === 0) {
+  if (Object.keys(data).length === 0) {
     return NextResponse.json({ success: false, error: "No fields to update." }, { status: 400 });
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Database unavailable";
     return NextResponse.json({ success: false, error: msg }, { status: 503 });
   }
 
-  const updated = await CouponModel.findByIdAndUpdate(id, { $set }, { new: true }).lean().exec();
-  if (!updated) {
+  try {
+    const updated = await prisma.coupon.update({ where: { id }, data });
+    invalidateCacheByPrefix("admin:coupons:");
+
+    return NextResponse.json({
+      success: true,
+      coupon: {
+        id: updated.id,
+        code: updated.code,
+        percentOff: updated.percentOff,
+        active: updated.active,
+        maxRedemptions: updated.maxRedemptions ?? null,
+        redemptionCount: updated.redemptionCount,
+        expiresAt: updated.expiresAt ? updated.expiresAt.toISOString() : null,
+      },
+    });
+  } catch {
     return NextResponse.json({ success: false, error: "Coupon not found." }, { status: 404 });
   }
-
-  invalidateCacheByPrefix("admin:coupons:");
-
-  return NextResponse.json({
-    success: true,
-    coupon: {
-      id: updated._id.toString(),
-      code: updated.code,
-      percentOff: updated.percentOff,
-      active: updated.active,
-      maxRedemptions: updated.maxRedemptions ?? null,
-      redemptionCount: updated.redemptionCount,
-      expiresAt: updated.expiresAt ? updated.expiresAt.toISOString() : null,
-    },
-  });
 }

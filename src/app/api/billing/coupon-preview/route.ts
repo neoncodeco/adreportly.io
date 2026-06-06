@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import {
   canUseZeroChargeCheckout,
   computeDiscountedCharge,
@@ -12,8 +12,7 @@ import {
   getCheckoutChargeAmount,
   getCheckoutPricing,
 } from "@/lib/billing/plans";
-import { requireMongo } from "@/lib/db";
-import { CouponModel } from "@/models/coupon";
+import { prisma, requireDb } from "@/lib/db";
 
 const bodySchema = z.object({
   planId: z.enum(["starter", "pro", "enterprise"]),
@@ -22,8 +21,8 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ success: false, error: "Sign in required." }, { status: 401 });
   }
 
@@ -56,13 +55,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Database unavailable";
     return NextResponse.json({ success: false, error: msg }, { status: 503 });
   }
 
-  const doc = await CouponModel.findOne({ code }).lean().exec();
+  const doc = await prisma.coupon.findUnique({ where: { code } });
   if (!doc) {
     return NextResponse.json({ success: false, error: "Invalid coupon code." }, { status: 404 });
   }
@@ -92,7 +91,7 @@ export async function POST(request: Request) {
     coupon: {
       code: doc.code,
       percentOff: doc.percentOff,
-      couponId: doc._id.toString(),
+      couponId: doc.id,
     },
     originalChargeAmount: chargeAmount,
     discountedChargeAmount: finalAmount,

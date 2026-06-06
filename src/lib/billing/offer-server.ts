@@ -1,6 +1,5 @@
 import { couponBlockReason, normalizeCouponCode } from "@/lib/billing/coupon-discount";
-import { requireMongo } from "@/lib/db";
-import { CouponModel } from "@/models/coupon";
+import { prisma, requireDb } from "@/lib/db";
 
 export type PublicOfferCoupon = {
   id: string;
@@ -12,7 +11,7 @@ export type PublicOfferCoupon = {
 };
 
 function toPublicOfferCoupon(doc: {
-  _id: { toString(): string };
+  id: string;
   code: string;
   percentOff: number;
   expiresAt?: Date | null;
@@ -20,7 +19,7 @@ function toPublicOfferCoupon(doc: {
   redemptionCount?: number | null;
 }): PublicOfferCoupon {
   return {
-    id: doc._id.toString(),
+    id: doc.id,
     code: doc.code,
     percentOff: doc.percentOff,
     expiresAt: doc.expiresAt ? doc.expiresAt.toISOString() : null,
@@ -51,13 +50,13 @@ function isEligibleCoupon(doc: {
 }
 
 export async function getLatestStandardOfferCoupon(): Promise<PublicOfferCoupon | null> {
-  await requireMongo();
+  await requireDb();
 
-  const rows = await CouponModel.find({ active: true, percentOff: 100 })
-    .sort({ updatedAt: -1, createdAt: -1 })
-    .limit(12)
-    .lean()
-    .exec();
+  const rows = await prisma.coupon.findMany({
+    where: { active: true, percentOff: 100 },
+    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+    take: 12,
+  });
 
   const activeCoupon = rows.find((row) => isEligibleCoupon(row));
   return activeCoupon ? toPublicOfferCoupon(activeCoupon) : null;
@@ -72,12 +71,12 @@ export async function getLatestStandardOfferCouponSafe(): Promise<PublicOfferCou
 }
 
 export async function getOfferCouponByCode(rawCode: string) {
-  await requireMongo();
+  await requireDb();
 
   const code = normalizeCouponCode(rawCode);
   if (code.length < 4) return null;
 
-  const doc = await CouponModel.findOne({ code }).exec();
+  const doc = await prisma.coupon.findUnique({ where: { code } });
   if (!doc || !isEligibleCoupon(doc)) {
     return null;
   }

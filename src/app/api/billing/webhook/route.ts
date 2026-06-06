@@ -1,11 +1,11 @@
+import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import {
   applyUddoktaPayPayloadToSubscriptions,
   extractBillingEventId,
 } from "@/lib/billing/process-provider-payment";
 import { getBillingWebhookCredential, verifyUddoktaPayWebhook } from "@/lib/billing/uddoktapay";
-import { requireMongo } from "@/lib/db";
-import { BillingEventLogModel } from "@/models/billing-event-log";
+import { prisma, requireDb } from "@/lib/db";
 
 export async function POST(request: Request) {
   const raw = await request.text();
@@ -27,45 +27,46 @@ export async function POST(request: Request) {
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Database unavailable";
     return NextResponse.json({ error: msg }, { status: 503 });
   }
 
-  const existing = await BillingEventLogModel.findOne({ eventId }).lean().exec();
+  const existing = await prisma.billingEventLog.findUnique({ where: { eventId } });
   if (existing?.status === "processed") {
     return NextResponse.json({ ok: true, idempotent: true });
   }
 
   const flat = payload;
-  await BillingEventLogModel.updateOne(
-    { eventId },
-    {
-      $setOnInsert: {
-        provider: "uddoktapay",
-        eventId,
-        eventType: typeof flat.event === "string" ? flat.event : "unknown",
-        payload: flat,
-      },
-      $set: { status: "received", error: null },
+  await prisma.billingEventLog.upsert({
+    where: { eventId },
+    create: {
+      provider: "uddoktapay",
+      eventId,
+      eventType: typeof flat.event === "string" ? flat.event : "unknown",
+      payload: flat as Prisma.InputJsonValue,
+      status: "received",
     },
-    { upsert: true },
-  );
+    update: {
+      status: "received",
+      error: null,
+    },
+  });
 
   try {
     await applyUddoktaPayPayloadToSubscriptions(payload);
-    await BillingEventLogModel.updateOne(
-      { eventId },
-      { $set: { status: "processed", processedAt: new Date(), error: null } },
-    );
+    await prisma.billingEventLog.update({
+      where: { eventId },
+      data: { status: "processed", processedAt: new Date(), error: null },
+    });
     return NextResponse.json({ ok: true });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Webhook processing failed";
-    await BillingEventLogModel.updateOne(
-      { eventId },
-      { $set: { status: "failed", error: message } },
-    );
+    await prisma.billingEventLog.update({
+      where: { eventId },
+      data: { status: "failed", error: message },
+    });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

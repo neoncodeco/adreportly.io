@@ -31,6 +31,8 @@ const fontSources = [
 
 const connectSources = [
   "'self'",
+  "https://*.supabase.co",
+  "wss://*.supabase.co",
   "https://graph.facebook.com",
   "https://www.facebook.com",
   "https://*.facebook.com",

@@ -1,43 +1,43 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import { BILLING_PLANS, getBillingCyclePrice, getCheckoutPricing } from "@/lib/billing/plans";
 import {
   getScheduledBillingChange,
   normalizeBillingCycle,
   syncUserScheduledBillingChangeIfDue,
 } from "@/lib/billing/subscription-state";
-import { requireMongo } from "@/lib/db";
+import { prisma, requireDb } from "@/lib/db";
 import { getOrSetCache, USER_CACHE_HEADERS } from "@/lib/server-cache";
-import { PaymentTransactionModel } from "@/models/payment-transaction";
-import { SubscriptionModel } from "@/models/subscription";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Database unavailable";
     return NextResponse.json({ error: msg }, { status: 503 });
   }
 
-  const payload = await getOrSetCache(`user:billing-me:${session.user.id}`, 10_000, async () => {
+  const payload = await getOrSetCache(`user:billing-me:${authUser.id}`, 10_000, async () => {
     const [sub, payments, user] = await Promise.all([
-      SubscriptionModel.findOne({ userId: session.user.id }).sort({ updatedAt: -1 }).lean().exec(),
-      PaymentTransactionModel.find({ userId: session.user.id })
-        .sort({ createdAt: -1 })
-        .limit(20)
-        .lean()
-        .exec(),
-      syncUserScheduledBillingChangeIfDue(session.user.id),
+      prisma.subscription.findFirst({
+        where: { userId: authUser.id },
+        orderBy: { updatedAt: "desc" },
+      }),
+      prisma.paymentTransaction.findMany({
+        where: { userId: authUser.id },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      }),
+      syncUserScheduledBillingChangeIfDue(authUser.id),
     ]);
 
     const billingCycle =
-      normalizeBillingCycle(user?.billingCycle) ??
-      normalizeBillingCycle((sub as { billingCycle?: string | null } | null)?.billingCycle);
+      normalizeBillingCycle(user?.billingCycle) ?? normalizeBillingCycle(sub?.billingCycle);
 
     const currentPlanId = user?.billingPlanId || sub?.planId || "free";
     const currentPlan = BILLING_PLANS.find((p) => p.id === currentPlanId) ?? BILLING_PLANS[0];
@@ -68,9 +68,8 @@ export async function GET() {
       Boolean(user?.billingPlanId && sub?.planId && user.billingPlanId !== sub.planId) ||
       Boolean(
         normalizeBillingCycle(user?.billingCycle) &&
-        normalizeBillingCycle((sub as { billingCycle?: string | null } | null)?.billingCycle) &&
-        normalizeBillingCycle(user?.billingCycle) !==
-          normalizeBillingCycle((sub as { billingCycle?: string | null } | null)?.billingCycle),
+        normalizeBillingCycle(sub?.billingCycle) &&
+        normalizeBillingCycle(user?.billingCycle) !== normalizeBillingCycle(sub?.billingCycle),
       );
     const renewalAt =
       user?.billingCurrentPeriodEnd ||
@@ -95,24 +94,23 @@ export async function GET() {
         : null,
       subscription: sub
         ? {
-            id: sub._id.toString(),
+            id: sub.id,
             status: sub.status,
             planId: sub.planId,
             billingCycle:
-              (sub as { billingCycle?: string }).billingCycle === "yearly" ||
-              (sub as { billingCycle?: string }).billingCycle === "monthly"
-                ? (sub as { billingCycle: "monthly" | "yearly" }).billingCycle
+              sub.billingCycle === "yearly" || sub.billingCycle === "monthly"
+                ? sub.billingCycle
                 : null,
             amount: sub.amount,
             currency: sub.currency,
             nextBillingAt: sub.nextBillingAt,
-            periodEndAt: (sub as { periodEndAt?: Date | null }).periodEndAt ?? null,
+            periodEndAt: sub.periodEndAt ?? null,
             canceledAt: sub.canceledAt,
             updatedAt: sub.updatedAt,
           }
         : null,
       payments: payments.map((p) => ({
-        id: p._id.toString(),
+        id: p.id,
         amount: p.amount,
         currency: p.currency,
         status: p.status,

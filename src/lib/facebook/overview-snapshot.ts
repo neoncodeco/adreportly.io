@@ -1,11 +1,11 @@
-import { connectDb } from "@/lib/db";
+import { Prisma } from "@prisma/client";
+import { hasDatabase, prisma } from "@/lib/db";
 import { getDecryptedTokenForAgency, getDisabledAdAccountIdSet } from "@/lib/agency-service";
 import { resolvePlanForUsage } from "@/lib/billing/usage";
 import {
   buildOverviewPayloadFromFacebook,
   emptyOverviewPayload,
 } from "@/lib/facebook/overview-payload";
-import { AnalyticsOverviewSnapshotModel } from "@/models/analytics-overview-snapshot";
 
 const DEFAULT_TTL_MS = 60 * 1000;
 const inFlight = new Map<string, Promise<Record<string, unknown>>>();
@@ -16,12 +16,11 @@ function snapshotTtlMs() {
 }
 
 export async function getOverviewSnapshot(agencyId: string) {
-  if (!process.env.MONGODB_URI) return null;
-  await connectDb();
-  return AnalyticsOverviewSnapshotModel.findOne({ agencyId })
-    .select("payload fetchedAt")
-    .lean()
-    .exec();
+  if (!hasDatabase()) return null;
+  return prisma.analyticsOverviewSnapshot.findUnique({
+    where: { agencyId },
+    select: { payload: true, fetchedAt: true },
+  });
 }
 
 export function isOverviewSnapshotFresh(fetchedAt: Date | string | null | undefined) {
@@ -36,11 +35,10 @@ export async function syncAgencyOverviewSnapshot(agencyId: string) {
   if (existing) return existing;
 
   const task = (async () => {
-    if (!process.env.MONGODB_URI) {
+    if (!hasDatabase()) {
       return emptyOverviewPayload(false) as Record<string, unknown>;
     }
 
-    await connectDb();
     const token = await getDecryptedTokenForAgency(agencyId);
     const plan = await resolvePlanForUsage({ agencyId });
     const disabledAdAccountIds = await getDisabledAdAccountIdSet(agencyId);
@@ -55,23 +53,37 @@ export async function syncAgencyOverviewSnapshot(agencyId: string) {
         )
       : emptyOverviewPayload(false);
 
-    await AnalyticsOverviewSnapshotModel.updateOne(
-      { agencyId },
-      { $set: { agencyId, payload, fetchedAt: new Date(), lastError: null } },
-      { upsert: true },
-    );
+    const fetchedAt = new Date();
+    await prisma.analyticsOverviewSnapshot.upsert({
+      where: { agencyId },
+      create: {
+        agencyId,
+        payload: payload as Prisma.InputJsonValue,
+        fetchedAt,
+        lastError: null,
+      },
+      update: {
+        payload: payload as Prisma.InputJsonValue,
+        fetchedAt,
+        lastError: null,
+      },
+    });
 
     return payload as Record<string, unknown>;
   })()
     .catch(async (error: unknown) => {
       const message = error instanceof Error ? error.message : "Overview sync failed";
-      if (process.env.MONGODB_URI) {
-        await connectDb();
-        await AnalyticsOverviewSnapshotModel.updateOne(
-          { agencyId },
-          { $set: { agencyId, lastError: message } },
-          { upsert: true },
-        );
+      if (hasDatabase()) {
+        await prisma.analyticsOverviewSnapshot.upsert({
+          where: { agencyId },
+          create: {
+            agencyId,
+            payload: {},
+            fetchedAt: new Date(),
+            lastError: message,
+          },
+          update: { lastError: message },
+        });
       }
       throw error;
     })

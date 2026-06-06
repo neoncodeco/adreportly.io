@@ -1,6 +1,7 @@
+import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import {
   applyUddoktaPayPayloadToSubscriptions,
   extractBillingEventId,
@@ -8,16 +9,15 @@ import {
   resolveBillingUserId,
 } from "@/lib/billing/process-provider-payment";
 import { normalizeProviderStatus, verifyUddoktaPayInvoice } from "@/lib/billing/uddoktapay";
-import { requireMongo } from "@/lib/db";
-import { BillingEventLogModel } from "@/models/billing-event-log";
+import { prisma, requireDb } from "@/lib/db";
 
 const bodySchema = z.object({
   invoice_id: z.string().min(4).max(200),
 });
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
 
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Database unavailable";
     return NextResponse.json({ error: msg }, { status: 503 });
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
 
   const flat = flattenProviderPayload(verified);
   const resolvedUserId = await resolveBillingUserId(flat);
-  if (!resolvedUserId || resolvedUserId !== session.user.id) {
+  if (!resolvedUserId || resolvedUserId !== authUser.id) {
     return NextResponse.json(
       {
         error:
@@ -74,38 +74,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Verified payload missing invoice id." }, { status: 502 });
   }
 
-  const existing = await BillingEventLogModel.findOne({ eventId }).lean().exec();
+  const existing = await prisma.billingEventLog.findUnique({ where: { eventId } });
   if (existing?.status === "processed") {
     return NextResponse.json({ ok: true, synced: true, idempotent: true });
   }
 
-  await BillingEventLogModel.updateOne(
-    { eventId },
-    {
-      $setOnInsert: {
-        provider: "uddoktapay",
-        eventId,
-        eventType: "verify_payment",
-        payload: verified,
-      },
-      $set: { status: "received", error: null },
+  await prisma.billingEventLog.upsert({
+    where: { eventId },
+    create: {
+      provider: "uddoktapay",
+      eventId,
+      eventType: "verify_payment",
+      payload: verified as Prisma.InputJsonValue,
+      status: "received",
     },
-    { upsert: true },
-  );
+    update: {
+      status: "received",
+      error: null,
+    },
+  });
 
   try {
     await applyUddoktaPayPayloadToSubscriptions(verified);
-    await BillingEventLogModel.updateOne(
-      { eventId },
-      { $set: { status: "processed", processedAt: new Date(), error: null } },
-    );
+    await prisma.billingEventLog.update({
+      where: { eventId },
+      data: { status: "processed", processedAt: new Date(), error: null },
+    });
     return NextResponse.json({ ok: true, synced: true });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Sync failed";
-    await BillingEventLogModel.updateOne(
-      { eventId },
-      { $set: { status: "failed", error: message } },
-    );
+    await prisma.billingEventLog.update({
+      where: { eventId },
+      data: { status: "failed", error: message },
+    });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

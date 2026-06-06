@@ -1,14 +1,12 @@
-import mongoose from "mongoose";
+import type { BillingStatus, Prisma } from "@prisma/client";
 import type { BillingCycle, BillingPlanId } from "@/lib/billing/plans";
 import { getBillingPlanById } from "@/lib/billing/plans";
 import { getPlanCycleForStorage } from "@/lib/billing/subscription-state";
 import { normalizeProviderStatus } from "@/lib/billing/uddoktapay";
+import { prisma } from "@/lib/db";
 import { sendPaymentPaidInvoiceEmail } from "@/lib/email/mailer";
+import { isValidId } from "@/lib/id";
 import { invalidateCacheKey } from "@/lib/server-cache";
-import { CouponModel } from "@/models/coupon";
-import { PaymentTransactionModel } from "@/models/payment-transaction";
-import { SubscriptionModel } from "@/models/subscription";
-import { UserModel } from "@/models/user";
 
 export function flattenProviderPayload(payload: Record<string, unknown>): Record<string, unknown> {
   const data = payload.data;
@@ -77,11 +75,15 @@ function resolveSubscriptionPeriodEnd(
 
 function resolveSubscriptionBillingCycle(sub: {
   billingCycle?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Prisma.JsonValue;
 }): BillingCycle {
   const fromDoc = sub.billingCycle;
   if (fromDoc === "yearly" || fromDoc === "monthly") return fromDoc;
-  const m = sub.metadata?.billingCycle;
+  const metadata =
+    sub.metadata && typeof sub.metadata === "object" && !Array.isArray(sub.metadata)
+      ? (sub.metadata as Record<string, unknown>)
+      : undefined;
+  const m = metadata?.billingCycle;
   if (m === "yearly" || m === "monthly") return m;
   return "monthly";
 }
@@ -121,11 +123,11 @@ export async function resolveBillingUserId(flat: Record<string, unknown>): Promi
   if (fromMeta) return fromMeta;
   const email = flat.email;
   if (typeof email !== "string" || !email.trim()) return null;
-  const row = await UserModel.findOne({ email: email.trim().toLowerCase() })
-    .select("_id")
-    .lean()
-    .exec();
-  return row?._id?.toString() ?? null;
+  const row = await prisma.user.findUnique({
+    where: { email: email.trim().toLowerCase() },
+    select: { id: true },
+  });
+  return row?.id ?? null;
 }
 
 function resolvePlanId(
@@ -147,6 +149,12 @@ function resolvePlanId(
   return null;
 }
 
+function subscriptionStatusToBillingStatus(
+  status: ReturnType<typeof normalizeProviderStatus>["subscriptionStatus"],
+): BillingStatus {
+  return status === "incomplete" ? "pending" : status;
+}
+
 function extractRawStatus(flat: Record<string, unknown>): unknown {
   return (
     flat.payment_status ??
@@ -163,28 +171,34 @@ async function findSubscriptionForPayment(
   planHint: BillingPlanId | null,
 ) {
   if (reference) {
-    const s = await SubscriptionModel.findOne({ providerReference: reference, userId })
-      .sort({ createdAt: -1 })
-      .exec();
+    const s = await prisma.subscription.findFirst({
+      where: { providerReference: reference, userId },
+      orderBy: { createdAt: "desc" },
+    });
     if (s) return s;
   }
   if (providerSubscriptionId) {
-    const s = await SubscriptionModel.findOne({ providerSubscriptionId })
-      .sort({ createdAt: -1 })
-      .exec();
+    const s = await prisma.subscription.findFirst({
+      where: { providerSubscriptionId },
+      orderBy: { createdAt: "desc" },
+    });
     if (s) return s;
   }
   if (planHint) {
-    const s = await SubscriptionModel.findOne({ userId, planId: planHint, status: "pending" })
-      .sort({ createdAt: -1 })
-      .exec();
+    const s = await prisma.subscription.findFirst({
+      where: { userId, planId: planHint, status: "pending" },
+      orderBy: { createdAt: "desc" },
+    });
     if (s) return s;
   }
-  return SubscriptionModel.findOne({ userId, status: "pending" }).sort({ createdAt: -1 }).exec();
+  return prisma.subscription.findFirst({
+    where: { userId, status: "pending" },
+    orderBy: { createdAt: "desc" },
+  });
 }
 
 /**
- * Applies UddoktaPay / Paymently webhook or verify-payment API payload to MongoDB.
+ * Applies UddoktaPay / Paymently webhook or verify-payment API payload to the database.
  * Resolves the pending checkout row by subscription (not only by invoice id).
  */
 export async function applyUddoktaPayPayloadToSubscriptions(
@@ -248,60 +262,51 @@ export async function applyUddoktaPayPayloadToSubscriptions(
 
   const resolvedAmount = parseAmount(flat.amount) || sub.amount || 0;
 
-  const subUpdate: {
-    $set: Record<string, unknown>;
-    $unset?: Record<string, 1>;
-  } = {
-    $set: {
-      userId,
-      agencyId: agencyIdFromMeta ?? sub.agencyId ?? null,
-      planId,
-      billingCycle: cycle,
-      status: normalized.subscriptionStatus,
-      amount: resolvedAmount,
-      currency: typeof flat.currency === "string" ? flat.currency : sub.currency || "BDT",
-      providerReference: reference ?? sub.providerReference,
-      canceledAt: parseDate(flat.canceled_at),
-      metadata: mergedMetadata,
-    },
+  const subUpdate: Prisma.SubscriptionUncheckedUpdateInput = {
+    userId,
+    agencyId: agencyIdFromMeta ?? sub.agencyId ?? null,
+    planId,
+    billingCycle: cycle,
+    status: normalized.subscriptionStatus,
+    amount: resolvedAmount,
+    currency: typeof flat.currency === "string" ? flat.currency : sub.currency || "BDT",
+    providerReference: reference ?? sub.providerReference,
+    canceledAt: parseDate(flat.canceled_at),
+    metadata: mergedMetadata as Prisma.InputJsonValue,
+    providerSubscriptionId: providerSubscriptionId ?? null,
   };
 
   if (normalized.subscriptionStatus === "active" && periodAnchor && computedPeriodEnd) {
-    subUpdate.$set.periodStartAt = periodAnchor;
-    subUpdate.$set.periodEndAt = computedPeriodEnd;
-    subUpdate.$set.nextBillingAt = computedPeriodEnd;
+    subUpdate.periodStartAt = periodAnchor;
+    subUpdate.periodEndAt = computedPeriodEnd;
+    subUpdate.nextBillingAt = computedPeriodEnd;
   } else if (providerPeriodEnd) {
-    subUpdate.$set.nextBillingAt = providerPeriodEnd;
-    subUpdate.$set.periodEndAt = providerPeriodEnd;
+    subUpdate.nextBillingAt = providerPeriodEnd;
+    subUpdate.periodEndAt = providerPeriodEnd;
   }
 
-  if (providerSubscriptionId) {
-    subUpdate.$set.providerSubscriptionId = providerSubscriptionId;
-  } else {
-    subUpdate.$unset = { providerSubscriptionId: 1 };
-  }
+  await prisma.subscription.update({
+    where: { id: sub.id },
+    data: subUpdate,
+  });
 
-  await SubscriptionModel.updateOne({ _id: sub._id }, subUpdate).exec();
-
-  const refreshed = await SubscriptionModel.findById(sub._id).exec();
+  const refreshed = await prisma.subscription.findUnique({ where: { id: sub.id } });
   if (!refreshed) {
     throw new Error("Subscription disappeared after update.");
   }
 
   if (normalized.subscriptionStatus === "active") {
-    await SubscriptionModel.updateMany(
-      {
+    await prisma.subscription.updateMany({
+      where: {
         userId,
-        _id: { $ne: refreshed._id },
-        status: { $in: ["pending", "active", "past_due", "incomplete"] },
+        id: { not: refreshed.id },
+        status: { in: ["pending", "active", "past_due", "incomplete"] },
       },
-      {
-        $set: {
-          status: "canceled",
-          canceledAt: paidAtForPeriod ?? new Date(),
-        },
+      data: {
+        status: "canceled",
+        canceledAt: paidAtForPeriod ?? new Date(),
       },
-    ).exec();
+    });
   }
 
   const invoiceId = typeof flat.invoice_id === "string" ? flat.invoice_id : null;
@@ -315,75 +320,97 @@ export async function applyUddoktaPayPayloadToSubscriptions(
     throw new Error("Payment payload missing invoice_id / transaction_id");
   }
 
-  const pendingTx = await PaymentTransactionModel.findOne({
-    subscriptionId: refreshed._id.toString(),
-    userId,
-    status: "pending",
-  })
-    .sort({ createdAt: -1 })
-    .exec();
+  const pendingTx = await prisma.paymentTransaction.findFirst({
+    where: {
+      subscriptionId: refreshed.id,
+      userId,
+      status: "pending",
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
   const paidAt =
     parseDate(flat.paid_at) ||
     parseDate(flat.date) ||
     (normalized.paymentStatus === "paid" ? new Date() : null);
 
-  const txFilter = pendingTx
-    ? { _id: pendingTx._id }
-    : { providerPaymentId: providerPaymentIdFromPayload };
-
   const resolvedProviderPaymentId = pendingTx?.providerPaymentId ?? providerPaymentIdFromPayload;
 
-  const existingTx = await PaymentTransactionModel.findOne(txFilter)
-    .select("_id status")
-    .lean()
-    .exec();
+  const existingTx = pendingTx
+    ? await prisma.paymentTransaction.findUnique({
+        where: { id: pendingTx.id },
+        select: { id: true, status: true },
+      })
+    : await prisma.paymentTransaction.findUnique({
+        where: { providerPaymentId: providerPaymentIdFromPayload },
+        select: { id: true, status: true },
+      });
   const wasPaid = existingTx?.status === "paid";
 
-  await PaymentTransactionModel.updateOne(
-    txFilter,
-    {
-      $set: {
-        userId,
-        subscriptionId: refreshed._id.toString(),
-        planId,
-        providerPaymentId: resolvedProviderPaymentId,
-        providerSubscriptionId,
-        providerReference: reference,
-        amount: resolvedAmount,
-        currency: typeof flat.currency === "string" ? flat.currency : refreshed.currency || "BDT",
-        status: normalized.paymentStatus,
-        paidAt,
-        raw: flat,
-      },
-    },
-    { upsert: !pendingTx },
-  );
-
-  const txRow = await PaymentTransactionModel.findOne({
+  const txData = {
     userId,
+    subscriptionId: refreshed.id,
+    planId,
     providerPaymentId: resolvedProviderPaymentId,
-  })
-    .select("_id")
-    .lean()
-    .exec();
-  const invoiceMongoId = txRow?._id?.toString() ?? null;
+    providerSubscriptionId,
+    providerReference: reference,
+    amount: resolvedAmount,
+    currency: typeof flat.currency === "string" ? flat.currency : refreshed.currency || "BDT",
+    status: normalized.paymentStatus,
+    paidAt,
+    raw: flat as Prisma.InputJsonValue,
+  };
+
+  if (pendingTx) {
+    await prisma.paymentTransaction.update({
+      where: { id: pendingTx.id },
+      data: txData,
+    });
+  } else {
+    await prisma.paymentTransaction.upsert({
+      where: { providerPaymentId: resolvedProviderPaymentId },
+      create: txData,
+      update: txData,
+    });
+  }
+
+  const txRow = await prisma.paymentTransaction.findUnique({
+    where: { providerPaymentId: resolvedProviderPaymentId },
+    select: { id: true },
+  });
+  const invoiceMongoId = txRow?.id ?? null;
 
   if (normalized.paymentStatus === "paid" && !wasPaid) {
     const couponId =
       typeof priorMeta.couponMongoId === "string" ? priorMeta.couponMongoId.trim() : "";
     const alreadyRedeemed = priorMeta.couponRedeemed === true;
-    if (couponId && !alreadyRedeemed && mongoose.isValidObjectId(couponId)) {
-      const marked = await SubscriptionModel.updateOne(
-        { _id: sub._id, "metadata.couponRedeemed": { $ne: true } },
-        { $set: { "metadata.couponRedeemed": true } },
-      ).exec();
-      if (marked.modifiedCount > 0) {
-        await CouponModel.updateOne({ _id: couponId }, { $inc: { redemptionCount: 1 } }).exec();
+    if (couponId && !alreadyRedeemed && isValidId(couponId)) {
+      const marked = await prisma.subscription.updateMany({
+        where: {
+          id: sub.id,
+          NOT: {
+            metadata: {
+              path: ["couponRedeemed"],
+              equals: true,
+            },
+          },
+        },
+        data: {
+          metadata: { ...priorMeta, couponRedeemed: true } as Prisma.InputJsonValue,
+        },
+      });
+      if (marked.count > 0) {
+        await prisma.coupon.update({
+          where: { id: couponId },
+          data: { redemptionCount: { increment: 1 } },
+        });
       }
     }
 
-    const u = await UserModel.findById(userId).select("email fullName").lean().exec();
+    const u = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, fullName: true },
+    });
     if (u?.email) {
       const planMeta = getBillingPlanById(planId);
       void sendPaymentPaidInvoiceEmail({
@@ -402,22 +429,18 @@ export async function applyUddoktaPayPayloadToSubscriptions(
   const userPeriodEnd =
     normalized.subscriptionStatus === "active" && computedPeriodEnd ? computedPeriodEnd : null;
 
-  await UserModel.updateOne(
-    { _id: userId },
-    {
-      $set: {
-        billingPlanId: planId,
-        billingStatus: normalized.subscriptionStatus,
-        billingCycle: getPlanCycleForStorage(planId, cycle),
-        ...(userPeriodEnd ? { billingCurrentPeriodEnd: userPeriodEnd } : {}),
-      },
-      $unset: {
-        billingScheduledPlanId: 1,
-        billingScheduledCycle: 1,
-        billingScheduledChangeAt: 1,
-      },
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      billingPlanId: planId,
+      billingStatus: subscriptionStatusToBillingStatus(normalized.subscriptionStatus),
+      billingCycle: getPlanCycleForStorage(planId, cycle),
+      billingCurrentPeriodEnd: userPeriodEnd,
+      billingScheduledPlanId: null,
+      billingScheduledCycle: null,
+      billingScheduledChangeAt: null,
     },
-  );
+  });
 
   invalidateCacheKey(`user:billing-me:${userId}`);
 }

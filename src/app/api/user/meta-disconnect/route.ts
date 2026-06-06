@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { requireMongo } from "@/lib/db";
+import { getServerUser } from "@/lib/auth/session";
+import { requireDb } from "@/lib/db";
 import { COOKIE_NAME } from "@/lib/jwt";
 import { disconnectMetaForUser } from "@/lib/meta-disconnect";
 
 export async function POST() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ ok: false, error: "Sign in required." }, { status: 401 });
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : "Database unavailable" },
@@ -19,7 +19,7 @@ export async function POST() {
     );
   }
 
-  await disconnectMetaForUser(session.user.id);
+  await disconnectMetaForUser(authUser.id);
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set(COOKIE_NAME, "", {

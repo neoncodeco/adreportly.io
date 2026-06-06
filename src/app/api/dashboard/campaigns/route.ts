@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getServerUser } from "@/lib/auth/session";
 import { metaAccessContext } from "@/lib/agency-from-request";
 import { getDecryptedTokenForAgency } from "@/lib/agency-service";
 import { USER_CACHE_HEADERS } from "@/lib/server-cache";
@@ -76,7 +76,6 @@ async function getCampaignPreviewUrl(
 
 export async function GET(req: NextRequest) {
   const { agencyId, isAuthenticated } = await metaAccessContext(req);
-  await auth();
 
   if (!isAuthenticated) {
     return NextResponse.json({ success: false, error: "Sign in required." }, { status: 401 });

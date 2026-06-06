@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/auth";
-import { requireMongo } from "@/lib/db";
+import { getServerUser } from "@/lib/auth/session";
+import { prisma, requireDb } from "@/lib/db";
 import { encryptSecret } from "@/lib/encryption";
 import { getOrSetCache, invalidateCacheByPrefix, USER_CACHE_HEADERS } from "@/lib/server-cache";
-import { UserModel } from "@/models/user";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Database unavailable" },
@@ -20,11 +19,11 @@ export async function GET() {
     );
   }
 
-  const payload = await getOrSetCache(`user:fb-app:${session.user.id}`, 30_000, async () => {
-    const user = await UserModel.findById(session.user.id)
-      .select("fbAppId +encryptedFbAppSecret agencyId")
-      .lean()
-      .exec();
+  const payload = await getOrSetCache(`user:fb-app:${authUser.id}`, 30_000, async () => {
+    const user = await prisma.user.findUnique({
+      where: { id: authUser.id },
+      select: { fbAppId: true, encryptedFbAppSecret: true, agencyId: true },
+    });
     return {
       fbAppId: user?.fbAppId ?? null,
       hasSecret: Boolean(user?.encryptedFbAppSecret),
@@ -41,8 +40,8 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
 
@@ -59,7 +58,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Database unavailable" },
@@ -69,21 +68,22 @@ export async function PATCH(request: NextRequest) {
 
   const fbAppSecret = parsed.data.fbAppSecret?.trim();
 
-  const existingUser = await UserModel.findById(session.user.id)
-    .select("+encryptedFbAppSecret")
-    .lean()
-    .exec();
+  const existingUser = await prisma.user.findUnique({
+    where: { id: authUser.id },
+    select: { encryptedFbAppSecret: true },
+  });
   if (!fbAppSecret && !existingUser?.encryptedFbAppSecret) {
     return NextResponse.json({ error: "App Secret is required." }, { status: 400 });
   }
 
-  await UserModel.findByIdAndUpdate(session.user.id, {
-    $set: {
+  await prisma.user.update({
+    where: { id: authUser.id },
+    data: {
       fbAppId: parsed.data.fbAppId,
       ...(fbAppSecret ? { encryptedFbAppSecret: encryptSecret(fbAppSecret) } : {}),
     },
-  }).exec();
-  invalidateCacheByPrefix(`user:fb-app:${session.user.id}`);
+  });
+  invalidateCacheByPrefix(`user:fb-app:${authUser.id}`);
   invalidateCacheByPrefix("user:dashboard-overview:");
   invalidateCacheByPrefix("user:ad-accounts:");
 
@@ -91,22 +91,23 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const authUser = await getServerUser();
+  if (!authUser?.id) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
   try {
-    await requireMongo();
+    await requireDb();
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Database unavailable" },
       { status: 503 },
     );
   }
-  await UserModel.findByIdAndUpdate(session.user.id, {
-    $set: { fbAppId: null, encryptedFbAppSecret: null },
-  }).exec();
-  invalidateCacheByPrefix(`user:fb-app:${session.user.id}`);
+  await prisma.user.update({
+    where: { id: authUser.id },
+    data: { fbAppId: null, encryptedFbAppSecret: null },
+  });
+  invalidateCacheByPrefix(`user:fb-app:${authUser.id}`);
   invalidateCacheByPrefix("user:dashboard-overview:");
   invalidateCacheByPrefix("user:ad-accounts:");
   return NextResponse.json({ ok: true });
