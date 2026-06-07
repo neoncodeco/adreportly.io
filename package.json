@@ -4,14 +4,9 @@
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "next dev",
-<<<<<<< Updated upstream
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
-=======
-    "build": "prisma generate && next build && node scripts/prepare-standalone.mjs",
-    "start": "node .next/standalone/server.js",
-    "start:next": "next start",
->>>>>>> Stashed changes
+    "start:standalone": "node .next/standalone/server.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
