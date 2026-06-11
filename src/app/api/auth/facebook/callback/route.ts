@@ -5,6 +5,7 @@ import { signAgencyJwt, COOKIE_NAME } from "@/lib/jwt";
 import { hasDatabase, prisma } from "@/lib/db";
 import { decryptSecret } from "@/lib/encryption";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import { getPublicSiteCallbackUrl, getPublicSiteUrl } from "@/lib/site-url";
 
 async function getUserFbCredentials(
   userId: string,
@@ -31,20 +32,14 @@ export async function GET(request: NextRequest) {
   });
   if (!rate.allowed) {
     return NextResponse.redirect(
-      new URL(
-        "/dashboard/meta-connect?error=rate_limited",
-        process.env.NEXT_PUBLIC_SITE_URL ??
-          (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : request.nextUrl.origin),
-      ),
+      new URL("/dashboard/meta-connect?error=rate_limited", getPublicSiteUrl()),
     );
   }
 
-  const site =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://adreportly.io");
+  const site = getPublicSiteUrl();
 
   const redirectUri =
-    process.env.FACEBOOK_REDIRECT_URI ?? `${site.replace(/\/$/, "")}/api/auth/facebook/callback`;
+    process.env.FACEBOOK_REDIRECT_URI ?? getPublicSiteCallbackUrl("/api/auth/facebook/callback");
 
   const url = request.nextUrl;
   const code = url.searchParams.get("code");

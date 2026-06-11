@@ -24,14 +24,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
+import { getPublicSiteCallbackUrl } from "@/lib/site-url";
 import { toast } from "sonner";
 
-const SITE =
-  typeof window !== "undefined"
-    ? window.location.origin
-    : (process.env.NEXT_PUBLIC_SITE_URL ?? "https://yourdomain.com");
-
-const REDIRECT_URL = `${SITE}/api/auth/facebook/callback`;
+const REDIRECT_URL = getPublicSiteCallbackUrl("/api/auth/facebook/callback");
 
 export function SettingsPage() {
   const { user } = useAuth();

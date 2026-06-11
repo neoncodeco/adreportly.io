@@ -3,16 +3,14 @@ import type Mail from "nodemailer/lib/mailer";
 
 import { DHAKA_TIMEZONE_LABEL, formatDhakaDateTime } from "@/lib/billing/date-format";
 import { renderInvoiceHtml } from "@/lib/billing/invoice-html";
+import { getPublicSiteUrl } from "@/lib/site-url";
 
 let transporterCache: nodemailer.Transporter | null = null;
 
 const BRAND_NAME = "AdReportly";
 
 function getBaseUrl() {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://adreportly.io")
-  ).replace(/\/$/, "");
+  return getPublicSiteUrl();
 }
 
 function escapeEmailHtml(s: string): string {
