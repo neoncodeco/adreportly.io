@@ -1,3 +1,5 @@
+import { getPublicSiteUrl, normalizeSiteUrl } from "@/lib/site-url";
+
 type BillingEnv = {
   publicSiteUrl: string;
   apiBaseUrl: string;
@@ -7,15 +9,9 @@ type BillingEnv = {
   webhookSecret: string;
 };
 
-function normalizeBaseUrl(value: string): string {
-  return value.replace(/\/+$/, "");
-}
-
 export function getBillingEnv(): BillingEnv {
-  const publicSiteUrl = normalizeBaseUrl(
-    process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "https://adreportly.io",
-  );
-  const apiBaseUrl = normalizeBaseUrl(process.env.UDDOKTAPAY_BASE_URL || "");
+  const publicSiteUrl = getPublicSiteUrl();
+  const apiBaseUrl = normalizeSiteUrl(process.env.UDDOKTAPAY_BASE_URL || "");
   const merchantId = process.env.UDDOKTAPAY_MERCHANT_ID || "";
   const apiKey = process.env.UDDOKTAPAY_API_KEY || "";
   const apiSecret = process.env.UDDOKTAPAY_API_SECRET || "";

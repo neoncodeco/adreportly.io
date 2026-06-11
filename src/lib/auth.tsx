@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { getPublicSiteCallbackUrl } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/client";
 
 /** Shape compatible with previous Supabase `User` usage in dashboard UI. */
@@ -134,7 +135,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     meta?: { full_name?: string; organization?: string },
   ) => {
     const supabase = createClient();
-    const origin = window.location.origin;
     const verifyNext = encodeURIComponent("/login?verify=success");
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
@@ -144,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           full_name: meta?.full_name ?? "",
           organization: meta?.organization ?? "",
         },
-        emailRedirectTo: `${origin}/auth/callback?next=${verifyNext}`,
+        emailRedirectTo: `${getPublicSiteCallbackUrl("/auth/callback")}?next=${verifyNext}`,
       },
     });
 

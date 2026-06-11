@@ -2,17 +2,10 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth";
+import { getPublicSiteBase } from "@/lib/site-url";
 import { ThemeProvider } from "@/lib/theme";
 import { Providers } from "./providers";
 import "./globals.css";
-
-function getMetadataBase(): URL {
-  const raw =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://adreportly.io");
-  const trimmed = raw.replace(/\/+$/, "");
-  return new URL(`${trimmed}/`);
-}
 
 const defaultTitle = "AdReportly — Real-time Facebook Ads Insights for Agencies";
 const defaultDescription =
@@ -22,7 +15,7 @@ const ogImage =
   "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9e461043-3cf3-4c2e-b0ad-d0915984965b/id-preview-b3aa24a5--b0ebd5f4-f67a-4ade-9c4d-b97522b92343.lovable.app-1777655552849.png";
 
 export const metadata: Metadata = {
-  metadataBase: getMetadataBase(),
+  metadataBase: getPublicSiteBase(),
   title: {
     default: defaultTitle,
     template: "%s · AdReportly",
@@ -43,7 +36,7 @@ export const metadata: Metadata = {
     "Bangladesh",
     "BDT billing",
   ],
-  authors: [{ name: "AdReportly", url: getMetadataBase().origin }],
+  authors: [{ name: "AdReportly", url: getPublicSiteBase().origin }],
   creator: "AdReportly",
   publisher: "AdReportly",
   formatDetection: {

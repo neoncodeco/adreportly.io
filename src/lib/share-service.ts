@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { hasDatabase, prisma } from "@/lib/db";
 import { normalizeDollarRateBdt, positiveFiniteNumber } from "@/lib/share-financial";
+import { getPublicSiteCallbackUrl } from "@/lib/site-url";
 
 export type ShareRecord = {
   shareToken: string;
@@ -72,10 +73,7 @@ export async function getShareByToken(token: string): Promise<ShareRecord | null
 }
 
 export function buildShareUrl(token: string) {
-  const base =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://adreportly.io");
-  return `${base.replace(/\/$/, "")}/view/${token}`;
+  return getPublicSiteCallbackUrl(`/view/${token}`);
 }
 
 export function newShareToken() {

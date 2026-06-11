@@ -18,6 +18,7 @@ import {
   ArrowRight,
   LayoutDashboard,
 } from "lucide-react";
+import { getPublicSiteCallbackUrl } from "@/lib/site-url";
 import { cn } from "@/lib/utils";
 
 type StepStatus = "required" | "optional" | "info";
@@ -51,6 +52,8 @@ function statusLabel(s: StepStatus) {
   if (s === "optional") return "Optional";
   return "Info";
 }
+
+const FACEBOOK_REDIRECT_URL = getPublicSiteCallbackUrl("/api/auth/facebook/callback");
 
 const SECTIONS: Section[] = [
   {
@@ -160,7 +163,7 @@ const SECTIONS: Section[] = [
           "Use HTTPS in production. Avoid trailing slashes unless your copied URL includes one",
         ],
         links: [{ label: "Meta app dashboard", href: "https://developers.facebook.com/apps" }],
-        code: "Example (replace with your domain):\nhttps://yourdomain.com/api/auth/facebook/callback\n\nLocal development:\nhttps://adreportly.io/api/auth/facebook/callback",
+        code: `Configured redirect URL:\n${FACEBOOK_REDIRECT_URL}`,
       },
       {
         title: "Authorize with Meta Connect",

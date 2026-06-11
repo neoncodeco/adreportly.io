@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerUser } from "@/lib/auth/session";
 import { hasDatabase, prisma } from "@/lib/db";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import { getPublicSiteCallbackUrl } from "@/lib/site-url";
 
 async function getUserFbAppId(userId: string): Promise<string | null> {
   if (!hasDatabase()) return null;
@@ -32,12 +33,8 @@ export async function GET(request: NextRequest) {
 
   const authUser = await getServerUser();
 
-  const site =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://adreportly.io");
-
   const redirectUri =
-    process.env.FACEBOOK_REDIRECT_URI ?? `${site.replace(/\/$/, "")}/api/auth/facebook/callback`;
+    process.env.FACEBOOK_REDIRECT_URI ?? getPublicSiteCallbackUrl("/api/auth/facebook/callback");
 
   // Per-user App ID from DB takes priority over .env
   let appId = process.env.FACEBOOK_APP_ID ?? null;

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Zap, Loader2 } from "lucide-react";
+import { getPublicSiteCallbackUrl } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,10 +19,9 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setSubmitting(true);
     const supabase = createClient();
-    const origin = window.location.origin;
     const resetNext = encodeURIComponent("/reset-password");
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${origin}/auth/callback?next=${resetNext}`,
+      redirectTo: `${getPublicSiteCallbackUrl("/auth/callback")}?next=${resetNext}`,
     });
     setSubmitting(false);
     if (error) {

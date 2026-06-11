@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Zap, Loader2 } from "lucide-react";
+import { getPublicSiteCallbackUrl } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -87,13 +88,12 @@ export default function LoginPage() {
     setResending(true);
     try {
       const supabase = createClient();
-      const origin = window.location.origin;
       const verifyNext = encodeURIComponent("/login?verify=success");
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: verifyEmail,
         options: {
-          emailRedirectTo: `${origin}/auth/callback?next=${verifyNext}`,
+          emailRedirectTo: `${getPublicSiteCallbackUrl("/auth/callback")}?next=${verifyNext}`,
         },
       });
       if (error) {
