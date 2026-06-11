@@ -44,9 +44,24 @@ Do not put the GitHub token directly in the clone URL because it can be saved in
 
 ## Environment File
 
-Create the production environment file:
+Create the production environme
 
-```bash
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 nano .env
 ```
 
