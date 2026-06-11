@@ -160,7 +160,7 @@ const SECTIONS: Section[] = [
           "Use HTTPS in production. Avoid trailing slashes unless your copied URL includes one",
         ],
         links: [{ label: "Meta app dashboard", href: "https://developers.facebook.com/apps" }],
-        code: "Example (replace with your domain):\nhttps://yourdomain.com/api/auth/facebook/callback\n\nLocal development:\nhttp://localhost:3000/api/auth/facebook/callback",
+        code: "Example (replace with your domain):\nhttps://yourdomain.com/api/auth/facebook/callback\n\nLocal development:\nhttps://adreportly.io/api/auth/facebook/callback",
       },
       {
         title: "Authorize with Meta Connect",

@@ -13,7 +13,7 @@ function normalizeBaseUrl(value: string): string {
 
 export function getBillingEnv(): BillingEnv {
   const publicSiteUrl = normalizeBaseUrl(
-    process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "http://localhost:3000",
+    process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "https://adreportly.io",
   );
   const apiBaseUrl = normalizeBaseUrl(process.env.UDDOKTAPAY_BASE_URL || "");
   const merchantId = process.env.UDDOKTAPAY_MERCHANT_ID || "";

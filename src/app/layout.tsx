@@ -9,7 +9,7 @@ import "./globals.css";
 function getMetadataBase(): URL {
   const raw =
     process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://adreportly.io");
   const trimmed = raw.replace(/\/+$/, "");
   return new URL(`${trimmed}/`);
 }
