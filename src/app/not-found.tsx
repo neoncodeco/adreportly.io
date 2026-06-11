@@ -53,7 +53,7 @@ export default function NotFound() {
               >
                 <Link href="/">
                   <Home className="h-4 w-4" />
-                  Back to home 
+                  Back to home
                 </Link>
               </Button>
             </div>

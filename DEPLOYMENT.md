@@ -46,24 +46,9 @@ Do not put the GitHub token directly in the clone URL because it can be saved in
 
 Create the production environme
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 nano .env
-```
+
+````
 
 Required production values include:
 
@@ -72,7 +57,7 @@ NODE_ENV=production
 PORT=3001
 NEXT_PUBLIC_SITE_URL=https://adreportly.io
 FACEBOOK_REDIRECT_URI=https://adreportly.io/api/auth/facebook/callback
-```
+````
 
 Also add production Supabase/Prisma database URLs, Supabase Auth keys, JWT/encryption, payment, SMTP, and Facebook app values (see `.env.example`).
 
