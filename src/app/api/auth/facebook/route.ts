@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
   const site =
     process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://adreportly.io");
 
   const redirectUri =
     process.env.FACEBOOK_REDIRECT_URI ?? `${site.replace(/\/$/, "")}/api/auth/facebook/callback`;
