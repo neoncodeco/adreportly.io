@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { COOKIE_NAME } from "@/lib/jwt";
+import { getPublicSiteUrl } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 
 const COOKIES_TO_CLEAR = [COOKIE_NAME, "fb_oauth_state", "fb_oauth_app_user"] as const;
@@ -31,9 +32,9 @@ async function signOutSupabase() {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   await signOutSupabase();
-  const res = NextResponse.redirect(new URL("/login", request.url));
+  const res = NextResponse.redirect(new URL("/login", getPublicSiteUrl()));
   clearAuthCookies(res);
   return res;
 }
